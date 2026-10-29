@@ -22,7 +22,7 @@ function Example({ ex }: { ex: ExampleRoom }) {
   return (
     <figure className="example">
       <div className="scene-frame scene-frame--small">
-        <BathroomScene bathroom={ex.bathroom} disabled picked={ex.pick} evaluation={evaluation} reducedMotion={reducedMotion} />
+        <BathroomScene bathroom={ex.bathroom} disabled picked={ex.pick} evaluation={evaluation} reducedMotion={reducedMotion} maxScale={0.72} />
       </div>
       <figcaption className="example-caption">
         <Tile grade="clear" size="sm" /> {ex.caption}

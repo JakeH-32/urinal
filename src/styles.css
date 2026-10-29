@@ -513,9 +513,6 @@ button {
   width: 100%;
   min-width: 0;
 }
-.scene-frame > * {
-  max-width: 100%;
-}
 
 .round-foot {
   min-height: 56px;
