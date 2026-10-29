@@ -48,7 +48,7 @@ export const EXAMPLE_ROOMS: ExampleRoom[] = [
       door: 'left',
     },
     pick: 5,
-    caption: 'Dividers add distance. Not against a talker.',
+    caption: 'A divider counts as a gap. Not against a talker.',
   },
   {
     id: 'stall',
