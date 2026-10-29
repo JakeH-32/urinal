@@ -10,7 +10,7 @@
 //     |i - j| + (number of dividers strictly between them)
 //     ...except dividers don't count for a TALKER (he leans around them).
 //
-//   Each occupant has a personal-space radius r (by quirk; DRUNK and FACETIME are lopsided).
+//   Each occupant has a personal-space radius r (by quirk; DRUNK is lopsided; FACETIME's camera side is infinite).
 //   clearance(i, guy) = effDist(i, guy) - r(toward i).  clearance <= 0 = VIOLATION.
 //   A free STALL never violates (it has walls) and has no clearance.
 //
@@ -46,7 +46,8 @@ export interface Guy {
   quirk: Quirk;
   /**
    * Lopsided quirks only. drunk: the side he sways toward (radius 3 that way, 1 the other).
-   * facetime: the side he holds the phone, i.e. the camera's frame (radius 2 that way, 1 the other).
+   * facetime: the side he holds the phone. The camera films the whole OTHER side (every urinal over
+   * there violates); beside the phone the normal 1-urinal rule applies.
    */
   lean?: Side;
   /** Display name + one-line description, filled from content pools. */
@@ -91,7 +92,7 @@ export interface Round {
  * A handmade puzzle room. `layout` is a compact spec, left to right, space-separated:
  *   _ empty urinal   L low   W puddle   X broken   S empty stall   $ occupied stall
  *   N normal guy   T talker   P splasher   B boss   D< drunk leaning left   D> drunk leaning right
- *   F< on FaceTime, phone held to his left   F> phone held to his right
+ *   F< on FaceTime, phone in his left hand (camera films everything to his right)   F> the mirror
  *   | divider between the neighbouring slots
  * e.g. "T | _ | L _ _ P _ S"
  */

@@ -131,7 +131,7 @@ export const QUIRKS: Record<Quirk, QuirkText> = {
   facetime: {
     label: 'FaceTime',
     emoji: '📱',
-    rule: 'Stay out of frame: two empty urinals on his phone side, one on the other.',
+    rule: 'His camera films everything on the far side from the phone. Nowhere over there is safe. Beside the phone, one empty urinal.',
     people: [
       { name: 'Rohan from Accounts', blurb: 'On FaceTime with his grandmother in Pune. She wants to see the office.' },
       { name: 'Vikram, the new hire', blurb: 'FaceTiming his nani in Jaipur. It’s 2 a.m. there. She’s thrilled.' },
@@ -461,7 +461,7 @@ export const HOW_TO_PLAY: { heading: string; body: string }[] = [
   },
   {
     heading: 'Some men need more room',
-    body: 'Talkers and splashers need two empty urinals. Bosses need three. Drunks sway one way: three on that side, one on the other. A guy on FaceTime needs you out of frame: two on his phone side, one on the other. The label over each man’s head says who’s who.',
+    body: 'Talkers and splashers need two empty urinals. Bosses need three. Drunks sway one way: three on that side, one on the other. A guy on FaceTime is filming everything on the far side from his phone, all the way to the wall: don’t stand anywhere over there. Beside the phone, one empty urinal is enough. The label over each man’s head says who’s who.',
   },
   {
     heading: 'Dividers and bad urinals',

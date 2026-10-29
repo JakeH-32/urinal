@@ -7,6 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Bathroom, Evaluation, Guy, Quirk, Side, Slot } from '../types';
 import { clearanceTo, culpritOf, effectiveDistance, evaluate, isWall, wallIndex, zoneCovers, zoneRadius } from './code';
+import { parseLayout } from './layout';
 
 const LOOK: Guy['look'] = { shirt: 0, pants: 0, hair: 0, skin: 0, height: 0, bald: false };
 
@@ -61,6 +62,13 @@ describe('primitives', () => {
     expect([r(5, 'left'), r(5, 'right')]).toEqual([1, 3]);
   });
 
+  it('facetime: the whole camera side is in frame, the phone side is the normal rule', () => {
+    const b = parseLayout('_ _ _ _ F< _ _ _', 'left');
+    const g = b.slots[4].occupant as Guy;
+    expect([zoneRadius(g, 'left'), zoneRadius(g, 'right')]).toEqual([1, Infinity]);
+    expect(zoneCovers(b, 4)).toEqual([3, 5, 6, 7]);
+  });
+
   it('dividers add distance, except for a talker', () => {
     const b = bath('_ | N | _ _ | T');
     expect(effectiveDistance(b, 0, 1)).toBe(2);
@@ -90,6 +98,14 @@ describe('the user examples', () => {
 
   it('3 urinals, door right [_ G _]: wall end green, door end yellow', () => {
     expect(grades(bath('_ N _', 'right'))).toEqual(['C:only-option', '-', 'S:not-wall']);
+  });
+
+  it('nobody stands in the background of a FaceTime (user report, Urinal #1 round 3)', () => {
+    // Phone in his left hand: everything to his right is on camera, even the far wall spot.
+    const b = parseLayout('_ _ _ _ F< _ _ _', 'left');
+    expect(grades(b)).toEqual([
+      'C:perfect', 'S:too-close', 'S:too-close', 'D:facetime', '-', 'D:facetime', 'D:facetime', 'D:facetime',
+    ]);
   });
 
   it('dividers make a spot legal but never roomier (user report, Urinal #1 round 4)', () => {

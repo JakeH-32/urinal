@@ -1,16 +1,24 @@
 // THE CODE: evaluates a bathroom. Owned by the Engine agent. See src/types.ts for the exact rules.
 import type { Bathroom, Evaluation, Grade, Guy, Quirk, Reason, Side, Slot, SlotAnalysis } from '../types';
 
-/** Personal-space radius by quirk (drunk/facetime: toward his lean; 1 the other way). */
+/**
+ * Personal-space radius by quirk. Drunk: 3 toward his lean, 1 the other way. FaceTime: see zoneRadius
+ * (his camera films the whole side away from the phone; this entry is only the no-lean fallback).
+ */
 export const BASE_RADIUS: Record<Quirk, number> = { normal: 1, talker: 2, splasher: 2, boss: 3, drunk: 3, facetime: 2 };
 
 /** Personal-space radius of `guy` toward `toward` (the side the candidate slot is on, relative to him). */
 export function zoneRadius(guy: Guy, toward: Side): number {
-  if (guy.quirk === 'drunk' || guy.quirk === 'facetime') {
-    // Lopsided: full radius toward his lean (sway / phone side), 1 the other way. No lean: both ways.
-    const r = BASE_RADIUS[guy.quirk];
-    if (!guy.lean) return r;
-    return guy.lean === toward ? r : 1;
+  if (guy.quirk === 'facetime') {
+    // `lean` is the phone hand. The camera films everything on the OTHER side, all the way to the
+    // wall: any urinal over there is in the background of the call. Beside the phone: normal rule.
+    if (!guy.lean) return BASE_RADIUS.facetime;
+    return guy.lean === toward ? 1 : Infinity;
+  }
+  if (guy.quirk === 'drunk') {
+    // Lopsided: 3 toward his lean, 1 the other way. No lean: both ways.
+    if (!guy.lean) return BASE_RADIUS.drunk;
+    return guy.lean === toward ? BASE_RADIUS.drunk : 1;
   }
   return BASE_RADIUS[guy.quirk] ?? 1;
 }
