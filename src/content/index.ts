@@ -495,6 +495,6 @@ export const HOW_TO_PLAY: { heading: string; body: string }[] = [
   },
   {
     heading: 'Grades',
-    body: '⬜ Clear: the right spot. 🟨 Lemonade: you kept the urinal code, but a better spot was free. 🟧 Apple Juice: you stood next to a man when you didn’t have to. 🟫 See a Doctor: you crowded a talker, splasher, boss, drunk or FaceTime guy, or wedged yourself between two men. Share the row, not the details.',
+    body: '🟦 Clear: the right spot. 🟨 Lemonade: you kept the urinal code, but a better spot was free. 🟧 Apple Juice: you stood next to a man when you didn’t have to. 🟫 See a Doctor: you crowded a talker, splasher, boss, drunk or FaceTime guy, or wedged yourself between two men. Share the row, not the details.',
   },
 ];

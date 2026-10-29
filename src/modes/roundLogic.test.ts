@@ -100,7 +100,7 @@ describe('results and stats', () => {
   it('counts clears and builds tiles', () => {
     const rs = [res(1, 'clear'), res(2, 'straw'), res(3, 'amber'), res(4, 'clear'), res(5, 'doctor')];
     expect(clearsIn(rs)).toBe(2);
-    expect(tileString(rs)).toBe('⬜🟨🟧⬜🟫');
+    expect(tileString(rs)).toBe('🟦🟨🟧🟦🟫');
     expect(gradeCounts(rs)).toEqual({ clear: 2, straw: 1, amber: 1, doctor: 1 });
     expect(nextRun(3, 'clear')).toBe(4);
     expect(nextRun(3, 'straw')).toBe(0);

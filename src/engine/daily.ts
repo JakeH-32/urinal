@@ -27,7 +27,7 @@ export function dateKeyOf(date: Date = new Date()): string {
 
 /**
  * Urinal #12 4/6
- * ⬜⬜🟨⬜🟧⬜
+ * 🟦🟦🟨🟦🟧🟦
  * Regular
  * <url>
  *

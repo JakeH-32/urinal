@@ -31,7 +31,7 @@ Venues climb in social stakes, not in grossness. Difficulty 1 is strangers (rest
 
 **New for URINAL:** awkward, cringe, yikes, oof, bro / bro code / dude, man cave, "personal bubble", "no homo", wingman, sword fight, "crossing streams", "eyes forward", "nature calls", "when you gotta go", "the struggle", "every man's nightmare", "Choose wisely."
 
-**Props:** stock internet grievances (fish microwavers, reply-all, crypto bros, HOA, Ohio); tiny hats, rubber ducks, googly eyes; sentient objects with funny names; potty humor of any kind.
+**Props:** stock internet grievances (fish microwavers, reply-all, crypto bros, HOA, Ohio); tiny hats, rubber ducks, googly eyes; sentient objects with funny names.
 
 ## UI copy
 Dry. At most one joke per screen, and it lives in a content slot (tagline, verdict, result title), never in buttons, toasts, labels or confirm dialogs. Buttons say what they do. How To Play and the legend are the one place clarity beats jokes: state the rule exactly, at most one joke per section.
@@ -51,7 +51,7 @@ Dry. At most one joke per screen, and it lives in a content slot (tagline, verdi
 - "Nice aim. Not." (fluid pun, explained sarcasm)
 
 ## Puns
-The user asked for puns, good ones. Rules:
+The user asked for puns, good ones, and loves pee and poop jokes ("who doesn't love a good pee joke, or poop joke"). Keep Code Brown, Leaky Faucet and the "urine" puns. Rules:
 - **Only good puns.** The pun has to work on first read with no hyphen gymnastics. Keep: "Royal Flush", "Whiz Kid", "Relief Pitcher", "Urine trouble.", "Bladder up.", "Wee the people.", "Stall tactics.", "Pee-k-a-boo."
 - **At most one pun per line**, never explained, never stacked, and no more than one or two per pool. Puns go best in rank titles, taglines and verdicts.
 - **Nothing anatomical.** No "main vein", "shake it off", "zip it", size or aim-at-anything jokes.

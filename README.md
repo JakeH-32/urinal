@@ -6,7 +6,7 @@
 
 A daily puzzle about the urinal code: you don't take the urinal next to another man. Each day has six bathrooms, from easy to hard, and everyone gets the same six. Tap a spot, walk in, and get graded:
 
-- ⬜ Clear: the urinal code's answer
+- 🟦 Clear: the urinal code's answer
 - 🟨 Lemonade: legal, but not the best spot
 - 🟧 Apple Juice: you broke the urinal code
 - 🟫 See a Doctor: you broke it badly

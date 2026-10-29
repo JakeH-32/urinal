@@ -1134,3 +1134,21 @@ button {
   display: inline-flex;
   flex: 0 0 auto;
 }
+
+/* ------------------------------------------------------------------ why note */
+
+/* One plain sentence under the verdict: which rule the pick broke (or which tiebreak it lost). */
+.verdict-why {
+  margin: 10px auto 0;
+  max-width: 34rem;
+  padding: 8px 12px;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  animation: fade-in 300ms ease both;
+}

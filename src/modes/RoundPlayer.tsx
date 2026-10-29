@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Round, RoundResult } from '../types';
 import { BathroomScene } from '../scene';
 import { evaluate } from '../engine/code';
+import { explainPick } from '../engine/explain';
 import { sfx } from '../audio/sfx';
 import { Button } from '../ui/Button';
 import { GradeUrinal } from '../ui/GradeUrinal';
@@ -83,6 +84,7 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
   }, [result]);
 
   const line = result ? verdictLine(round.id, result.reason, violatorName(round.bathroom, evaluation, result.pick)) : '';
+  const why = result ? explainPick(round.bathroom, evaluation, result.pick) : null;
 
   return (
     <div className="round">
@@ -108,6 +110,7 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
               <GradeUrinal grade={result.grade} animate={!reducedMotion} />
               {line && <p className="verdict-line">{line}</p>}
             </div>
+            {why && <p className="verdict-why">{why}</p>}
             <div className="row">
               <Button ref={nextRef} variant="primary" size="lg" onClick={onNext} sound={false}>
                 {nextLabel}

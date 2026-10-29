@@ -45,7 +45,7 @@ describe('dailyNumber', () => {
 describe('buildShareText', () => {
   it('finished record', () => {
     const text = buildShareText(record(['clear', 'clear', 'straw', 'clear', 'amber', 'clear']), 'https://urinal.example');
-    expect(text).toBe(`Urinal #12 4/6\n⬜⬜🟨⬜🟧⬜\n${RESULT_TITLES[4]}\nhttps://urinal.example`);
+    expect(text).toBe(`Urinal #12 4/6\n🟦🟦🟨🟦🟧🟦\n${RESULT_TITLES[4]}\nhttps://urinal.example`);
   });
 
   it('omits the url line when empty; doctor tile', () => {
@@ -54,6 +54,6 @@ describe('buildShareText', () => {
   });
 
   it('in progress: tiles so far, no title', () => {
-    expect(buildShareText(record(['clear', 'straw']), '')).toBe('Urinal #12 1/6\n⬜🟨');
+    expect(buildShareText(record(['clear', 'straw']), '')).toBe('Urinal #12 1/6\n🟦🟨');
   });
 });
