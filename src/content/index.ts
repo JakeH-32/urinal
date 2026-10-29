@@ -502,34 +502,39 @@ export const FIXTURES = {
   divider: 'Divider. Makes a close spot legal. Doesn’t count as room.',
 } as const;
 
-/** How To Play sections, in order. The UI renders each with a small example scene where it fits. */
+/**
+ * How To Play, in order. Deliberately no placement rules: the game is about a man's instincts, so
+ * players learn the urinal code by playing (the one-line "why" after each pick), never from a formula.
+ */
 export const HOW_TO_PLAY: { heading: string; body: string }[] = [
   {
     heading: 'Pick a spot',
-    body: 'Six bathrooms a day, easiest first. Each has a row of urinals, and some are taken. Tap one free spot to stand there.',
+    body: 'Six bathrooms a day, easiest first. Tap the urinal you’d use.',
   },
   {
-    heading: 'Never next to anyone',
-    body: 'The urinal code: never take the urinal right next to another man. Leave at least one empty urinal between you. He’d do the same for you.',
+    heading: 'The urinal code',
+    body: 'Every man knows it. No man has ever said it out loud, and we’re not starting now. Go with your gut.',
   },
   {
-    heading: 'Space, then neighbors, then the wall',
-    body: 'If several spots keep the urinal code, take the one with the most room to spare: the most empty urinals beyond what each man needs. Dividers don’t count as room. Still tied? Stand by a normal guy, not one with a label. Still tied? Take the spot against the far wall. Still tied? They’re all Clear. If every spot breaks the code, break it as little as possible: one normal guy beats anyone with a label.',
+    heading: 'Read the room',
+    body: 'A label over a man’s head means he’s a special case. Out-of-order urinals can’t be used. The stall is there if you need it.',
   },
   {
-    heading: 'Some men need more room',
-    body: 'Talkers and splashers need two empty urinals. Bosses need three. Drunks sway one way: two on that side, one on the other. A guy on FaceTime is filming everything on the far side from his phone, all the way to the wall: don’t stand anywhere over there. Beside the phone, one empty urinal is enough. A gassy guy’s smell drifts toward the door: three empty urinals on his door side, one on the other. The label over each man’s head says who’s who.',
-  },
-  {
-    heading: 'Dividers and bad urinals',
-    body: 'A divider counts as one extra empty urinal for keeping the urinal code, except against a talker, who leans around it, or a guy on FaceTime, whose camera sees right over it. It doesn’t count as room: a spot that keeps the distance with real empty urinals beats one that needs a divider. Low urinals and puddled urinals are allowed, but any clean normal urinal beats them.',
-  },
-  {
-    heading: 'The stall',
-    body: 'The stall never breaks the urinal code, but it’s only correct when every urinal would. If a clean urinal is free, the stall is cowardice. No stall either? Break the urinal code as little as possible.',
+    heading: 'Learn the hard way',
+    body: 'Pick wrong and you’ll find out why. Pick right and nobody says a word, which is how it should be.',
   },
   {
     heading: 'Grades',
-    body: '🟦 Clear: the right spot. 🟨 Lemonade: you kept the urinal code, but a better spot was free. 🟧 Apple Juice: you stood next to a man when you didn’t have to. 🟫 See a Doctor: you crowded a talker, splasher, boss, drunk, FaceTime or gassy guy, or wedged yourself between two men. Share the row, not the details.',
+    body: 'Clear means you picked the spot any man would. Your score is how many came back Clear. Share your colors, not the answers.',
   },
+];
+
+/** How To Play's who's who: one line of character per label. Flavor only, never a placement rule. */
+export const WHOS_WHO: { quirk: Exclude<Quirk, 'normal'>; line: string }[] = [
+  { quirk: 'talker', line: 'Wants to catch up. Here. Now.' },
+  { quirk: 'splasher', line: 'Confident. Not accurate.' },
+  { quirk: 'boss', line: 'Signs your paychecks. Notices everything.' },
+  { quirk: 'drunk', line: 'Swaying. Watch which way.' },
+  { quirk: 'facetime', line: 'On a video call with his grandma back home. Nobody wants to be in the background.' },
+  { quirk: 'gassy', line: 'Had the four-bean salad. Mind the draft.' },
 ];

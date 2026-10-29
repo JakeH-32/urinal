@@ -185,6 +185,15 @@ export interface Settings {
   reducedMotion: boolean;
 }
 
+export interface PracticeCurrent {
+  seed: number;
+  run: number;
+  /** Recent grades, newest last (at most 12). */
+  history: Grade[];
+  /** True once this room was graded: coming back deals a new room. */
+  done: boolean;
+}
+
 export interface SaveData {
   version: 1;
   settings: Settings;
@@ -197,7 +206,13 @@ export interface SaveData {
     /** Global "replay today" resets this device has already applied (see DAILY_RESETS). */
     resets?: string[];
   };
-  practice: { played: number; greens: number; bestRun: number };
+  practice: {
+    played: number;
+    greens: number;
+    bestRun: number;
+    /** The Endless room in progress, so leaving or reloading never rerolls it or resets the run. */
+    current?: PracticeCurrent;
+  };
   /** True after the first-run How To Play has been shown. */
   seenTutorial: boolean;
 }

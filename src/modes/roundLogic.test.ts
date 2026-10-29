@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { Bathroom, Evaluation, RoundResult } from '../types';
+import type { Bathroom, Evaluation, Guy, Quirk, RoundResult, Side } from '../types';
 import { VERDICTS } from '../content';
 import { culpritOf } from '../engine/code';
 import { defaultSave } from '../state/storage';
 import { recordRound } from '../state/dailyStreak';
-import { EXAMPLE_ROOMS, makeGuy, placeExamples } from '../ui/exampleRooms';
 import {
   dailyStats,
   clearsIn,
@@ -16,6 +15,10 @@ import {
   verdictLine,
   violatorName,
 } from './roundLogic';
+
+function makeGuy(quirk: Quirk, name: string, blurb = '', lean?: Side): Guy {
+  return { quirk, ...(lean ? { lean } : {}), name, blurb, look: { shirt: 0, pants: 0, hair: 0, skin: 0, height: 0.5, bald: false } };
+}
 
 const room: Bathroom = {
   slots: [
@@ -136,30 +139,5 @@ describe('results and stats', () => {
     expect(st.lifetime).toEqual({ clear: 11, straw: 1, amber: 1, doctor: 1 });
     expect(dailyStats(s, '2026-10-30').todayClears).toBeUndefined();
     expect(dailyStats(defaultSave(), '2026-10-30')).toMatchObject({ played: 0, avgClears: 0 });
-  });
-});
-
-describe('example rooms', () => {
-  it('places each example on a matching section, leftovers go to the end', () => {
-    const sections = [
-      { heading: 'The Code', body: 'Never stand next to another man.' },
-      { heading: 'Talkers', body: 'He talks through dividers.' },
-      { heading: 'Stalls', body: 'Only when every urinal is bad.' },
-    ];
-    const { bySection, leftover } = placeExamples(sections);
-    expect(bySection.get(0)?.id).toBe('basic');
-    expect(bySection.get(1)?.id).toBe('talker');
-    expect(bySection.get(2)?.id).toBe('stall');
-    expect(leftover).toEqual([]);
-    expect(placeExamples([{ heading: 'Hi', body: 'Nothing here.' }]).leftover).toHaveLength(EXAMPLE_ROOMS.length);
-  });
-
-  it('example picks are free, pickable slots', () => {
-    for (const ex of EXAMPLE_ROOMS) {
-      const slot = ex.bathroom.slots[ex.pick];
-      expect(slot.occupant).toBeUndefined();
-      expect(slot.flag).not.toBe('broken');
-      expect(ex.bathroom.dividers).toHaveLength(ex.bathroom.slots.length - 1);
-    }
   });
 });

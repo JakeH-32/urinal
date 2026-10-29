@@ -1,7 +1,7 @@
 // Persistence: one localStorage key, defensive migration, pure update helpers.
 // Every storage access is wrapped in try/catch so the game works with storage
 // blocked (Safari private mode, sandboxed iframes, quota errors...).
-import type { DailyRecord, Grade, Reason, RoundResult, SaveData, Settings } from '../types';
+import type { DailyRecord, Grade, PracticeCurrent, Reason, RoundResult, SaveData, Settings } from '../types';
 import { GRADE_ORDER } from '../grades';
 
 export const STORAGE_KEY = 'urinal:v1';
@@ -117,7 +117,27 @@ function migrateDaily(raw: unknown): SaveData['daily'] {
 function migratePractice(raw: unknown): SaveData['practice'] {
   if (!isObj(raw)) return defaultSave().practice;
   const played = int(raw.played, 0);
-  return { played, greens: Math.min(played, int(raw.greens, 0)), bestRun: int(raw.bestRun, 0) };
+  const current = migrateCurrent(raw.current);
+  return { played, greens: Math.min(played, int(raw.greens, 0)), bestRun: int(raw.bestRun, 0), ...(current ? { current } : {}) };
+}
+
+/** Recent Endless grades kept for the header. */
+export const PRACTICE_HISTORY = 12;
+
+function migrateCurrent(raw: unknown): PracticeCurrent | undefined {
+  if (!isObj(raw)) return undefined;
+  const seed = raw.seed;
+  if (typeof seed !== 'number' || !Number.isInteger(seed) || seed < 0 || seed > 0x3fffffff) return undefined;
+  const history = Array.isArray(raw.history)
+    ? raw.history.filter((g): g is Grade => GRADE_ORDER.includes(g as Grade)).slice(-PRACTICE_HISTORY)
+    : [];
+  return { seed, run: int(raw.run, 0), history, done: bool(raw.done, false) };
+}
+
+/** Remember the Endless room in progress. */
+export function withPracticeCurrent(save: SaveData, current: PracticeCurrent): SaveData {
+  const history = current.history.slice(-PRACTICE_HISTORY);
+  return { ...save, practice: { ...save.practice, current: { ...current, history } } };
 }
 
 /**
@@ -190,6 +210,7 @@ export function recordPractice(save: SaveData, grade: Grade, run: number): SaveD
   return {
     ...save,
     practice: {
+      ...p,
       played: p.played + 1,
       greens: p.greens + (grade === 'clear' ? 1 : 0),
       bestRun: Math.max(p.bestRun, run),

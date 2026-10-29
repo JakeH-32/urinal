@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Reason, RoundResult } from '../types';
 import { VERDICTS } from '../content';
-import { STORAGE_KEY, defaultSave, loadSave, migrate, recordPractice, resetProgress, saveSave } from './storage';
+import { STORAGE_KEY, defaultSave, loadSave, migrate, recordPractice, resetProgress, saveSave, withPracticeCurrent } from './storage';
 
 function memoryStorage(): Storage {
   const m = new Map<string, string>();
@@ -154,5 +154,29 @@ describe('pure helpers', () => {
     expect(out.settings).toEqual(s.settings);
     expect(out.seenTutorial).toBe(true);
     expect(out.practice.played).toBe(0);
+  });
+});
+
+describe('Endless room in progress', () => {
+  it('survives a save/load round trip and a grade, and reset clears it', () => {
+    let s = withPracticeCurrent(defaultSave(), { seed: 12345, run: 3, history: ['clear', 'clear', 'clear'], done: false });
+    s = recordPractice(s, 'clear', 4);
+    expect(s.practice.current).toEqual({ seed: 12345, run: 3, history: ['clear', 'clear', 'clear'], done: false });
+    const back = migrate(JSON.stringify(s));
+    expect(back.practice.current).toEqual(s.practice.current);
+    expect(back.practice.bestRun).toBe(4);
+    expect(resetProgress(back).practice.current).toBeUndefined();
+  });
+
+  it('drops a junk current room and caps the history', () => {
+    expect(migrate({ version: 1, practice: { current: { seed: -1 } } }).practice.current).toBeUndefined();
+    const long = withPracticeCurrent(defaultSave(), { seed: 1, run: 0, history: Array(20).fill('straw'), done: true });
+    expect(long.practice.current?.history).toHaveLength(12);
+    expect(migrate({ version: 1, practice: { current: { seed: 7, history: ['clear', 'nope'] } } }).practice.current).toEqual({
+      seed: 7,
+      run: 0,
+      history: ['clear'],
+      done: false,
+    });
   });
 });

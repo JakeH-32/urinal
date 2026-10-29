@@ -1,11 +1,13 @@
-// Endless practice bathrooms. Each has a code (#/practice/CODE) that rebuilds exactly that room.
+// Endless practice bathrooms. Each has a code (#/endless/CODE) that rebuilds exactly that room.
+// The room in progress, the run and recent grades are saved, so leaving or reloading never rerolls
+// an unplayed room or resets the run. A graded room deals a fresh one when you come back.
 import { useEffect, useMemo, useState } from 'react';
 import type { Grade, RoundResult } from '../types';
 import { practiceRound } from '../engine/generate';
 import { decodePracticeCode, encodePracticeCode, randomSeed } from '../engine/rng';
-import { routeUrl } from '../router';
+import { navigate, routeUrl } from '../router';
 import { useSave } from '../state/SaveContext';
-import { recordPractice } from '../state/storage';
+import { recordPractice, withPracticeCurrent } from '../state/storage';
 import { ShareButton } from '../ui/ShareButton';
 import { useToast } from '../ui/Toast';
 import { useReducedMotion } from '../ui/hooks';
@@ -19,9 +21,17 @@ export function Practice({ code }: { code?: string }) {
   const toast = useToast();
 
   const decoded = useMemo(() => (code ? decodePracticeCode(code) : null), [code]);
-  const [seed, setSeed] = useState(() => decoded ?? randomSeed());
-  const [run, setRun] = useState(0);
-  const [history, setHistory] = useState<Grade[]>([]);
+  // Read once on mount: a shared code wins, else the saved unplayed room, else a new one.
+  const [saved] = useState(() => save.practice.current);
+  const [seed, setSeed] = useState(() => decoded ?? (saved && !saved.done ? saved.seed : randomSeed()));
+  const [run, setRun] = useState(() => saved?.run ?? 0);
+  const [history, setHistory] = useState<Grade[]>(() => saved?.history ?? []);
+
+  // Save the room as soon as it's dealt.
+  useEffect(() => {
+    update((s) => withPracticeCurrent(s, { seed, run, history, done: false }));
+    // Only when the room changes; run and history are saved with each grade.
+  }, [seed, update]);
 
   useEffect(() => {
     if (code && decoded === null) toast(`“${code}” isn’t a room code. Here’s a random bathroom.`, { tone: 'danger' });
@@ -32,12 +42,20 @@ export function Practice({ code }: { code?: string }) {
 
   const onGraded = (r: RoundResult) => {
     const newRun = nextRun(run, r.grade);
+    const newHistory = [...history, r.grade].slice(-12);
     setRun(newRun);
-    setHistory((h) => [...h, r.grade].slice(-12));
-    update((s) => recordPractice(s, r.grade, newRun));
+    setHistory(newHistory);
+    update((s) => withPracticeCurrent(recordPractice(s, r.grade, newRun), { seed, run: newRun, history: newHistory, done: true }));
   };
 
-  const onNext = () => setSeed(randomSeed());
+  const onNext = () => {
+    const next = randomSeed();
+    // Drop a shared room's code from the address so a reload doesn't deal that room again.
+    if (code) {
+      update((s) => withPracticeCurrent(s, { seed: next, run, history, done: false }));
+      navigate({ name: 'practice' }, { replace: true });
+    } else setSeed(next);
+  };
 
   const header = (
     <header className="round-head">
