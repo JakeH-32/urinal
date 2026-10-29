@@ -251,6 +251,7 @@ export const VENUES: string[][] = [
 export const VERDICTS: Record<Reason, string[]> = {
   // green
   perfect: [
+    'Urine good hands.',
     'Textbook.',
     'Spaced like a professional.',
     'The urinal code holds.',
@@ -263,6 +264,7 @@ export const VERDICTS: Record<Reason, string[]> = {
     'Clean. Quiet. Correct.',
   ],
   'only-option': [
+    'Urine-evitable. You made it the least bad.',
     'Every option was wrong. You found the least wrong one.',
     'A violation, but the smallest one on the menu.',
     'The room was a trap. You lost the least.',
@@ -274,6 +276,7 @@ export const VERDICTS: Record<Reason, string[]> = {
     'Damage control, executed well.',
   ],
   'stall-forced': [
+    'Leak of faith. It paid off.',
     'The stall. Correct, and nobody will ever know.',
     'Every urinal was a crime. The stall was the only exit.',
     'Door closed. Code intact.',
@@ -323,6 +326,7 @@ export const VERDICTS: Record<Reason, string[]> = {
     'Bold choice of fixture.',
   ],
   'stall-coward': [
+    'Stall tactics.',
     'Are you really sitting down to pee?',
     'You sat down for this.',
     'Not wrong. Just seated.',
@@ -335,6 +339,7 @@ export const VERDICTS: Record<Reason, string[]> = {
   ],
   // red
   adjacent: [
+    'Urine his space now.',
     '{name} is right there. So were the other urinals.',
     '{name} has shifted his weight away from you.',
     '{name} is now studying the ceiling with real purpose.',
@@ -347,6 +352,7 @@ export const VERDICTS: Record<Reason, string[]> = {
     '{name} will be using the other bathroom from now on.',
   ],
   talker: [
+    '{name}: “Long time no pee!”',
     '{name} has started talking.',
     'The divider didn’t help. {name} leaned around it.',
     '{name} wants your take on interest rates.',
@@ -359,6 +365,7 @@ export const VERDICTS: Record<Reason, string[]> = {
     'You were in range. {name} has your number now.',
   ],
   splasher: [
+    'Code yellow. Check your shoes.',
     '{name} splashed you.',
     'Splash radius is two urinals. You stood inside it.',
     '{name} apologized. That made it worse.',
@@ -371,6 +378,7 @@ export const VERDICTS: Record<Reason, string[]> = {
     'Collateral damage: you.',
   ],
   boss: [
+    'Urine trouble. {name} saw everything.',
     '{name} says hi.',
     '{name} has asked what you’re doing for Thanksgiving.',
     '{name} called you by the wrong name. You answered to it.',
@@ -383,6 +391,7 @@ export const VERDICTS: Record<Reason, string[]> = {
     '{name} suggested you “grab lunch sometime.” He has a date in mind.',
   ],
   drunk: [
+    '{name} is going with the flow. The flow is toward you.',
     '{name} swayed into you.',
     'You stood on his lean side. {name} leaned.',
     '{name} has mistaken you for the wall.',
@@ -395,6 +404,7 @@ export const VERDICTS: Record<Reason, string[]> = {
     '{name} has invited you to the after-party. There is no after-party.',
   ],
   facetime: [
+    'Pee-k-a-boo. His grandmother sees you.',
     'You walked into frame. His grandmother waved.',
     '{name} has introduced you to his grandmother. She wants to know what you do.',
     '{name} turned the phone so you could say hi. She’s still waiting.',
@@ -408,13 +418,13 @@ export const VERDICTS: Record<Reason, string[]> = {
 
 /** Result title by number of greens, index 0..6. */
 export const RESULT_TITLES: string[] = [
-  'Menace to the Row',
-  'Liability',
-  'Known Hazard',
-  'Civilian',
-  'Regular',
-  'Diplomat',
-  'Keeper of the Urinal Code',
+  'Urine Trouble',
+  'Code Brown',
+  'Leaky Faucet',
+  'Pee-destrian',
+  'Relief Pitcher',
+  'Whiz Kid',
+  'Royal Flush',
 ];
 
 /** Menu taglines. 10+. */
@@ -434,6 +444,11 @@ export const TAGLINES: string[] = [
   'Your father never explained this. Neither did his.',
   'Somewhere, a man just picked the urinal next to the only other man.',
   'Today’s bathrooms are ready.',
+  'Bladder up.',
+  'Wee the people.',
+  'Pee-r pressure, once a day.',
+  'Urine for a treat.',
+  'Go with the flow. Not next to it.',
 ];
 
 /** Short fixture labels for the legend / tooltips. */

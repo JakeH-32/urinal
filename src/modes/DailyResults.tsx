@@ -13,7 +13,7 @@ import { useNow } from '../ui/hooks';
 import { HydrationChart } from '../ui/HydrationChart';
 import { clearsIn, gradeCounts, verdictLine, violatorName } from './roundLogic';
 
-export function NextCountdown({ label = 'Next Urinal in' }: { label?: string }) {
+export function NextCountdown({ label = 'Hold it. Next Urinal in' }: { label?: string }) {
   const now = useNow(1000);
   return (
     <p className="countdown">

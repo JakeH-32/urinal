@@ -29,7 +29,7 @@ Venues climb in social stakes, not in grossness. Difficulty 1 is strangers (rest
 ## Banned words and props
 **Carried over:** bonk/bonked, vibe(s), "energy" (as slang), main character, NPC, unhinged, feral, chaotic (as an adjective), plot twist, it's giving, the audacity, living rent free, touch grass, slay, no cap, doggo, do the math, just saying, technically, legally, "would like a word", "is judging you", "for content", "Probably." as a closing line, mop, "floor texture".
 
-**New for URINAL:** awkward, cringe, yikes, oof, bro / bro code / dude, man cave, "personal bubble", "no homo", wingman, sword fight, number one / number two, stream, aim (as a pun), "crossing streams", "eyes forward", "nature calls", "when you gotta go", "the struggle", "every man's nightmare", "Choose wisely."
+**New for URINAL:** awkward, cringe, yikes, oof, bro / bro code / dude, man cave, "personal bubble", "no homo", wingman, sword fight, "crossing streams", "eyes forward", "nature calls", "when you gotta go", "the struggle", "every man's nightmare", "Choose wisely."
 
 **Props:** stock internet grievances (fish microwavers, reply-all, crypto bros, HOA, Ohio); tiny hats, rubber ducks, googly eyes; sentient objects with funny names; potty humor of any kind.
 
@@ -49,3 +49,9 @@ Dry. At most one joke per screen, and it lives in a content slot (tagline, verdi
 - "He's going to think you're into him." (homophobic framing)
 - "Eyes forward, buddy!" (looking, cheerleading)
 - "Nice aim. Not." (fluid pun, explained sarcasm)
+
+## Puns
+The user asked for puns, good ones. Rules:
+- **Only good puns.** The pun has to work on first read with no hyphen gymnastics. Keep: "Royal Flush", "Whiz Kid", "Relief Pitcher", "Urine trouble.", "Bladder up.", "Wee the people.", "Stall tactics.", "Pee-k-a-boo."
+- **At most one pun per line**, never explained, never stacked, and no more than one or two per pool. Puns go best in rank titles, taglines and verdicts.
+- **Nothing anatomical.** No "main vein", "shake it off", "zip it", size or aim-at-anything jokes.
