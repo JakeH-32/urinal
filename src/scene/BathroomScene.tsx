@@ -19,6 +19,7 @@ import {
 import { CHIP_W, Droplets, FaceTimePhone, GasEngulf, GuyFigure, PHONE_X, PHONE_Y, PfftBurst, QuirkChip, StinkCloud, SideBubble, SplashPuddle, YouTag, guyTop } from './Guy';
 import { Divider, Doorway, Puddle, STALL_TOP_Y, SolidEnd, Stall, Urinal } from './Fixtures';
 import { GRADES } from '../grades';
+import { sideOf, zoneCovers } from '../engine/code';
 import {
   buildReveal,
   describeBathroom,
@@ -220,6 +221,20 @@ export function BathroomScene(props: BathroomSceneProps) {
   }, [layout, bathroom]);
   const youInStall = !!pickedSlot && pickedSlot.kind === 'stall' && arrived;
 
+  // FaceTime: the stretch his camera films (the side away from the phone, to the end of the row),
+  // straight from the engine so the picture can never disagree with the grade.
+  const cameraSpans = useMemo(() => {
+    const out: { guy: number; lo: number; hi: number; recAt: 'lo' | 'hi' }[] = [];
+    bathroom.slots.forEach((s, j) => {
+      const g = s.occupant;
+      if (!g || g.quirk !== 'facetime' || !g.lean || s.kind !== 'urinal') return;
+      const filmed = zoneCovers(bathroom, j).filter((i) => sideOf(i, j) !== g.lean);
+      // REC sits at the far end of the frame, away from his head and chip.
+      if (filmed.length) out.push({ guy: j, lo: Math.min(...filmed), hi: Math.max(...filmed), recAt: g.lean === 'left' ? 'hi' : 'lo' });
+    });
+    return out;
+  }, [bathroom]);
+
   const rootClass = ['urinal-scene', reducedMotion ? 'us-reduced' : '', locked ? 'us-locked' : 'us-live', className ?? '']
     .filter(Boolean)
     .join(' ');
@@ -282,6 +297,10 @@ export function BathroomScene(props: BathroomSceneProps) {
         })}
         {layout.dividers.map((d) => (
           <Divider key={`div-${d.index}`} x={d.x} />
+        ))}
+        {/* FaceTime: a viewfinder over everything his camera can see (in front of urinals, behind men) */}
+        {cameraSpans.map((c) => (
+          <CameraFrame key={`cam-${c.guy}`} layout={layout} lo={c.lo} hi={c.hi} recAt={c.recAt} />
         ))}
         {/* grade plate under "you" (under any puddle, which stays visible) */}
         {reveal?.grade && pickedSlot && (
@@ -698,6 +717,34 @@ function YouWalker({ fromX, toX, instant, hidden, straddle, onArrive }: YouWalke
     >
       <GuyFigure look={YOU_LOOK} hoodie straddle={k} />
       <YouTag y={guyTop(YOU_LOOK.height) - 4 + STRADDLE_DROP * k} />
+    </g>
+  );
+}
+
+/** Camera viewfinder over the slots a FaceTime guy is filming: corner brackets, a faint tint, a REC tag. */
+function CameraFrame({ layout, lo, hi, recAt }: { layout: SceneLayout; lo: number; hi: number; recAt: 'lo' | 'hi' }) {
+  const sp = spanOf(layout, lo, hi);
+  const x0 = sp.x0 + 5;
+  const x1 = sp.x1 - 5;
+  const y0 = 8;
+  const y1 = FEET_Y + 14;
+  const k = 16; // bracket arm length
+  const rec = { w: 44, h: 16 };
+  const recX = recAt === 'hi' ? x1 - rec.w - 6 : x0 + 6;
+  return (
+    <g className="us-cam" aria-hidden="true">
+      <rect className="us-cam-tint" x={x0} y={y0} width={x1 - x0} height={y1 - y0} rx={8} />
+      <path
+        className="us-cam-bracket"
+        d={`M${x0},${y0 + k} V${y0} H${x0 + k} M${x1 - k},${y0} H${x1} V${y0 + k} M${x1},${y1 - k} V${y1} H${x1 - k} M${x0 + k},${y1} H${x0} V${y1 - k}`}
+      />
+      <g transform={`translate(${recX},${y0 + 5})`}>
+        <rect className="us-cam-rec" width={rec.w} height={rec.h} rx={8} />
+        <circle className="us-cam-dot" cx={10} cy={rec.h / 2} r={4} />
+        <text className="us-cam-text" x={18} y={rec.h / 2 + 0.5} dominantBaseline="central">
+          REC
+        </text>
+      </g>
     </g>
   );
 }
