@@ -25,6 +25,7 @@ const REASON_SET: Record<Reason, true> = {
   boss: true,
   drunk: true,
   facetime: true,
+  gassy: true,
 };
 
 export const REASONS: readonly Reason[] = Object.keys(REASON_SET) as Reason[];

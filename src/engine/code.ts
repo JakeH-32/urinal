@@ -5,7 +5,7 @@ import type { Bathroom, Evaluation, Grade, Guy, Quirk, Reason, Side, Slot, SlotA
  * Personal-space radius by quirk. Drunk: 3 toward his lean, 1 the other way. FaceTime: see zoneRadius
  * (his camera films the whole side away from the phone; this entry is only the no-lean fallback).
  */
-export const BASE_RADIUS: Record<Quirk, number> = { normal: 1, talker: 2, splasher: 2, boss: 3, drunk: 3, facetime: 2 };
+export const BASE_RADIUS: Record<Quirk, number> = { normal: 1, talker: 2, splasher: 2, boss: 3, drunk: 3, facetime: 2, gassy: 3 };
 
 /** Personal-space radius of `guy` toward `toward` (the side the candidate slot is on, relative to him). */
 export function zoneRadius(guy: Guy, toward: Side): number {
@@ -15,10 +15,11 @@ export function zoneRadius(guy: Guy, toward: Side): number {
     if (!guy.lean) return BASE_RADIUS.facetime;
     return guy.lean === toward ? 1 : Infinity;
   }
-  if (guy.quirk === 'drunk') {
-    // Lopsided: 3 toward his lean, 1 the other way. No lean: both ways.
-    if (!guy.lean) return BASE_RADIUS.drunk;
-    return guy.lean === toward ? BASE_RADIUS.drunk : 1;
+  if (guy.quirk === 'drunk' || guy.quirk === 'gassy') {
+    // Lopsided: 3 toward his lean (drunk: sway; gassy: the door, where the smell drifts), 1 the
+    // other way. No lean: both ways.
+    if (!guy.lean) return BASE_RADIUS[guy.quirk];
+    return guy.lean === toward ? BASE_RADIUS[guy.quirk] : 1;
   }
   return BASE_RADIUS[guy.quirk] ?? 1;
 }

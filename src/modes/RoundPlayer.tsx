@@ -54,6 +54,7 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
     const r = resultFromEvaluation(round.id, pick, evaluation);
     setResult(r);
     sfx.play(r.grade);
+    if (r.reason === 'gassy') sfx.play('fart');
     onGradedRef.current(r);
   };
   const revealRef = useRef(reveal);

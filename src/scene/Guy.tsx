@@ -1,4 +1,5 @@
 // A guy seen from behind, standing facing the wall. Local coords: feet centre at (0, 0), y up is negative.
+import type { CSSProperties } from 'react';
 import type { Quirk } from '../types';
 import { GUY_H, heightScale } from './geometry';
 import { QUIRK_STYLE, SHOE, type ResolvedLook } from './looks';
@@ -75,6 +76,8 @@ function Hair({ look }: { look: ResolvedLook }) {
 
 const ARM_L = 'M-21,-140 C-29,-136 -31,-118 -29,-100 L-20,-98 C-20,-112 -19,-124 -16,-132 Z';
 const ARM_R = 'M21,-140 C29,-136 31,-118 29,-100 L20,-98 C20,-112 19,-124 16,-132 Z';
+/** Arm bent with the hand on the hip (right side; mirror for left). */
+const AKIMBO = 'M20,-137 L37,-116 L23,-93';
 /** Arm hanging straight down to hold something at the hip. */
 const ARM_DOWN_R = 'M21,-140 C29,-136 32,-118 33,-96 L25,-94 C23,-112 19,-124 16,-132 Z';
 
@@ -85,6 +88,7 @@ export function GuyFigure({ look, hoodie, quirk = 'normal', turn = 0, talking, p
   const prop = quirk === 'boss' ? 'coffee' : quirk === 'drunk' ? 'beer' : quirk === 'facetime' ? 'phone' : null;
   const shoe = hoodie ? '#f4f4f4' : SHOE;
   const legs = legPose(straddle, wide);
+  const akimbo = quirk === 'gassy';
   const footX = legs.footX;
   const torso = hoodie
     ? 'M-20,-144 C-26,-144 -26,-137 -25,-131 L-21,-76 L21,-76 L25,-131 C26,-137 26,-144 20,-144 Z'
@@ -132,8 +136,21 @@ export function GuyFigure({ look, hoodie, quirk = 'normal', turn = 0, talking, p
       {hoodie && <path d="M-20,-86 L20,-86 L21,-76 L-21,-76 Z" fill={look.shirtShade} />}
       {suit && <path d="M0,-70 L0,-96" stroke="#151922" strokeWidth={2} />}
       {/* arms (bent forward, so we mostly see the upper arms) */}
-      {prop && propSide < 0 ? null : <path className="us-ink" fill={look.shirtShade} d={ARM_L} />}
-      {prop && propSide > 0 ? null : <path className="us-ink" fill={look.shirtShade} d={ARM_R} />}
+      {akimbo ? (
+        // hands on hips, elbows out: relaxed and unbothered
+        [-1, 1].map((sx) => (
+          <g key={sx} transform={sx < 0 ? 'scale(-1,1)' : undefined}>
+            <path d={AKIMBO} fill="none" stroke="var(--us-ink)" strokeWidth={11} strokeLinecap="round" strokeLinejoin="round" />
+            <path d={AKIMBO} fill="none" stroke={look.shirtShade} strokeWidth={6.6} strokeLinecap="round" strokeLinejoin="round" />
+            <circle className="us-ink" cx={21} cy={-91} r={4.2} fill={look.skin} />
+          </g>
+        ))
+      ) : (
+        <>
+          {prop && propSide < 0 ? null : <path className="us-ink" fill={look.shirtShade} d={ARM_L} />}
+          {prop && propSide > 0 ? null : <path className="us-ink" fill={look.shirtShade} d={ARM_R} />}
+        </>
+      )}
       {propArm}
       {/* neck */}
       <rect className="us-ink" x={-6} y={-153} width={12} height={12} fill={look.skin} />
@@ -206,6 +223,70 @@ export function FaceTimePhone() {
       <path d="M5.5,7 L7,0.5" stroke="#b97a52" strokeWidth={1.6} strokeLinecap="round" />
       <circle cx={7.2} cy={-0.6} r={1.8} fill="#b97a52" />
       <rect x={-3} y={-16.8} width={6} height={1.2} rx={0.6} fill="#555" />
+    </g>
+  );
+}
+
+/** The gassy guy's always-on stink: soft green puffs drifting toward `dir` (local coords, feet at 0). */
+export function StinkCloud({ dir }: { dir: -1 | 1 }) {
+  const puffs: readonly (readonly [number, number, number])[] = [
+    [14, -86, 5.5],
+    [28, -98, 7],
+    [43, -110, 8.5],
+  ];
+  return (
+    <g className="us-stink" aria-hidden="true">
+      {puffs.map(([x, y, r], i) => (
+        <g key={i} transform={`translate(${dir * x},${y})`}>
+          <g className="us-puff" style={{ '--dir': dir, animationDelay: `${-i * 0.9}s` } as CSSProperties}>
+            <circle r={r} className="us-gas" />
+            <circle cx={dir * r * 0.55} cy={-r * 0.35} r={r * 0.62} className="us-gas" />
+          </g>
+        </g>
+      ))}
+      <g className="us-stink-lines" transform={`translate(${dir * 30},-122)`}>
+        <path d="M0,0 q3,-4 0,-8 q-3,-4 0,-8" />
+        <path d="M9,4 q3,-4 0,-8 q-3,-4 0,-8" transform={dir < 0 ? 'translate(-18,0)' : undefined} />
+      </g>
+    </g>
+  );
+}
+
+/** Reveal: a big green cloud engulfing "you" (local coords, your feet at 0). */
+export function GasEngulf() {
+  const puffs: readonly (readonly [number, number, number])[] = [
+    [0, -128, 19],
+    [-20, -150, 16],
+    [18, -158, 17],
+    [-22, -108, 14],
+    [22, -112, 15],
+    [0, -178, 13],
+    [-6, -84, 13],
+    [14, -86, 11],
+  ];
+  return (
+    <g className="us-engulf" aria-hidden="true">
+      {puffs.map(([x, y, r], i) => (
+        <circle key={i} cx={x} cy={y} r={r} className="us-gas us-gas-big" />
+      ))}
+    </g>
+  );
+}
+
+/** Reveal: a little "PFFT" burst, centred at (x, y). */
+export function PfftBurst({ x, y }: { x: number; y: number }) {
+  const pts: string[] = [];
+  for (let i = 0; i < 14; i++) {
+    const a = (i / 14) * Math.PI * 2;
+    const r = i % 2 === 0 ? 19 : 13;
+    pts.push(`${(Math.cos(a) * r * 1.25).toFixed(1)},${(Math.sin(a) * r).toFixed(1)}`);
+  }
+  return (
+    <g className="us-pfft" transform={`translate(${x},${y}) rotate(-8)`}>
+      <polygon className="us-ink" points={pts.join(' ')} fill="#e4f07a" />
+      <text className="us-pfft-text" textAnchor="middle" dominantBaseline="central" y={0.5}>
+        PFFT
+      </text>
     </g>
   );
 }

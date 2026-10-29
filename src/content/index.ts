@@ -145,6 +145,23 @@ export const QUIRKS: Record<Quirk, QuirkText> = {
       { name: 'Your roommate Kabir', blurb: 'His nani calls at eight sharp, Mumbai time. She doesn’t care where he is.' },
     ],
   },
+  gassy: {
+    label: 'Gassy',
+    emoji: '💨',
+    rule: 'His smell drifts toward the door: three empty urinals on his door side, one on the other.',
+    people: [
+      { name: 'Big Rob', blurb: 'Won a chili cook-off in 2019. Still trains for it.' },
+      { name: 'Your uncle Walt', blurb: 'Had the four-bean salad. All four beans.' },
+      { name: 'Glen from Facilities', blurb: 'Lactose intolerant. Ordered the triple latte anyway.' },
+      { name: 'The buffet regular', blurb: 'Went back for the shrimp a fourth time.' },
+      { name: 'Deacon Hollis', blurb: 'Too dignified to apologize.' },
+      { name: 'Your old roommate Benny', blurb: 'Never once opened a window. Still won’t.' },
+      { name: 'A man with a gas station burrito', blurb: 'Finished it in the hallway. It’s finishing him now.' },
+      { name: 'Your carpool buddy Marty', blurb: 'Rolls his window down first. Never explains.' },
+      { name: 'Hal from the protein shake place', blurb: 'Six scoops a day. Science is still deciding.' },
+      { name: 'A man in a hot sauce tie', blurb: 'He wears it as a warning.' },
+    ],
+  },
 };
 
 /** Venue lines by difficulty 1..6 (index 0 = difficulty 1). 10+ each. */
@@ -410,6 +427,16 @@ export const VERDICTS: Record<Reason, string[]> = {
     '{name} is wobbling toward you at a steady pace.',
     '{name} has invited you to the after-party. There is no after-party.',
   ],
+  gassy: [
+    '{name} let one go. It drifted toward the door, and so were you.',
+    'Downwind of {name}. Rookie mistake.',
+    '{name} cleared the air. Into your air.',
+    'That was not the hand dryer.',
+    '{name}: “Excuse me.” He did not mean it.',
+    'Gas leak reported. Source: {name}. Victim: you.',
+    'Wind advisory in effect. You walked into it.',
+    '{name} has released a statement.',
+  ],
   facetime: [
     'Pee-k-a-boo. His grandmother sees you.',
     'You walked into frame. His grandmother waved.',
@@ -483,7 +510,7 @@ export const HOW_TO_PLAY: { heading: string; body: string }[] = [
   },
   {
     heading: 'Some men need more room',
-    body: 'Talkers and splashers need two empty urinals. Bosses need three. Drunks sway one way: three on that side, one on the other. A guy on FaceTime is filming everything on the far side from his phone, all the way to the wall: don’t stand anywhere over there. Beside the phone, one empty urinal is enough. The label over each man’s head says who’s who.',
+    body: 'Talkers and splashers need two empty urinals. Bosses need three. Drunks sway one way: three on that side, one on the other. A guy on FaceTime is filming everything on the far side from his phone, all the way to the wall: don’t stand anywhere over there. Beside the phone, one empty urinal is enough. A gassy guy’s smell drifts toward the door: three empty urinals on his door side, one on the other. The label over each man’s head says who’s who.',
   },
   {
     heading: 'Dividers and bad urinals',
@@ -495,6 +522,6 @@ export const HOW_TO_PLAY: { heading: string; body: string }[] = [
   },
   {
     heading: 'Grades',
-    body: '🟦 Clear: the right spot. 🟨 Lemonade: you kept the urinal code, but a better spot was free. 🟧 Apple Juice: you stood next to a man when you didn’t have to. 🟫 See a Doctor: you crowded a talker, splasher, boss, drunk or FaceTime guy, or wedged yourself between two men. Share the row, not the details.',
+    body: '🟦 Clear: the right spot. 🟨 Lemonade: you kept the urinal code, but a better spot was free. 🟧 Apple Juice: you stood next to a man when you didn’t have to. 🟫 See a Doctor: you crowded a talker, splasher, boss, drunk, FaceTime or gassy guy, or wedged yourself between two men. Share the row, not the details.',
   },
 ];

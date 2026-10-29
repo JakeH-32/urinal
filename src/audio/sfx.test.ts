@@ -201,7 +201,7 @@ describe('sfx with a (fake) AudioContext', () => {
   });
 
   it('has exactly the Urinal sound set', () => {
-    expect([...NAMES].sort()).toEqual(['amber', 'clear', 'click', 'doctor', 'dryer', 'flush', 'step', 'straw']);
+    expect([...NAMES].sort()).toEqual(['amber', 'clear', 'click', 'doctor', 'dryer', 'fart', 'flush', 'step', 'straw']);
   });
 
   it('every sound is a short one-shot (nothing loops)', async () => {

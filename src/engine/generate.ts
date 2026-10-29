@@ -86,7 +86,9 @@ function placeGuys(rng: Rng, b: Bathroom, quirks: Quirk[]): void {
   for (const q of quirks) {
     const free = freeUrinals(b);
     if (free.length === 0) return;
-    b.slots[rng.pick(free)].occupant = guy(q, rng);
+    const g = guy(q, rng);
+    if (q === 'gassy') g.lean = b.door; // his smell drifts out the door
+    b.slots[rng.pick(free)].occupant = g;
   }
 }
 
@@ -100,8 +102,8 @@ function addFlags(rng: Rng, b: Bathroom, count: number, kinds: readonly UrinalFl
 
 const ALL_FLAGS: readonly UrinalFlag[] = ['low', 'puddle', 'broken'];
 const SOFT_QUIRKS: readonly Quirk[] = ['talker', 'splasher', 'facetime'];
-const BIG_QUIRKS: readonly Quirk[] = ['boss', 'drunk'];
-const ANY_QUIRK: readonly Quirk[] = ['talker', 'splasher', 'boss', 'drunk', 'facetime'];
+const BIG_QUIRKS: readonly Quirk[] = ['boss', 'drunk', 'gassy'];
+const ANY_QUIRK: readonly Quirk[] = ['talker', 'splasher', 'boss', 'drunk', 'facetime', 'gassy'];
 
 /** Per-round intent decided once, before rejection sampling. */
 interface Plan {

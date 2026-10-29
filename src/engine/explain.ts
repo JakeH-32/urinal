@@ -61,6 +61,13 @@ export function explainPick(b: Bathroom, ev: Evaluation, pick: number): string |
         ? `He was leaning ${lean}. Go to his ${other(lean)} side, or stay three urinals away.`
         : `Even on the side he isn’t leaning, leave one empty urinal.`;
     }
+    case 'gassy': {
+      const drift = guy.lean;
+      if (!drift) return 'Gassy guys need three empty urinals between you.';
+      return side === drift
+        ? 'His smell drifts toward the door, and you were downwind. Stand on his far side, or three urinals away.'
+        : 'Even upwind of him, leave one empty urinal.';
+    }
     case 'facetime': {
       const phone = guy.lean;
       if (!phone) return 'Stay out of his camera.';

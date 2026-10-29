@@ -69,6 +69,14 @@ describe('primitives', () => {
     expect(zoneCovers(b, 4)).toEqual([3, 5, 6, 7]);
   });
 
+  it('gassy: three toward the door (where the smell drifts), one away from it', () => {
+    const b = parseLayout('_ _ _ _ G _ _ _', 'left');
+    const g = b.slots[4].occupant as Guy;
+    expect(g.lean).toBe('left');
+    expect([zoneRadius(g, 'left'), zoneRadius(g, 'right')]).toEqual([3, 1]);
+    expect(zoneCovers(b, 4)).toEqual([1, 2, 3, 5]);
+  });
+
   it('dividers add distance, except for a talker', () => {
     const b = bath('_ | N | _ _ | T');
     expect(effectiveDistance(b, 0, 1)).toBe(2);

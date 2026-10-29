@@ -30,6 +30,13 @@ describe('explainPick', () => {
     expect(explain('_ _ _ F< _ _ _', 'right', 2)).toBe('You were right next to his phone. Leave one empty urinal.');
   });
 
+  it('gassy: downwind (door side) vs. right next to him upwind', () => {
+    expect(explain('_ _ _ _ G _ _ _', 'left', 2)).toBe(
+      'His smell drifts toward the door, and you were downwind. Stand on his far side, or three urinals away.',
+    );
+    expect(explain('_ _ _ _ G _ _ _', 'left', 5)).toBe('Even upwind of him, leave one empty urinal.');
+  });
+
   it('boss, talker through a divider, two men at once', () => {
     expect(explain('_ _ _ B _ _ _ _ _ _', 'left', 5)).toBe('The boss needs three empty urinals between you.');
     expect(explain('T | _ _ _ _ _', 'left', 1)).toBe('Talkers need two empty urinals. He leans right around dividers.');

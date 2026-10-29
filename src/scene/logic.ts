@@ -13,6 +13,7 @@ export const QUIRK_BADGES: Record<Quirk, string | null> = {
   boss: '👔',
   drunk: '🍺',
   facetime: '📱',
+  gassy: '💨',
 };
 
 /** Pickable = unoccupied and not broken. */

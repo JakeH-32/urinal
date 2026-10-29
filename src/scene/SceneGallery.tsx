@@ -44,6 +44,8 @@ function radius(g: Guy, toward: Side): number {
       return toward === g.lean ? 3 : 1;
     case 'facetime':
       return toward === g.lean ? 2 : 1;
+    case 'gassy':
+      return toward === g.lean ? 3 : 1;
     default:
       return 1;
   }
@@ -130,7 +132,7 @@ const quirks = room(
 );
 const crowded = room(
   [
-    U(guy()),
+    U(guy('gassy', { lean: 'left' })),
     U(guy('talker')),
     U(),
     U(guy('splasher')),
@@ -156,6 +158,8 @@ const revealDoctorRoom = room([U(), U(guy('talker')), U(), U(), U(guy('boss')), 
 const revealFaceTimeRoom = room([U(), U(), U(guy('facetime', { lean: 'right' })), U(), U(), U(), U(), U(guy())], 'right');
 const revealAmberRoom = room([U(guy()), U(), U(guy('splasher')), U(), U(undefined, 'broken'), U()], 'right');
 const puddleRoom = room([U(guy('normal'), 'puddle'), U(), U(), U(undefined, 'puddle'), U(), U(guy('splasher'), 'puddle')], 'left');
+// Gassy at 2, door on the right so his smell drifts right: zone covers 1 (r=1) and 3..5 (r=3).
+const revealGassyRoom = room([U(), U(), U(guy('gassy', { lean: 'right' })), U(), U(), U()], 'right');
 const revealStallRoom = room([U(guy()), U(), U(guy('boss')), U(), U(guy()), S()], 'left');
 
 const evalOf = (b: Bathroom, picks: Record<number, Grade>, greens: number[], violated: Record<number, number[]> = {}): Evaluation => ({
@@ -185,6 +189,12 @@ const revealFaceTime = evalOf(revealFaceTimeRoom, { 0: 'clear', 1: 'amber', 3: '
   6: [7],
 });
 const puddleEval = evalOf(puddleRoom, { 3: 'straw', 2: 'clear' }, [2]);
+const revealGassy = evalOf(revealGassyRoom, { 0: 'clear', 1: 'amber', 3: 'doctor', 4: 'doctor', 5: 'doctor' }, [0], {
+  1: [2],
+  3: [2],
+  4: [2],
+  5: [2],
+});
 const revealStall = evalOf(revealStallRoom, { 5: 'clear', 1: 'doctor', 3: 'doctor' }, [5], { 1: [0, 2], 3: [2, 4] });
 
 // ---- Page ------------------------------------------------------------------------------
@@ -294,6 +304,9 @@ export function SceneGallery() {
       </Section>
       <Section title="Puddle straddle: occupant (slot 1), you (slot 4), splasher at a puddle (slot 6)" note="Legs wide over the puddle, knees bent, arms down. Live: try slot 6 in the first interactive room.">
         <BathroomScene bathroom={puddleRoom} picked={3} evaluation={puddleEval} slotNumbers />
+      </Section>
+      <Section title="Reveal: downwind of the gassy guy (door right)">
+        <BathroomScene bathroom={revealGassyRoom} picked={4} evaluation={revealGassy} />
       </Section>
       <Section title="Reveal: stall pick (you're in the stall)">
         <BathroomScene bathroom={revealStallRoom} picked={5} evaluation={revealStall} />

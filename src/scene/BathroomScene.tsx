@@ -16,7 +16,7 @@ import {
   walkPose,
   type SceneLayout,
 } from './geometry';
-import { CHIP_W, Droplets, FaceTimePhone, GuyFigure, PHONE_X, PHONE_Y, QuirkChip, SideBubble, SplashPuddle, YouTag, guyTop } from './Guy';
+import { CHIP_W, Droplets, FaceTimePhone, GasEngulf, GuyFigure, PHONE_X, PHONE_Y, PfftBurst, QuirkChip, StinkCloud, SideBubble, SplashPuddle, YouTag, guyTop } from './Guy';
 import { Divider, Doorway, Puddle, STALL_TOP_Y, SolidEnd, Stall, Urinal } from './Fixtures';
 import { GRADES } from '../grades';
 import {
@@ -80,6 +80,7 @@ const REACTION_TEXT: Record<Guy['quirk'], string | null> = {
   boss: '…',
   splasher: null,
   facetime: null,
+  gassy: null,
 };
 const FACETIME_REACTION = 'Who’s this?';
 const TALKER_LINE = 'Hey, buddy!';
@@ -350,8 +351,22 @@ export function BathroomScene(props: BathroomSceneProps) {
                 ? 'So…'
                 : guy.quirk === 'facetime'
                   ? FACETIME_REACTION
-                  : '!'
+                  : guy.quirk === 'gassy'
+                    ? null
+                    : '!'
             : REACTION_TEXT[guy.quirk];
+          if (guy.quirk === 'gassy') {
+            // PFFT over him (at his hip, downwind side); the cloud on "you" is drawn in its own layer.
+            const lean: -1 | 1 = guy.lean === 'left' ? -1 : 1;
+            const s = heightScale(guy.look.height);
+            const bx = stall ? g.cx : g.cx + lean * 22 * s;
+            const by = stall ? STALL_TOP_Y + 110 : FEET_Y - 96 * s;
+            return (
+              <g key={`react-${index}`} className="us-reaction">
+                <PfftBurst x={bx} y={by} />
+              </g>
+            );
+          }
           if (guy.quirk === 'facetime' && !stall) {
             // Bubble comes from the phone, which he has turned toward you.
             // Phone redrawn above "you" (who may stand right next to it); bubble floats above your tag.
@@ -390,12 +405,28 @@ export function BathroomScene(props: BathroomSceneProps) {
           const reactDir = reactorDir.get(g.index);
           const turn = headTurn(guy, bathroom.door, reactDir) || 1;
           const head = headPoint(guy, g.cx);
+          // A neighbour on the side he's facing: drop the bubble to shoulder height so it doesn't cover that guy's head.
+          const crowdedSide = !reactDir && !!bathroom.slots[g.index + turn]?.occupant;
           return (
             <g key={`talk-${g.index}`} className={reactDir ? 'us-talk us-reaction' : 'us-talk'}>
-              <SideBubble x={head.x + turn * 19} y={head.y + 6} text={reactDir ? 'So…' : TALKER_LINE} dir={turn} small={!reactDir} />
+              <SideBubble
+                x={head.x + turn * 19}
+                y={head.y + (crowdedSide ? 30 : 6)}
+                text={reactDir ? 'So…' : TALKER_LINE}
+                dir={turn}
+                small={!reactDir}
+              />
             </g>
           );
         })}
+
+        {/* gassy reaction: a big green cloud engulfs you */}
+        {pickedSlot &&
+          reveal?.reactors.some((r) => bathroom.slots[r.index].occupant?.quirk === 'gassy') && (
+            <g className="us-reaction" transform={`translate(${pickedSlot.cx},${FEET_Y + (pickedSlot.flag === 'puddle' ? STRADDLE_DROP : 0)})`}>
+              <GasEngulf />
+            </g>
+          )}
 
         {/* reveal rings and green checks (on top) */}
         {reveal?.grade && pickedSlot && <Ring layout={layout} index={pickedSlot.index} color={GRADES[reveal.grade].color} ink={GRADES[reveal.grade].ink} />}
@@ -517,6 +548,11 @@ function Occupant({ guy, cx, index, turn, chipX, propSide, straddle }: OccupantP
           />
         </g>
       </g>
+      {guy.quirk === 'gassy' && (
+        <g transform={`translate(${cx},${FEET_Y + (straddle ? STRADDLE_DROP : 0)})`}>
+          <StinkCloud dir={guy.lean === 'left' ? -1 : 1} />
+        </g>
+      )}
       {/* chip stays upright even when the guy leans */}
       <QuirkChip x={chipX ?? head.x} y={head.top - 5} quirk={guy.quirk} />
     </g>

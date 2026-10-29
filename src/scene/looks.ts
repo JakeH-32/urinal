@@ -21,6 +21,7 @@ export const QUIRK_STYLE: Record<Quirk, QuirkStyle> = {
   boss: { color: '#c62828', ink: '#ffffff', tag: 'BOSS', emoji: '👔' },
   drunk: { color: '#ef7d00', ink: '#1d1300', tag: 'DRUNK', emoji: '🍺' },
   facetime: { color: '#0f9d8a', ink: '#ffffff', tag: 'FACETIME', emoji: '📱' },
+  gassy: { color: '#6f8418', ink: '#ffffff', tag: 'GASSY', emoji: '💨' },
 };
 
 /** Just the chip colours, for legends and UI. */
@@ -31,6 +32,7 @@ export const QUIRK_COLORS: Record<Quirk, string> = {
   boss: QUIRK_STYLE.boss.color,
   drunk: QUIRK_STYLE.drunk.color,
   facetime: QUIRK_STYLE.facetime.color,
+  gassy: QUIRK_STYLE.gassy.color,
 };
 
 export type HairStyle = 'crop' | 'buzz' | 'curly' | 'swoop' | 'long' | 'bun' | 'slick';
@@ -84,7 +86,7 @@ export function resolveLook(look: Guy['look'], quirk: Quirk = 'normal'): Resolve
   let shirt: string = SHIRTS[wrap(look.shirt, SHIRTS.length)];
   let hair = look.bald ? null : HAIRS[wrap(look.hair, HAIRS.length)];
   let pants: string = PANTS[wrap(look.pants, PANTS.length)];
-  if (quirk === 'talker' || quirk === 'splasher' || quirk === 'drunk' || quirk === 'facetime') shirt = QUIRK_STYLE[quirk].color;
+  if (quirk === 'talker' || quirk === 'splasher' || quirk === 'drunk' || quirk === 'facetime' || quirk === 'gassy') shirt = QUIRK_STYLE[quirk].color;
   if (quirk === 'boss') {
     shirt = SUIT;
     pants = '#262b37';

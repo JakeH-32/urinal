@@ -95,7 +95,8 @@ describe('400 days of dailies', () => {
           expect(g.look.hair).toBeLessThanOrEqual(5);
           expect(g.look.skin).toBeLessThanOrEqual(4);
           expect(g.look.height).toBeLessThanOrEqual(2);
-          expect(g.lean !== undefined).toBe(g.quirk === 'drunk' || g.quirk === 'facetime');
+          expect(g.lean !== undefined).toBe(g.quirk === 'drunk' || g.quirk === 'facetime' || g.quirk === 'gassy');
+          if (g.quirk === 'gassy') expect(g.lean, where).toBe(b.door);
         }
         for (const s of b.slots) if (s.kind === 'stall') expect(s.occupant).toBeUndefined();
 
@@ -116,7 +117,7 @@ describe('400 days of dailies', () => {
           expect(['talker', 'splasher', 'facetime']).toContain(quirks[0]);
         }
         if (r.difficulty === 4) for (const q of quirks) expect(['talker', 'splasher', 'facetime']).toContain(q);
-        if (r.difficulty === 5) expect(quirks.some((q) => q === 'boss' || q === 'drunk'), where).toBe(true);
+        if (r.difficulty === 5) expect(quirks.some((q) => q === 'boss' || q === 'drunk' || q === 'gassy'), where).toBe(true);
         if (r.difficulty <= 4) expect(ev.slots[ev.greens[0]].reason).not.toBe('stall-forced');
       }
     }

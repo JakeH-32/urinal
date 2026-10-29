@@ -25,6 +25,7 @@ function slotFor(tok: string): Slot {
     case 'D>': return { kind: 'urinal', occupant: guy('drunk', 'right') };
     case 'F<': return { kind: 'urinal', occupant: guy('facetime', 'left') };
     case 'F>': return { kind: 'urinal', occupant: guy('facetime', 'right') };
+    case 'G': return { kind: 'urinal', occupant: guy('gassy') }; // pointed at the door below
     default: throw new Error(`bad layout token "${tok}"`);
   }
 }
@@ -45,6 +46,7 @@ export function parseLayout(spec: string, door: Side): Bathroom {
     slots.push(slotFor(tok));
   }
   if (pending) throw new Error(`trailing divider in "${spec}"`);
+  for (const s of slots) if (s.occupant?.quirk === 'gassy') s.occupant.lean = door;
   if (slots.length < 2) throw new Error(`layout needs 2+ slots: "${spec}"`);
   return { slots, dividers, door };
 }

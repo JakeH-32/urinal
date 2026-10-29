@@ -122,6 +122,29 @@
   50% { transform: rotate(3deg); }
 }
 
+/* gassy: green puffs drift toward the door and fade */
+.urinal-scene .us-gas { fill: #b9d86a; fill-opacity: 0.72; stroke: #6f8f2a; stroke-width: 1.6; }
+.urinal-scene .us-gas-big { fill: #a9cc4f; fill-opacity: 0.55; stroke-opacity: 0.7; }
+.urinal-scene .us-stink-lines path { fill: none; stroke: #6f8f2a; stroke-width: 1.8; stroke-linecap: round; opacity: 0.85; }
+.urinal-scene .us-puff {
+  animation: us-puff 2.7s ease-in-out infinite;
+}
+@keyframes us-puff {
+  0% { transform: translate(0, 0) scale(0.85); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translate(calc(var(--dir, 1) * 16px), -10px) scale(1.15); opacity: 0; }
+}
+.urinal-scene .us-engulf { animation: us-engulf 2.4s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 50% 60%; }
+@keyframes us-engulf {
+  from { transform: scale(0.97); }
+  to { transform: scale(1.04); }
+}
+.urinal-scene .us-pfft-text {
+  font: 900 10.5px/1 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  fill: #3b4a08;
+  letter-spacing: 0.3px;
+}
+
 /* quirk chips */
 .urinal-scene .us-chip-box { stroke: var(--us-ink); stroke-width: 2; }
 .urinal-scene .us-chip-disc { stroke-width: 2.4; }
@@ -180,6 +203,8 @@
 .urinal-scene .us-slot-btn:focus-visible .us-hl-glow { stroke-width: 4; stroke: #f0a800; }
 
 /* reduced motion */
+.urinal-scene.us-reduced .us-puff,
+.urinal-scene.us-reduced .us-engulf,
 .urinal-scene.us-reduced .us-sway,
 .urinal-scene.us-reduced .us-wobble,
 .urinal-scene.us-reduced .us-reaction,
@@ -189,6 +214,8 @@
 .urinal-scene.us-reduced .us-band { animation: none; }
 .urinal-scene.us-reduced .us-hl { transition: none; }
 @media (prefers-reduced-motion: reduce) {
+  .urinal-scene .us-puff,
+  .urinal-scene .us-engulf,
   .urinal-scene .us-sway,
   .urinal-scene .us-wobble,
   .urinal-scene .us-reaction,

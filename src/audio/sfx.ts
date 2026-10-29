@@ -2,9 +2,9 @@
 // Safe everywhere: with no AudioContext (Node tests, SSR, ancient browsers) every call is a no-op.
 
 /** One sound per grade (clear/straw/amber/doctor), so `sfx.play(grade)` works. */
-export type SfxName = 'click' | 'step' | 'clear' | 'straw' | 'amber' | 'doctor' | 'flush' | 'dryer';
+export type SfxName = 'click' | 'step' | 'clear' | 'straw' | 'amber' | 'doctor' | 'flush' | 'dryer' | 'fart';
 
-export const SFX_NAMES: readonly SfxName[] = ['click', 'step', 'clear', 'straw', 'amber', 'doctor', 'flush', 'dryer'];
+export const SFX_NAMES: readonly SfxName[] = ['click', 'step', 'clear', 'straw', 'amber', 'doctor', 'flush', 'dryer', 'fart'];
 
 type Stop = () => void;
 const noop: Stop = () => {};
@@ -295,6 +295,24 @@ const SOUNDS: Record<SfxName, Maker> = {
   /** See a Doctor: the same buzzer, lower and doubled. */
   doctor(c, dest) {
     return buzzer(c, dest, 82.4, 0.3, 2);
+  },
+
+  /** Fart: a low sawtooth with a wobbling pitch and a fluttering, muffled rasp. */
+  fart(c, dest) {
+    const v = voice(c, dest);
+    const body = tone(v, {
+      type: 'sawtooth',
+      freq: 92,
+      path: [[0.12, 78], [0.3, 104], [0.48, 66], [0.62, 58]],
+      dur: 0.65,
+      gain: 0.32,
+      attack: 0.01,
+      hold: 0.45,
+    });
+    lfo(v, body.frequency, 26, 14, 0, 0.65, 'square');
+    const rasp = noise(v, { dur: 0.6, gain: 0.22, attack: 0.01, hold: 0.4, filter: 'lowpass', freq: 380, q: 5 });
+    lfo(v, rasp.filter.frequency, 30, 160, 0, 0.6);
+    return stopper(v);
   },
 
   /** Flush: a filtered noise swell that sweeps down, then a gurgle and a refill hiss. */
