@@ -14,6 +14,28 @@ const QUIRK_NOUN: Record<Exclude<Quirk, 'normal'>, string> = {
   gassy: 'the gassy guy',
 };
 
+/** Who sits at slot i's tightest room: how many quirk guys and how many normal guys. */
+function tightNeighbors(b: Bathroom, i: number): { quirks: number; normals: number } {
+  let room = Infinity;
+  let quirks = 0;
+  let normals = 0;
+  b.slots.forEach((s, j) => {
+    const q = s.occupant?.quirk;
+    if (!q || j === i) return;
+    const r = roomTo(b, i, j);
+    if (r < room) {
+      room = r;
+      quirks = 0;
+      normals = 0;
+    }
+    if (r === room) {
+      if (q === 'normal') normals++;
+      else quirks++;
+    }
+  });
+  return { quirks, normals };
+}
+
 /** The quirk guy closest (by room) to slot i, if any. */
 function tightQuirk(b: Bathroom, i: number): Exclude<Quirk, 'normal'> | undefined {
   let best: Exclude<Quirk, 'normal'> | undefined;
@@ -47,7 +69,12 @@ export function explainPick(b: Bathroom, ev: Evaluation, pick: number): string |
         return 'Legal, but the ✓ spot had more room.';
       case 'quirk-neighbor': {
         const who = tightQuirk(b, pick);
-        return `Same room, but the ✓ spot put you next to a normal guy, not ${who ? QUIRK_NOUN[who] : 'a guy with a label'}.`;
+        const noun = who ? QUIRK_NOUN[who] : 'a guy with a label';
+        const mine = tightNeighbors(b, pick);
+        const best = ev.greens.length ? tightNeighbors(b, ev.greens[0]) : undefined;
+        if (best && best.quirks === 0 && best.normals > 0) return `Same room, but the ✓ spot put you next to a normal guy, not ${noun}.`;
+        if (best && mine.quirks >= 2 && best.quirks === 1) return 'Same room, but you had a guy with a label on each side. The ✓ spot only had one that close.';
+        return 'Same room, but the ✓ spot had fewer guys with labels that close.';
       }
       case 'not-wall':
         return 'Same room, but the ✓ spot was against the wall.';

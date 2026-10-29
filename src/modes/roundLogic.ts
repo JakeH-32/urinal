@@ -65,7 +65,12 @@ export function verdictLine(roundId: string, reason: Reason, name?: string): str
   const m = /^(.*)-r(\d+)$/.exec(roundId);
   const at = m ? hashString(m[1]) + Number(m[2]) : hashString(roundId);
   const line = lines[at % lines.length];
-  if (name) return line.replace(/\{name\}/g, name);
+  // "The groom's brother" mid-sentence reads "the groom's brother".
+  if (name) {
+    return line.replace(/([.:!?]\s+)?\{name\}/g, (_m, stop: string | undefined, at: number) =>
+      at === 0 || stop !== undefined || !name.startsWith('The ') ? `${stop ?? ''}${name}` : `t${name.slice(1)}`,
+    );
+  }
   // No name (shouldn't happen in play): "He" at a sentence start, "him" elsewhere.
   return line.replace(/(^|[.:!?]\s+)\{name\}/g, '$1He').replace(/\{name\}/g, 'him');
 }

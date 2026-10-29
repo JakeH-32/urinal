@@ -68,6 +68,16 @@ describe('grading', () => {
 });
 
 describe('verdictLine', () => {
+  it('lowercases a "The ..." name mid-sentence only', () => {
+    const lines = ['Out of everyone in here, you chose {name}.', '{name} has a new favorite person.'];
+    const got = [0, 1, 2, 3, 4, 5].map((r) => verdictLine(`dx-r${r}`, 'quirk-neighbor', 'The groom’s brother'));
+    for (const l of got) {
+      if (l.startsWith('Out of')) expect(l).toBe('Out of everyone in here, you chose the groom’s brother.');
+      if (l.endsWith('favorite person.')) expect(l).toBe('The groom’s brother has a new favorite person.');
+    }
+    expect(lines.length).toBe(2);
+  });
+
   it('is deterministic per round id and fills {name}', () => {
     const a = verdictLine('d2026-10-28-r3', 'adjacent', 'Dale');
     expect(a).toBe(verdictLine('d2026-10-28-r3', 'adjacent', 'Dale'));

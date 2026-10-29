@@ -49,6 +49,13 @@ describe('explainPick', () => {
     expect(explain('_ N _', 'right', 2)).toBe('Same room, but the ✓ spot was against the wall.');
   });
 
+  it('neighbors: names a normal guy only when the ✓ spot really has one (playtest: wedding)', () => {
+    expect(explain('_ | D> _ N | _ _ _ T', 'right', 0)).toBe('Same room, but the ✓ spot put you next to a normal guy, not the drunk.');
+    expect(explain('_ _ D< _ _ _ D> _ _ _', 'right', 4)).toBe(
+      'Same room, but you had a guy with a label on each side. The ✓ spot only had one that close.',
+    );
+  });
+
   it('least-bad Clear explains itself', () => {
     expect(explain('N _', 'left', 1)).toBe('Every spot broke the urinal code. This one broke it the least.');
   });

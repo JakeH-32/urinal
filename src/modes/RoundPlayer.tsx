@@ -7,6 +7,7 @@ import { explainPick } from '../engine/explain';
 import { sfx } from '../audio/sfx';
 import { Button } from '../ui/Button';
 import { GradeUrinal } from '../ui/GradeUrinal';
+import { VERDICTS } from '../content';
 import { crowdPercents, type RoundCrowd } from '../net/community';
 import { RoundCrowdLine } from '../ui/Crowd';
 import { resultFromEvaluation, verdictLine, violatorName } from './roundLogic';
@@ -94,8 +95,9 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
 
   const named = result ? violatorName(round.bathroom, evaluation, result.pick) : undefined;
   const line = result ? verdictLine(round.id, result.reason, named) : '';
-  // His bio, shown small after the pick: flavor only, never a hint.
-  const bio = named ? round.bathroom.slots.find((s) => s.occupant?.name === named)?.occupant?.blurb : undefined;
+  // His bio, shown small after the pick, only when the verdict line is about him: flavor, never a hint.
+  const aboutHim = !!named && !!result && (VERDICTS[result.reason] ?? []).some((l) => l.includes('{name}')) && line.toLowerCase().includes(named.toLowerCase());
+  const bio = aboutHim ? round.bathroom.slots.find((s) => s.occupant?.name === named)?.occupant?.blurb : undefined;
   const why = result ? explainPick(round.bathroom, evaluation, result.pick) : null;
 
   return (
