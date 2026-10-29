@@ -130,7 +130,8 @@ button {
   position: sticky;
   top: 0;
   z-index: 20;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 8px;
   padding: 8px var(--gutter);
@@ -139,8 +140,15 @@ button {
   border-bottom: 2px solid var(--ink);
   backdrop-filter: blur(6px);
 }
+
+.topbar-side {
+  display: flex;
+  gap: 6px;
+}
+.topbar-left {
+  justify-self: start;
+}
 .topbar-title {
-  flex: 1;
   text-align: center;
   font-family: var(--font-display);
   font-size: 1.3rem;
@@ -149,8 +157,7 @@ button {
   text-decoration: none;
 }
 .topbar-right {
-  display: flex;
-  gap: 6px;
+  justify-self: end;
 }
 .topbar-btn {
   display: inline-grid;
@@ -636,8 +643,14 @@ button {
 .menu {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding-top: 8px;
+  justify-content: center;
+  gap: 28px;
+  width: 100%;
+  max-width: 460px;
+  margin: 0 auto;
+  /* Fill the space under the top bar so the menu sits in the optical center. */
+  min-height: calc(100dvh - 160px);
+  padding: 8px 0 24px;
 }
 .hero {
   text-align: center;
@@ -645,8 +658,8 @@ button {
 .wordmark {
   display: flex;
   justify-content: center;
-  gap: 6px;
-  margin: 8px 0 12px;
+  gap: clamp(5px, 1.6vw, 8px);
+  margin: 0 0 14px;
 }
 .wordmark-tile {
   display: inline-grid;
@@ -681,7 +694,7 @@ button {
 .menu-primary {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 .today {
   text-align: center;
@@ -694,6 +707,7 @@ button {
 }
 .streak {
   font-size: 1rem;
+  margin: -12px 0 0;
 }
 .menu-grid {
   display: grid;

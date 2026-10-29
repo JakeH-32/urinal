@@ -115,19 +115,11 @@ function Shell() {
       <a className="skip-link" href="#main">
         Skip to content
       </a>
+      {/* Two buttons each side so the title sits dead center at every width. */}
       <header className="topbar">
-        <a className="topbar-btn" href="#/" aria-label="Menu">
-          <span aria-hidden="true">🚽</span>
-        </a>
-        <a className="topbar-title" href="#/">
-          URINAL
-        </a>
-        <div className="topbar-right">
-          <a className="topbar-btn" href="#/how" aria-label="How to play">
-            <span aria-hidden="true">?</span>
-          </a>
-          <a className="topbar-btn" href="#/stats" aria-label="Stats">
-            <span aria-hidden="true">📊</span>
+        <div className="topbar-side topbar-left">
+          <a className="topbar-btn" href="#/" aria-label="Menu">
+            <span aria-hidden="true">🚽</span>
           </a>
           <button
             type="button"
@@ -139,6 +131,17 @@ function Shell() {
           >
             <span aria-hidden="true">{sound ? '🔊' : '🔇'}</span>
           </button>
+        </div>
+        <a className="topbar-title" href="#/">
+          URINAL
+        </a>
+        <div className="topbar-side topbar-right">
+          <a className="topbar-btn" href="#/how" aria-label="How to play">
+            <span aria-hidden="true">?</span>
+          </a>
+          <a className="topbar-btn" href="#/stats" aria-label="Stats">
+            <span aria-hidden="true">📊</span>
+          </a>
         </div>
       </header>
       <main className={`page page--${route.name}`} id="main" tabIndex={-1}>
