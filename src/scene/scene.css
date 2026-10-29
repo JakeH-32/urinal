@@ -1,0 +1,199 @@
+/* URINAL scene. Self-contained theme: looks the same on any page background. */
+.urinal-scene {
+  --us-wall: #cfdbe4;
+  --us-tile-line: #b4c5d2;
+  --us-side-wall: #b6c6d2;
+  --us-side-tile-line: #9fb2c1;
+  --us-corner: #8ea2b3;
+  --us-floor: #e9edf0;
+  --us-floor-line: #d6dde3;
+  --us-baseboard: #3c7fc2;
+  --us-ink: #26303b;
+  --us-porcelain: #ffffff;
+  --us-porcelain-shade: #e1e8ef;
+  --us-chrome: #c9d2db;
+  --us-stall-door: #7f9db5;
+  --us-stall-ajar: #6c8aa3;
+  --us-stall-frame: #6a869d;
+  --us-stall-in: #a8b9c6;
+  --us-divider: #4f6478;
+  --us-divider-edge: #7d93a8;
+  --us-beyond: #efe7d6;
+  --us-beyond-floor: #e3dccd;
+  --us-mirror: #cfe6f3;
+  --us-jamb: #a9bbc9;
+  --us-highlight: #ffd23f;
+  --us-band: #e39b17;
+  --us-band-edge: #8a4b0f;
+  --us-frame: #26303b;
+
+  position: relative;
+  width: 100%;
+  margin-inline: auto;
+  border: 3px solid var(--us-frame);
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--us-wall);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.25);
+  line-height: 0;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.urinal-scene .us-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: hidden;
+}
+
+/* shared strokes */
+.urinal-scene .us-ink {
+  stroke: var(--us-ink);
+  stroke-width: 2.2;
+  stroke-linejoin: round;
+}
+
+/* room shell */
+.urinal-scene .us-wall { fill: var(--us-wall); }
+.urinal-scene .us-tile-line { stroke: var(--us-tile-line); stroke-width: 1.2; }
+.urinal-scene .us-tile-line-side { stroke: var(--us-side-tile-line); }
+.urinal-scene .us-side-wall { fill: var(--us-side-wall); }
+.urinal-scene .us-corner { stroke: var(--us-corner); stroke-width: 2; }
+.urinal-scene .us-floor { fill: var(--us-floor); }
+.urinal-scene .us-floor-lines line { stroke: var(--us-floor-line); stroke-width: 1.4; }
+.urinal-scene .us-baseboard { stroke: var(--us-baseboard); stroke-width: 4; stroke-linecap: square; }
+.urinal-scene .us-baseboard-beyond { stroke: #c9b994; stroke-width: 4; }
+.urinal-scene .us-beyond { fill: var(--us-beyond); }
+.urinal-scene .us-beyond-floor { fill: var(--us-beyond-floor); }
+.urinal-scene .us-mirror { fill: var(--us-mirror); }
+.urinal-scene .us-jamb { fill: var(--us-jamb); }
+
+/* fixtures */
+.urinal-scene .us-porcelain { fill: var(--us-porcelain); }
+.urinal-scene .us-porcelain-shade { fill: var(--us-porcelain-shade); }
+.urinal-scene .us-chrome { fill: var(--us-chrome); }
+.urinal-scene .us-broken .us-porcelain,
+.urinal-scene .us-broken .us-porcelain-shade { fill: #b9c1c8; }
+.urinal-scene .us-broken-dim { fill: rgba(30, 40, 52, 0.18); }
+.urinal-scene .us-sign {
+  font: 800 7px/1 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  fill: #b3261e;
+  letter-spacing: 0.2px;
+}
+.urinal-scene .us-stall-door { fill: var(--us-stall-door); }
+.urinal-scene .us-stall-ajar { fill: var(--us-stall-ajar); }
+.urinal-scene .us-stall-frame { fill: var(--us-stall-frame); }
+.urinal-scene .us-stall-in { fill: var(--us-stall-in); }
+.urinal-scene .us-divider-panel { fill: var(--us-divider); }
+.urinal-scene .us-divider-face { fill: var(--us-divider-edge); opacity: 0.55; }
+.urinal-scene .us-divider-shadow { fill: rgba(38, 48, 59, 0.18); }
+.urinal-scene .us-slot-num {
+  font: 700 11px/1 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  fill: #7d8c99;
+}
+
+/* people */
+.urinal-scene .us-emoji {
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+}
+.urinal-scene .us-bubble-text {
+  font: 800 12px/1 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  fill: var(--us-ink);
+}
+.urinal-scene .us-you-tag text {
+  font: 900 10px/1 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  letter-spacing: 0.6px;
+}
+
+.urinal-scene .us-sway {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: us-sway 2.4s ease-in-out infinite;
+}
+/* drunk: a bigger, slower wobble on top of his static lean */
+.urinal-scene .us-wobble {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: us-wobble 1.7s ease-in-out infinite;
+}
+@keyframes us-wobble {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+/* quirk chips */
+.urinal-scene .us-chip-box { stroke: var(--us-ink); stroke-width: 2; }
+.urinal-scene .us-chip-disc { stroke-width: 2.4; }
+.urinal-scene .us-chip-text {
+  font: 900 11.5px/1 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  letter-spacing: 0.4px;
+}
+.urinal-scene .us-bubble-text-sm { font-size: 10px; font-weight: 800; }
+
+@keyframes us-sway {
+  0%, 100% { transform: rotate(-0.9deg); }
+  50% { transform: rotate(0.9deg); }
+}
+
+/* reveal */
+.urinal-scene .us-band-wall { fill: var(--us-band); opacity: 0.16; }
+.urinal-scene .us-band-floor {
+  fill: var(--us-band);
+  fill-opacity: 0.38;
+  stroke: var(--us-band-edge);
+  stroke-width: 1.6;
+  stroke-dasharray: 5 4;
+}
+.urinal-scene .us-plate { stroke-width: 2.2; }
+.urinal-scene .us-ring rect { fill: none; }
+.urinal-scene .us-ring-outline { stroke-width: 6.5; }
+.urinal-scene .us-ring-fill { stroke-width: 3.5; }
+.urinal-scene .us-ring-dashed .us-ring-outline { stroke-width: 5.5; stroke-dasharray: 9 6; }
+.urinal-scene .us-ring-dashed .us-ring-fill { stroke-width: 2.5; stroke-dasharray: 9 6; }
+.urinal-scene .us-reaction,
+.urinal-scene .us-ring,
+.urinal-scene .us-check,
+.urinal-scene .us-plate,
+.urinal-scene .us-band {
+  animation: us-pop 260ms ease-out both;
+}
+@keyframes us-pop {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* picking */
+.urinal-scene .us-slot-btn { cursor: pointer; outline: none; }
+.urinal-scene .us-hit { fill: transparent; }
+.urinal-scene .us-hl { opacity: 0; transition: opacity 120ms ease-out; pointer-events: none; }
+.urinal-scene .us-hl-glow {
+  fill: rgba(255, 210, 63, 0.14);
+  stroke: var(--us-highlight);
+  stroke-width: 3;
+}
+.urinal-scene .us-footprints ellipse { fill: rgba(38, 48, 59, 0.28); }
+.urinal-scene .us-slot-btn:focus-visible .us-hl { opacity: 1; }
+@media (hover: hover) {
+  .urinal-scene .us-slot-btn:hover .us-hl { opacity: 1; }
+}
+.urinal-scene .us-slot-btn:focus-visible .us-hl-glow { stroke-width: 4; stroke: #f0a800; }
+
+/* reduced motion */
+.urinal-scene.us-reduced .us-sway,
+.urinal-scene.us-reduced .us-wobble,
+.urinal-scene.us-reduced .us-reaction,
+.urinal-scene.us-reduced .us-ring,
+.urinal-scene.us-reduced .us-check,
+.urinal-scene.us-reduced .us-plate,
+.urinal-scene.us-reduced .us-band { animation: none; }
+.urinal-scene.us-reduced .us-hl { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+  .urinal-scene .us-sway,
+  .urinal-scene .us-wobble,
+  .urinal-scene .us-reaction,
+  .urinal-scene .us-ring,
+  .urinal-scene .us-check,
+  .urinal-scene .us-plate,
+  .urinal-scene .us-band { animation: none; }
+}

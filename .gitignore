@@ -1,0 +1,16 @@
+node_modules
+dist
+.env
+.netlify
+*.log
+.DS_Store
+.env.*
+!.env.example
+
+# Raw image generations and QA previews (tools/gen-image)
+art/.raw/
+
+# Local-only art pipeline (not part of the public Urinal repo)
+tools/
+art/
+.claude/
