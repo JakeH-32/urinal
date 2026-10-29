@@ -25,9 +25,11 @@
 //   Equal keys tie. Grades are a hydration chart (display meta in src/grades.ts; players see
 //   Clear / Lemonade / Apple Juice / See a Doctor, the ids below are internal):
 //     CLEAR  = ties with the best (the Code's answer).
-//     STRAW  = not clear, but no more violations than the best (legal, not best).
-//     AMBER  = more violations than the best, exactly 1 violation, and the violated guy is a normal guy.
-//     DOCTOR = more violations than the best, and either 2+ violations or a quirk guy's zone. ("See a doctor.")
+//     STRAW  = not clear, and legal (0 violations), or exactly as bad as a code-breaking best
+//              (same violation count and severity; severity = 1 per normal guy, 2 per quirk guy).
+//     AMBER  = otherwise, exactly 1 violation and the violated guy is a normal guy.
+//     DOCTOR = otherwise: 2+ violations or a quirk guy's zone. ("See a doctor.")
+//   Ranking step 2 is violations, then severity (crowding a normal guy beats crowding a boss).
 
 export interface Rng {
   next(): number;
@@ -122,7 +124,8 @@ export type Reason =
   // straw
   | 'too-close' // clean, but a roomier clean spot existed
   | 'not-wall' // same clearance, but a wall spot existed
-  | 'near-door' // same everything, but the far end was free
+  | 'near-door' // same everything, took the slot right at the door, and the far end was free
+  | 'door-side' // same everything, just nearer the door than the answer (not at the door)
   | 'low-urinal' // picked low/puddle when a normal clean urinal existed
   | 'stall-coward' // picked the stall when a clean urinal existed
   // amber/doctor (named by the occupant whose zone you violated; the worst one if several)

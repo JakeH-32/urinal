@@ -315,6 +315,13 @@ export const VERDICTS: Record<Reason, string[]> = {
     'First urinal anyone sees. Yours.',
     'You’re the greeter now.',
   ],
+  'door-side': [
+    'Same room, but the spot deeper in was free.',
+    'Everything was equal except the door. You picked the door side.',
+    'You stopped a few urinals short.',
+    'The answer was farther in. Same room, less traffic.',
+    'Equal space. You took the end with foot traffic.',
+  ],
   'low-urinal': [
     'There’s a reason that one was free.',
     'The good urinals are still there, being good.',

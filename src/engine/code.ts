@@ -62,8 +62,13 @@ export function clearanceTo(b: Bathroom, i: number, j: number): number {
  */
 export function roomTo(b: Bathroom, i: number, j: number): number {
   const guy = b.slots[j].occupant as Guy;
-  return Math.abs(i - j) - zoneRadius(guy, sideOf(i, j));
+  const r = zoneRadius(guy, sideOf(i, j));
+  // In a FaceTime frame (infinite zone) farther back is still better: rank it as a large radius.
+  return Math.abs(i - j) - (Number.isFinite(r) ? r : FRAME_RANK_RADIUS);
 }
+
+/** Ranking stand-in for an infinite zone; bigger than any room. */
+const FRAME_RANK_RADIUS = 12;
 
 export function isPickable(slot: Slot): boolean {
   return !slot.occupant && !(slot.kind === 'urinal' && slot.flag === 'broken');
@@ -131,6 +136,8 @@ interface Cand {
   index: number;
   tier: 0 | 1 | 2 | 3;
   violations: number;
+  /** How bad the violations are: 1 per normal guy, 2 per quirk guy. */
+  severity: number;
   clearance: number;
   violatedBy: number[];
 }
@@ -139,6 +146,7 @@ interface Cand {
 function compareCand(b: Bathroom, x: Cand, y: Cand): number {
   if (x.tier !== y.tier) return x.tier - y.tier;
   if (x.violations !== y.violations) return x.violations - y.violations;
+  if (x.severity !== y.severity) return x.severity - y.severity;
   if (x.clearance !== y.clearance) return x.clearance > y.clearance ? -1 : 1;
   const wx = isWall(b, x.index);
   const wy = isWall(b, y.index);
@@ -148,7 +156,7 @@ function compareCand(b: Bathroom, x: Cand, y: Cand): number {
 
 function analyzeSlot(b: Bathroom, i: number, occ: number[]): Cand {
   const slot = b.slots[i];
-  if (slot.kind === 'stall') return { index: i, tier: 2, violations: 0, clearance: Infinity, violatedBy: [] };
+  if (slot.kind === 'stall') return { index: i, tier: 2, violations: 0, severity: 0, clearance: Infinity, violatedBy: [] };
   let clearance = Infinity;
   const violatedBy: number[] = [];
   for (const j of occ) {
@@ -157,7 +165,9 @@ function analyzeSlot(b: Bathroom, i: number, occ: number[]): Cand {
     if (clearanceTo(b, i, j) <= 0) violatedBy.push(j);
   }
   const tier = violatedBy.length > 0 ? 3 : slot.flag === 'low' || slot.flag === 'puddle' ? 1 : 0;
-  return { index: i, tier, violations: violatedBy.length, clearance, violatedBy };
+  let severity = 0;
+  for (const j of violatedBy) severity += b.slots[j].occupant?.quirk === 'normal' ? 1 : 2;
+  return { index: i, tier, violations: violatedBy.length, severity, clearance, violatedBy };
 }
 
 function strawReason(b: Bathroom, pick: Cand, best: Cand): Reason {
@@ -165,7 +175,8 @@ function strawReason(b: Bathroom, pick: Cand, best: Cand): Reason {
   if (pick.tier === 1 && best.tier === 0) return 'low-urinal';
   if (pick.clearance < best.clearance) return 'too-close';
   if (isWall(b, best.index) && !isWall(b, pick.index)) return 'not-wall';
-  return 'near-door';
+  // "By the door" lines only fit the slot actually at the door end.
+  return doorDistance(b, pick.index) === 0 ? 'near-door' : 'door-side';
 }
 
 function violationReason(b: Bathroom, i: number): Reason {
@@ -195,7 +206,8 @@ export function evaluate(b: Bathroom): Evaluation {
       grade = 'clear';
       reason = best.tier <= 1 ? 'perfect' : best.tier === 2 ? 'stall-forced' : 'only-option';
       greens.push(index);
-    } else if (c.violations <= best.violations) {
+    } else if (c.violations === 0 || (c.violations === best.violations && c.severity === best.severity)) {
+      // Lemonade: legal, or (when every spot breaks the code) exactly as bad as the answer.
       grade = 'straw';
       reason = strawReason(b, c, best);
     } else {

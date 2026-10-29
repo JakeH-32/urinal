@@ -188,10 +188,28 @@ describe('evaluate', () => {
     expect(grades(bath('N _ _ _ N _ _', 'left'))).toEqual(['-', 'A:adjacent', 'S:not-wall', 'A:adjacent', '-', 'A:adjacent', 'C:perfect']);
   });
 
-  it('near-door: same everything, the far one was free', () => {
+  it('door-side: same everything, just nearer the door than the answer', () => {
     const ev = evaluate(bath('N _ _ _ _ _ _ N', 'left'));
     expect(ev.greens).toEqual([4]);
-    expect(ev.slots[3]).toMatchObject({ grade: 'straw', reason: 'near-door' });
+    expect(ev.slots[3]).toMatchObject({ grade: 'straw', reason: 'door-side' });
+  });
+
+  it('near-door: only for the slot actually at the door', () => {
+    // The wall spot is taken, so the door end vs. the middle comes down to the door.
+    const ev = evaluate(bath('_ _ N _ _ _ N', 'left'));
+    expect(ev.greens).toEqual([4]);
+    expect(ev.slots[0]).toMatchObject({ grade: 'straw', reason: 'near-door' });
+  });
+
+  it('when every spot breaks the code, crowding a quirk guy is worse than a normal guy (playtest, daily #1 r5)', () => {
+    const b = parseLayout('_ _ B N _ | N | N _', 'left');
+    expect(grades(b)).toEqual(['D:boss', 'D:boss', '-', '-', 'D:boss', '-', '-', 'C:only-option']);
+  });
+
+  it('stuck in a FaceTime frame: farther in the background is better (playtest, practice KWDX32)', () => {
+    const ev = evaluate(parseLayout('_ N P _ F< _ _ _', 'right'));
+    expect(ev.greens).toEqual([7]);
+    expect(ev.slots[5].grade).not.toBe('clear');
   });
 
   it('only-option ranks violations by clearance (too-close / not-wall)', () => {
