@@ -221,7 +221,7 @@ describe('when configured', () => {
     const headers = init?.headers as Record<string, string>;
     expect(headers.apikey).toBe(KEY);
     expect(headers.Authorization).toBe(`Bearer ${KEY}`);
-    expect(headers.Prefer).toContain('resolution=ignore-duplicates');
+    expect(headers.Prefer).toBe('return=minimal');
     const sent = body(fetchMock.mock.calls[0]);
     expect(Object.keys(sent).sort()).toEqual(['day', 'device', 'grade', 'round', 'slot']);
     expect(sent).toMatchObject({ day: 2, round: 3, slot: 4, grade: 'straw' });

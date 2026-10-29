@@ -1,7 +1,7 @@
 -- URINAL crowd stats ("better than 72% of players", "most went with #7").
 -- Paste this whole file into Supabase -> SQL Editor -> Run. Safe to run again.
 -- See docs/STATS.md. The game talks to this over the REST API with the public anon key:
---   POST /rest/v1/picks, POST /rest/v1/finishes   (insert only; duplicates ignored)
+--   POST /rest/v1/picks, POST /rest/v1/finishes   (insert only; a repeat comes back 409)
 --   POST /rest/v1/rpc/day_stats {"p_day": N}      (aggregate counts only)
 -- Nothing personal is stored: day, round, slot, grade, points, clears and a random per-device id.
 
@@ -33,8 +33,8 @@ alter table public.picks enable row level security;
 alter table public.finishes enable row level security;
 
 revoke all on table public.picks, public.finishes from anon, authenticated;
--- SELECT is granted only because "insert ... on conflict do nothing" (how the game ignores repeats)
--- needs it on the key columns. With RLS on and no select policy, every read still returns zero rows.
+-- SELECT is granted, but RLS has no select policy, so every read returns zero rows. (The game sends
+-- plain inserts: "on conflict do nothing" would fail the RLS check without a select policy.)
 grant select, insert on table public.picks, public.finishes to anon, authenticated;
 
 -- Inserts are accepted only for "today" (Urinal #1 = 2026-10-28), with a day of slack each way for

@@ -283,7 +283,9 @@ function send(key: string, day: number, table: 'picks' | 'finishes', row: Record
   if (inflight.has(key)) return;
   const store = readStore();
   if (store.sent.includes(key)) return;
-  const done = call(table, { ...row, device: store.device }, 'resolution=ignore-duplicates,return=minimal', (res) => res.status)
+  // Plain insert: "resolution=ignore-duplicates" (ON CONFLICT DO NOTHING) fails Supabase's RLS check
+  // since the public key has no SELECT policy. A repeat just comes back 409, which counts as sent.
+  const done = call(table, { ...row, device: store.device }, 'return=minimal', (res) => res.status)
     .then((status) => {
       // 2xx = stored; 409 = already there; 400/422 = the data will never be accepted. Anything else
       // (offline, timeout, 401, 5xx, schema not set up yet) stays unsent and is retried next visit.
