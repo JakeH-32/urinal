@@ -206,8 +206,12 @@ export function evaluate(b: Bathroom): Evaluation {
       grade = 'clear';
       reason = best.tier <= 1 ? 'perfect' : best.tier === 2 ? 'stall-forced' : 'only-option';
       greens.push(index);
-    } else if (c.violations === 0 || (c.violations === best.violations && c.severity === best.severity)) {
-      // Lemonade: legal, or (when every spot breaks the code) exactly as bad as the answer.
+    } else if (
+      c.violations === 0 ||
+      (c.violations === best.violations && c.severity === best.severity && c.clearance === best.clearance)
+    ) {
+      // Lemonade: legal, or (when every spot breaks the code) exactly as bad as the answer and only
+      // lost on the wall/door tiebreak. Breaking it more closely than needed is Apple Juice or worse.
       grade = 'straw';
       reason = strawReason(b, c, best);
     } else {

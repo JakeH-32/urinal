@@ -83,6 +83,8 @@ describe('400 days of dailies', () => {
           if (r.difficulty === 4 || r.difficulty === 5) expect(isTrap(b, ev), where).toBe(true);
         }
 
+        // d3+: never a single free spot.
+        if (r.difficulty >= 3) expect(b.slots.filter((s) => !s.occupant && s.flag !== 'broken').length, where).toBeGreaterThanOrEqual(2);
         // People: unique names, sane looks, lean only on lopsided quirks, nobody in a stall.
         expect(new Set(guys.map((g) => g.name)).size, where).toBe(guys.length);
         for (const g of guys) {

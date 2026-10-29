@@ -254,6 +254,8 @@ function accepts(b: Bathroom, ev: Evaluation, d: Difficulty, plan: Plan, stage: 
     else if (s.grade === 'amber' || s.grade === 'doctor') broke++;
   }
   const green = ev.slots[ev.greens[0]];
+  // From d3 on, a room with a single free spot is a free point: never allowed.
+  if (d >= 3 && pickable < 2) return false;
   if (!small) {
     if (pickable < 3 || broke < 1) return false;
     if (d >= 2 && d <= 5 && straw < 1) return false;

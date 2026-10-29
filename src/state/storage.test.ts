@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { RoundResult } from '../types';
+import type { Reason, RoundResult } from '../types';
+import { VERDICTS } from '../content';
 import { STORAGE_KEY, defaultSave, loadSave, migrate, recordPractice, resetProgress, saveSave } from './storage';
 
 function memoryStorage(): Storage {
@@ -94,6 +95,22 @@ describe('migrate', () => {
     const out = migrate({ daily: { streak: 5, bestStreak: 2 }, practice: { played: 3, greens: 9, bestRun: 2 } });
     expect(out.daily.bestStreak).toBe(5);
     expect(out.practice.greens).toBe(3);
+  });
+});
+
+describe('every reason survives a reload', () => {
+  it('keeps saved results for all reasons the engine can produce (VERDICTS keys)', () => {
+    // One reason per day (a day holds at most 6 results).
+    const reasons = Object.keys(VERDICTS) as Reason[];
+    const s = defaultSave();
+    reasons.forEach((reason, i) => {
+      const key = `2027-01-${String(i + 1).padStart(2, '0')}`;
+      const result: RoundResult = { roundId: `d${key}-r1`, pick: 0, grade: 'doctor', reason };
+      s.daily.byDate[key] = { dateKey: key, number: i + 1, results: [result], finished: false };
+    });
+    const back = migrate(JSON.parse(JSON.stringify(s)));
+    const kept = Object.values(back.daily.byDate).flatMap((d) => d.results.map((r) => r.reason));
+    expect(kept.sort()).toEqual([...reasons].sort());
   });
 });
 

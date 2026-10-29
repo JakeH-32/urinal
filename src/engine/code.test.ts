@@ -212,8 +212,8 @@ describe('evaluate', () => {
     expect(ev.slots[5].grade).not.toBe('clear');
   });
 
-  it('only-option ranks violations by clearance (too-close / not-wall)', () => {
-    expect(grades(bath('_ _ B _ _', 'right'))).toEqual(['C:only-option', 'S:too-close', '-', 'S:too-close', 'S:not-wall']);
+  it('only-option: closer than the answer is See a Doctor; equal but losing on the wall is Lemonade', () => {
+    expect(grades(bath('_ _ B _ _', 'right'))).toEqual(['C:only-option', 'D:boss', '-', 'D:boss', 'S:not-wall']);
   });
 
   it('fewer violations wins among violating urinals; more is red', () => {

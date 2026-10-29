@@ -7,21 +7,27 @@ import { GRADE_ORDER } from '../grades';
 export const STORAGE_KEY = 'urinal:v1';
 export const ROUNDS_PER_DAY = 6;
 
-export const REASONS: readonly Reason[] = [
-  'perfect',
-  'only-option',
-  'stall-forced',
-  'too-close',
-  'not-wall',
-  'near-door',
-  'low-urinal',
-  'stall-coward',
-  'adjacent',
-  'talker',
-  'splasher',
-  'boss',
-  'drunk',
-];
+// A Record so the compiler fails if a new Reason is added to types.ts but not here.
+// (A missing reason makes migrate() drop that saved result, which strands the daily.)
+const REASON_SET: Record<Reason, true> = {
+  perfect: true,
+  'only-option': true,
+  'stall-forced': true,
+  'too-close': true,
+  'not-wall': true,
+  'near-door': true,
+  'door-side': true,
+  'low-urinal': true,
+  'stall-coward': true,
+  adjacent: true,
+  talker: true,
+  splasher: true,
+  boss: true,
+  drunk: true,
+  facetime: true,
+};
+
+export const REASONS: readonly Reason[] = Object.keys(REASON_SET) as Reason[];
 
 export function defaultSettings(): Settings {
   return { sound: true, reducedMotion: false };

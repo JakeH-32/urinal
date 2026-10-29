@@ -26,7 +26,8 @@
 //   Clear / Lemonade / Apple Juice / See a Doctor, the ids below are internal):
 //     CLEAR  = ties with the best (the Code's answer).
 //     STRAW  = not clear, and legal (0 violations), or exactly as bad as a code-breaking best
-//              (same violation count and severity; severity = 1 per normal guy, 2 per quirk guy).
+//              (same violation count, severity and room; it only lost on wall/door).
+//              Severity = 1 per normal guy, 2 per quirk guy.
 //     AMBER  = otherwise, exactly 1 violation and the violated guy is a normal guy.
 //     DOCTOR = otherwise: 2+ violations or a quirk guy's zone. ("See a doctor.")
 //   Ranking step 2 is violations, then severity (crowding a normal guy beats crowding a boss).

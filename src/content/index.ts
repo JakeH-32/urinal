@@ -479,7 +479,7 @@ export const HOW_TO_PLAY: { heading: string; body: string }[] = [
   },
   {
     heading: 'Space, then wall, then door',
-    body: 'If several spots keep the urinal code, take the one with the most room to the nearest man. Still tied? Take a spot against a wall. Still tied? Take the one farthest from the door.',
+    body: 'If several spots keep the urinal code, take the one with the most room to spare: the most empty urinals beyond what each man needs. Dividers don’t count as room. Still tied? Take the spot against the far wall. Still tied? Take the one farthest from the door. If every spot breaks the code, break it as little as possible: one normal guy beats anyone with a label.',
   },
   {
     heading: 'Some men need more room',
