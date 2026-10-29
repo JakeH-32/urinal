@@ -66,8 +66,8 @@ export function Menu() {
       )}
 
       <nav className="menu-grid" aria-label="More">
-        <LinkButton href="#/practice" block>
-          Practice
+        <LinkButton href="#/endless" block>
+          Endless
         </LinkButton>
         <LinkButton href="#/how" block>
           How to play

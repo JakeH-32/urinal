@@ -61,7 +61,7 @@ export function Stats() {
       </section>
 
       <section className="card">
-        <h2 className="h3">Practice</h2>
+        <h2 className="h3">Endless</h2>
         <dl className="stat-grid">
           <div className="stat">
             <dd className="stat-value">{p.played}</dd>

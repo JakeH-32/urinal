@@ -7,7 +7,9 @@ describe('router', () => {
     expect(parseHash('#/')).toEqual({ name: 'menu' });
     expect(parseHash('#/daily')).toEqual({ name: 'daily' });
     expect(parseHash('#/daily/')).toEqual({ name: 'daily' });
-    expect(parseHash('#/practice')).toEqual({ name: 'practice' });
+    expect(parseHash('#/endless')).toEqual({ name: 'practice' });
+    expect(parseHash('#/endless/K7Q2XM')).toEqual({ name: 'practice', code: 'K7Q2XM' });
+    expect(parseHash('#/practice')).toEqual({ name: 'practice' }); // old links still work
     expect(parseHash('#/practice/K7Q2XM')).toEqual({ name: 'practice', code: 'K7Q2XM' });
     expect(parseHash('#/how')).toEqual({ name: 'how' });
     expect(parseHash('#/stats')).toEqual({ name: 'stats' });

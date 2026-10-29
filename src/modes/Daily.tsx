@@ -32,8 +32,8 @@ export function Daily() {
       <>
         <DailyResults record={record} todayKey={todayKey} rounds={rounds} />
         <div className="row row--center">
-          <LinkButton href="#/practice" variant="default">
-            Practice
+          <LinkButton href="#/endless" variant="default">
+            Endless
           </LinkButton>
           <LinkButton href="#/stats" variant="ghost">
             Stats

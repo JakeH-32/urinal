@@ -24,7 +24,7 @@ export function Practice({ code }: { code?: string }) {
   const [history, setHistory] = useState<Grade[]>([]);
 
   useEffect(() => {
-    if (code && decoded === null) toast(`“${code}” isn’t a practice code. Here’s a random bathroom.`, { tone: 'danger' });
+    if (code && decoded === null) toast(`“${code}” isn’t a room code. Here’s a random bathroom.`, { tone: 'danger' });
   }, [code, decoded, toast]);
 
   const round = useMemo(() => practiceRound(seed), [seed]);
@@ -54,7 +54,7 @@ export function Practice({ code }: { code?: string }) {
       </div>
       <p className="round-meta">
         <span className="round-count">
-          Practice · Level {round.difficulty} · <span className="code">{roomCode}</span>
+          Endless · Level {round.difficulty} · <span className="code">{roomCode}</span>
         </span>
         <span className="round-venue">{round.venue}</span>
       </p>
@@ -72,7 +72,7 @@ export function Practice({ code }: { code?: string }) {
       header={header}
       extra={
         <ShareButton
-          text={`Urinal practice room ${roomCode}. Find the right one.`}
+          text={`Urinal room ${roomCode}. Find the right one.`}
           url={routeUrl({ name: 'practice', code: roomCode })}
           label="Share room"
         />

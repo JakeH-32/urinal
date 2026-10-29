@@ -29,7 +29,7 @@ const SceneGallery = loadGallery
 const TITLES: Record<Route['name'], string> = {
   menu: 'Urinal',
   daily: 'Daily · Urinal',
-  practice: 'Practice · Urinal',
+  practice: 'Endless · Urinal',
   how: 'How to play · Urinal',
   stats: 'Stats · Urinal',
   settings: 'Settings · Urinal',

@@ -15,6 +15,8 @@ export function parseHash(hash: string): Route {
   switch (head) {
     case 'daily':
       return { name: 'daily' };
+    // "Endless" mode; #/practice is its old name, kept so shared room links still work.
+    case 'endless':
     case 'practice': {
       const code = arg ? safeDecode(arg).trim() : '';
       return code ? { name: 'practice', code } : { name: 'practice' };
@@ -45,7 +47,7 @@ export function routeToHash(route: Route): string {
     case 'menu':
       return '#/';
     case 'practice':
-      return route.code ? `#/practice/${encodeURIComponent(route.code)}` : '#/practice';
+      return route.code ? `#/endless/${encodeURIComponent(route.code)}` : '#/endless';
     case 'devScene':
       return '#/dev/scene';
     default:

@@ -11,7 +11,7 @@ A daily puzzle about the urinal code: you don't take the urinal next to another 
 - 🟧 Apple Juice: you broke the urinal code
 - 🟫 See a Doctor: you broke it badly
 
-Finish all six to get a score out of 6, a rank and a share card. Practice mode has endless bathrooms, each with a share code (`#/practice/K7Q2XM`).
+Finish all six to get a score out of 6, a rank and a share card. Endless mode has unlimited random bathrooms, each with a share code (`#/endless/K7Q2XM`).
 
 The rules are written down in `src/types.ts` and implemented in `src/engine/code.ts`.
 

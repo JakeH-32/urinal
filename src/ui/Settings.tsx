@@ -37,7 +37,7 @@ export function Settings() {
 
       <section className="card">
         <h2 className="h3">Progress</h2>
-        <p className="muted small">Deletes your dailies, streaks and practice stats on this device. Settings stay.</p>
+        <p className="muted small">Deletes your dailies, streaks and Endless stats on this device. Settings stay.</p>
         {confirming ? (
           <div className="row">
             <Button

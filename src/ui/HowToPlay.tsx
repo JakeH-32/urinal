@@ -73,7 +73,7 @@ export function HowToPlay() {
         <LinkButton href="#/daily" variant="primary" size="lg">
           Play today’s Urinal
         </LinkButton>
-        <LinkButton href="#/practice">Practice</LinkButton>
+        <LinkButton href="#/endless">Endless</LinkButton>
       </div>
     </article>
   );
