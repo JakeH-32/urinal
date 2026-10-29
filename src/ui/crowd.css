@@ -1,0 +1,72 @@
+/* Crowd stats (src/ui/Crowd.tsx): small, bold, soft ink; the numbers in full ink. */
+
+.crowd-line {
+  margin: 0;
+  max-width: 40ch;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ink-soft);
+  text-align: center;
+  animation: crowd-in 240ms ease-out both;
+}
+
+.crowd-line b,
+.crowd-summary b,
+.crowd-review b {
+  color: var(--ink);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.crowd-summary {
+  margin: 12px auto 0;
+  max-width: 36ch;
+  text-align: center;
+  animation: crowd-in 240ms ease-out both;
+}
+.crowd-summary-main {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.3;
+  color: var(--ink);
+}
+.crowd-summary-note {
+  margin: 2px 0 0;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+}
+
+/* Sits inside .review-text (a column of spans), under the verdict line. */
+.crowd-review {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+@keyframes crowd-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.reduce-motion .crowd-line,
+.reduce-motion .crowd-summary {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .crowd-line,
+  .crowd-summary {
+    animation: none;
+  }
+}

@@ -16,7 +16,7 @@ describe('explainPick', () => {
 
   it('drunk: picking his lean side tells you to go to the other side', () => {
     // Leaning right; you stood two to his right.
-    expect(explain('_ _ D> _ _ _ _', 'left', 4)).toBe('He was leaning right. Go to his left side, or stay three urinals away.');
+    expect(explain('_ _ D> _ _ _ _', 'left', 4)).toBe('He was leaning right. Go to his left side, or leave two empty urinals.');
   });
 
   it('drunk: right next to him on his other side', () => {
@@ -28,6 +28,7 @@ describe('explainPick', () => {
       'His phone was in his left hand, so everything to his right is on camera. Go to his left side.',
     );
     expect(explain('_ _ _ F< _ _ _', 'right', 2)).toBe('You were right next to his phone. Leave one empty urinal.');
+    expect(explain('_ _ _ | F< _ _ _', 'right', 2)).toBe('His camera sees right over the divider. Leave one empty urinal next to him.');
   });
 
   it('gassy: downwind (door side) vs. right next to him upwind', () => {

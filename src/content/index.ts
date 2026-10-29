@@ -108,7 +108,7 @@ export const QUIRKS: Record<Quirk, QuirkText> = {
   drunk: {
     label: 'Drunk',
     emoji: '🍺',
-    rule: 'Sways one way: three empty urinals on that side, one on the other.',
+    rule: 'Sways one way: two empty urinals on that side, one on the other.',
     people: [
       { name: 'Kyle', blurb: 'Started at brunch. Brunch was yesterday.' },
       { name: 'Uncle Terry', blurb: 'Has been telling people a story about you. The bad one.' },
@@ -315,6 +315,14 @@ export const VERDICTS: Record<Reason, string[]> = {
     'You gave him the minimum. He noticed.',
     'Close enough to hear his ringtone.',
   ],
+  'quirk-neighbor': [
+    'Same room either way. You picked the neighbor with a label.',
+    'There was a normal guy available.',
+    '{name} has a new favorite person.',
+    'Out of everyone in here, you chose {name}.',
+    'You’ll be in {name}’s story tonight.',
+    'Equal space. Weirder neighbor.',
+  ],
   'not-wall': [
     'The wall spot was free.',
     'Same distance, minus the wall.',
@@ -505,16 +513,16 @@ export const HOW_TO_PLAY: { heading: string; body: string }[] = [
     body: 'The urinal code: never take the urinal right next to another man. Leave at least one empty urinal between you. He’d do the same for you.',
   },
   {
-    heading: 'Space, then wall, then door',
-    body: 'If several spots keep the urinal code, take the one with the most room to spare: the most empty urinals beyond what each man needs. Dividers don’t count as room. Still tied? Take the spot against the far wall. Still tied? Take the one farthest from the door. If every spot breaks the code, break it as little as possible: one normal guy beats anyone with a label.',
+    heading: 'Space, then neighbors, then the wall',
+    body: 'If several spots keep the urinal code, take the one with the most room to spare: the most empty urinals beyond what each man needs. Dividers don’t count as room. Still tied? Stand by a normal guy, not one with a label. Still tied? Take the spot against the far wall. Still tied? They’re all Clear. If every spot breaks the code, break it as little as possible: one normal guy beats anyone with a label.',
   },
   {
     heading: 'Some men need more room',
-    body: 'Talkers and splashers need two empty urinals. Bosses need three. Drunks sway one way: three on that side, one on the other. A guy on FaceTime is filming everything on the far side from his phone, all the way to the wall: don’t stand anywhere over there. Beside the phone, one empty urinal is enough. A gassy guy’s smell drifts toward the door: three empty urinals on his door side, one on the other. The label over each man’s head says who’s who.',
+    body: 'Talkers and splashers need two empty urinals. Bosses need three. Drunks sway one way: two on that side, one on the other. A guy on FaceTime is filming everything on the far side from his phone, all the way to the wall: don’t stand anywhere over there. Beside the phone, one empty urinal is enough. A gassy guy’s smell drifts toward the door: three empty urinals on his door side, one on the other. The label over each man’s head says who’s who.',
   },
   {
     heading: 'Dividers and bad urinals',
-    body: 'A divider counts as one extra empty urinal for keeping the urinal code, except against a talker, who leans around it. It doesn’t count as room: a spot that keeps the distance with real empty urinals beats one that needs a divider. Low urinals and puddled urinals are allowed, but any clean normal urinal beats them.',
+    body: 'A divider counts as one extra empty urinal for keeping the urinal code, except against a talker, who leans around it, or a guy on FaceTime, whose camera sees right over it. It doesn’t count as room: a spot that keeps the distance with real empty urinals beats one that needs a divider. Low urinals and puddled urinals are allowed, but any clean normal urinal beats them.',
   },
   {
     heading: 'The stall',

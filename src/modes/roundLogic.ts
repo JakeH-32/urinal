@@ -2,7 +2,7 @@
 import type { Bathroom, DailyRecord, Evaluation, Grade, Quirk, Reason, RoundResult, SaveData, Side } from '../types';
 import { FIXTURES, QUIRKS, VERDICTS } from '../content';
 import { hashString } from '../engine/rng';
-import { culpritOf } from '../engine/code';
+import { culpritOf, occupantIndices, roomTo } from '../engine/code';
 import { GRADES, GRADE_ORDER } from '../grades';
 
 const FALLBACK_REASON: Record<Grade, Reason> = {
@@ -20,8 +20,8 @@ export function resultFromEvaluation(roundId: string, pick: number, evaluation: 
 }
 
 /**
- * Name of the guy whose zone the pick violated, if any: the engine's culprit (most offended),
- * else the first entry of violatedBy.
+ * Name of the guy the verdict is about: the engine's culprit (most offended), else the first entry
+ * of violatedBy, else (a legal pick) the closest neighbour by room, a quirk guy winning ties.
  */
 export function violatorName(bathroom: Bathroom, evaluation: Evaluation | undefined, pick: number): string | undefined {
   let idx: number | null | undefined;
@@ -34,8 +34,24 @@ export function violatorName(bathroom: Bathroom, evaluation: Evaluation | undefi
     const a = evaluation?.slots.find((s) => s.index === pick) ?? evaluation?.slots[pick];
     idx = a?.violatedBy?.[0];
   }
+  if (idx === null || idx === undefined) idx = closestNeighbor(bathroom, pick);
   if (idx === null || idx === undefined) return undefined;
   return bathroom.slots[idx]?.occupant?.name;
+}
+
+function closestNeighbor(b: Bathroom, pick: number): number | undefined {
+  let best: number | undefined;
+  let bestRoom = Infinity;
+  for (const j of occupantIndices(b)) {
+    if (j === pick) continue;
+    const room = roomTo(b, pick, j);
+    const quirky = b.slots[j].occupant?.quirk !== 'normal';
+    if (room < bestRoom || (room === bestRoom && quirky)) {
+      best = j;
+      bestRoom = room;
+    }
+  }
+  return best;
 }
 
 /**
@@ -45,7 +61,10 @@ export function violatorName(bathroom: Bathroom, evaluation: Evaluation | undefi
 export function verdictLine(roundId: string, reason: Reason, name?: string): string {
   const lines = VERDICTS[reason] ?? [];
   if (lines.length === 0) return '';
-  const line = lines[hashString(roundId) % lines.length];
+  // Daily ids end in -r<round>: offset by the round so one day never repeats a line.
+  const m = /^(.*)-r(\d+)$/.exec(roundId);
+  const at = m ? hashString(m[1]) + Number(m[2]) : hashString(roundId);
+  const line = lines[at % lines.length];
   if (name) return line.replace(/\{name\}/g, name);
   // No name (shouldn't happen in play): "He" at a sentence start, "him" elsewhere.
   return line.replace(/(^|[.:!?]\s+)\{name\}/g, '$1He').replace(/\{name\}/g, 'him');

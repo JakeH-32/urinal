@@ -52,6 +52,12 @@ export interface BathroomSceneProps {
   /** Show small slot numbers (1-based) on the floor under each slot. Default false. */
   slotNumbers?: boolean;
   /**
+   * Crowd stats: percent of players (0..100) who picked each slot, indexed like `bathroom.slots`
+   * (missing or non-finite entries read as 0%). Once the evaluation is revealed, each pickable slot
+   * gets a small "38%" label at the foot of the wall; the most-picked spot's label is inverted.
+   */
+  crowd?: number[];
+  /**
    * Cap on on-screen px per viewBox unit (default 0.875): the frame's max-width is
    * `layout.width * maxScale` so fixtures keep the same size in small and big rooms.
    * Pass Infinity to always fill the container width.
@@ -119,7 +125,7 @@ function headPoint(guy: Guy, cx: number): { x: number; y: number; top: number } 
 }
 
 export function BathroomScene(props: BathroomSceneProps) {
-  const { bathroom, onPick, disabled, picked, evaluation, reducedMotion, onWalkDone, className, ariaLabel, slotNumbers } = props;
+  const { bathroom, onPick, disabled, picked, evaluation, reducedMotion, onWalkDone, className, ariaLabel, slotNumbers, crowd } = props;
   const maxScale = props.maxScale ?? MAX_PX_PER_UNIT;
   const layout = useMemo(() => layoutBathroom(bathroom), [bathroom]);
   const rawId = useId();
@@ -222,7 +228,14 @@ export function BathroomScene(props: BathroomSceneProps) {
   const skew = (solidLeft ? -1 : 1) * (Math.atan(SIDE_SLOPE) * 180) / Math.PI;
 
   return (
-    <div className={rootClass} style={{ maxWidth: Number.isFinite(maxScale) ? `${Math.round(W * maxScale)}px` : undefined }}>
+    <div
+      className={rootClass}
+      style={{
+        // Width cap and aspect ratio as variables, so a page can also cap the scene by height (see .round in styles.css).
+        ['--us-max-w' as string]: Number.isFinite(maxScale) ? `${Math.round(W * maxScale)}px` : '100%',
+        ['--us-aspect' as string]: W / SCENE_H,
+      }}
+    >
       <svg
         className="us-svg"
         viewBox={`0 0 ${W} ${SCENE_H}`}
@@ -437,6 +450,9 @@ export function BathroomScene(props: BathroomSceneProps) {
           </g>
         ))}
 
+        {/* crowd stats: what share of players picked each spot (after the reveal) */}
+        {reveal && crowd && <CrowdLabels layout={layout} bathroom={bathroom} crowd={crowd} />}
+
         {/* pickable hit areas */}
         {!locked &&
           layout.slots.map((g) => {
@@ -500,6 +516,53 @@ function Ring({ layout, index, color, ink, dashed }: { layout: SceneLayout; inde
   );
 }
 
+/** "38%"; a share that isn't zero or everyone never reads as "0%" or "100%". */
+function crowdPct(p: number): string {
+  if (!(p > 0)) return '0%';
+  if (p < 1) return '<1%';
+  if (p < 100 && p >= 99.5) return '99%';
+  return `${Math.round(Math.min(100, p))}%`;
+}
+
+/**
+ * Percent pills at the foot of the wall under each pickable slot: below the lowest urinal bowl and
+ * above the ✓ marker and the ring's bottom edge. Text is sized off the room width so it renders at
+ * roughly the same on-screen size in any room on a phone (bigger rooms are drawn smaller).
+ */
+function CrowdLabels({ layout, bathroom, crowd }: { layout: SceneLayout; bathroom: Bathroom; crowd: number[] }) {
+  const fs = Math.max(15, Math.min(21, layout.width / 36));
+  const h = fs + 7;
+  const cy = FLOOR_Y + 6;
+  const maxW = PITCH - 14; // clear of the ring's outline
+  const items = layout.slots
+    .filter((g) => isPickable(bathroom.slots[g.index]))
+    .map((g) => {
+      const raw = crowd[g.index];
+      const p = typeof raw === 'number' && Number.isFinite(raw) ? Math.max(0, Math.min(100, raw)) : 0;
+      return { g, p, text: crowdPct(p) };
+    });
+  const top = Math.max(0, ...items.map((it) => it.p));
+  return (
+    <g className="us-crowd" aria-hidden="true">
+      {items.map(({ g, p, text }) => {
+        // Bold digits run ~0.6em, "%" a bit wider; shrink the font if a label would outgrow the slot.
+        const natural = fs * (0.6 * text.length + 0.3) + 10;
+        const size = natural > maxW ? (fs * (maxW - 10)) / (natural - 10) : fs;
+        const w = Math.min(natural, maxW);
+        const cls = p <= 0 ? 'us-crowd-pill us-crowd-zero' : p === top ? 'us-crowd-pill us-crowd-top' : 'us-crowd-pill';
+        return (
+          <g key={`crowd-${g.index}`} className={cls}>
+            <rect x={g.cx - w / 2} y={cy - h / 2} width={w} height={h} rx={h / 2} />
+            <text x={g.cx} y={cy + 0.5} textAnchor="middle" dominantBaseline="central" style={{ fontSize: size }}>
+              {text}
+            </text>
+          </g>
+        );
+      })}
+    </g>
+  );
+}
+
 function CheckMark({ x, y }: { x: number; y: number }) {
   return (
     <g className="us-check" transform={`translate(${x},${y})`}>
@@ -554,7 +617,7 @@ function Occupant({ guy, cx, index, turn, chipX, propSide, straddle }: OccupantP
         </g>
       )}
       {/* chip stays upright even when the guy leans */}
-      <QuirkChip x={chipX ?? head.x} y={head.top - 5} quirk={guy.quirk} />
+      <QuirkChip x={chipX ?? head.x} y={head.top - 5} quirk={guy.quirk} lean={guy.quirk === 'drunk' ? guy.lean : undefined} />
     </g>
   );
 }

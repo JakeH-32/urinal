@@ -1,6 +1,6 @@
 // A guy seen from behind, standing facing the wall. Local coords: feet centre at (0, 0), y up is negative.
 import type { CSSProperties } from 'react';
-import type { Quirk } from '../types';
+import type { Quirk, Side } from '../types';
 import { GUY_H, heightScale } from './geometry';
 import { QUIRK_STYLE, SHOE, type ResolvedLook } from './looks';
 import { legPose } from './pose';
@@ -295,17 +295,19 @@ export function PfftBurst({ x, y }: { x: number; y: number }) {
 export const CHIP_W = 66;
 
 /** Quirk chip above a guy's head: emoji disc + coloured label. Bottom centre at (x, y). */
-export function QuirkChip({ x, y, quirk }: { x: number; y: number; quirk: Quirk }) {
+export function QuirkChip({ x, y, quirk, lean }: { x: number; y: number; quirk: Quirk; lean?: Side }) {
   const st = QUIRK_STYLE[quirk];
   if (!st.tag) return null;
+  // A drunk's chip points the way he sways, so the lopsided zone is readable at a glance.
+  const tag = lean ? (lean === 'left' ? `◀ ${st.tag}` : `${st.tag} ▶`) : st.tag;
   const w = CHIP_W;
   const h = 18;
-  const squeeze = st.tag.length > 6 ? { textLength: w - 10, lengthAdjust: 'spacingAndGlyphs' as const } : {};
+  const squeeze = tag.length > 6 ? { textLength: w - 10, lengthAdjust: 'spacingAndGlyphs' as const } : {};
   return (
     <g className={`us-chip us-chip-${quirk}`} transform={`translate(${x},${y})`}>
       <rect className="us-chip-box" x={-w / 2} y={-h} width={w} height={h} rx={9} fill={st.color} />
       <text className="us-chip-text" x={0} y={-h / 2 + 0.5} textAnchor="middle" dominantBaseline="central" fill={st.ink} {...squeeze}>
-        {st.tag}
+        {tag}
       </text>
       <circle className="us-chip-disc" cx={0} cy={-h - 9} r={10.5} fill="#fff" stroke={st.color} />
       <text className="us-emoji" x={0} y={-h - 8} textAnchor="middle" dominantBaseline="central" fontSize={12.5}>

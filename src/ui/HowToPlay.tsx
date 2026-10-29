@@ -45,6 +45,7 @@ export function HowToPlay() {
 
       {HOW_TO_PLAY.map((sec, i) => {
         const ex = bySection.get(i);
+        if (sec.heading === 'Grades') return null; // shown with the chart below
         return (
           <section key={i} className="how-section">
             <h2 className="h3">{sec.heading}</h2>
@@ -65,7 +66,7 @@ export function HowToPlay() {
 
       <section className="how-section">
         <h2 className="h3">Grades</h2>
-        <p>Every pick gets a color from the chart. Your score is how many came back Clear.</p>
+        <p>{HOW_TO_PLAY.find((s) => s.heading === 'Grades')?.body} Your score is how many came back Clear.</p>
         <HydrationChart />
       </section>
 

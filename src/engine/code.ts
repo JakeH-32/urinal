@@ -2,10 +2,10 @@
 import type { Bathroom, Evaluation, Grade, Guy, Quirk, Reason, Side, Slot, SlotAnalysis } from '../types';
 
 /**
- * Personal-space radius by quirk. Drunk: 3 toward his lean, 1 the other way. FaceTime: see zoneRadius
+ * Personal-space radius by quirk. Drunk: 2 toward his lean, 1 the other way. FaceTime: see zoneRadius
  * (his camera films the whole side away from the phone; this entry is only the no-lean fallback).
  */
-export const BASE_RADIUS: Record<Quirk, number> = { normal: 1, talker: 2, splasher: 2, boss: 3, drunk: 3, facetime: 2, gassy: 3 };
+export const BASE_RADIUS: Record<Quirk, number> = { normal: 1, talker: 2, splasher: 2, boss: 3, drunk: 2, facetime: 2, gassy: 3 };
 
 /** Personal-space radius of `guy` toward `toward` (the side the candidate slot is on, relative to him). */
 export function zoneRadius(guy: Guy, toward: Side): number {
@@ -16,8 +16,8 @@ export function zoneRadius(guy: Guy, toward: Side): number {
     return guy.lean === toward ? 1 : Infinity;
   }
   if (guy.quirk === 'drunk' || guy.quirk === 'gassy') {
-    // Lopsided: 3 toward his lean (drunk: sway; gassy: the door, where the smell drifts), 1 the
-    // other way. No lean: both ways.
+    // Lopsided: the full radius toward his lean (drunk 2: sway; gassy 3: the door, where the smell
+    // drifts), 1 the other way. No lean: both ways.
     if (!guy.lean) return BASE_RADIUS[guy.quirk];
     return guy.lean === toward ? BASE_RADIUS[guy.quirk] : 1;
   }
@@ -33,10 +33,14 @@ export function dividersBetween(b: Bathroom, i: number, j: number): number {
   return n;
 }
 
-/** Effective distance between slots i and j, honoring dividers (unless the occupant at j is a talker). */
+/** Dividers don't help against these: the talker leans around them, the FaceTime camera sees over them. */
+const IGNORES_DIVIDERS: ReadonlySet<Quirk> = new Set(['talker', 'facetime']);
+
+/** Effective distance between slots i and j, honoring dividers (unless the occupant at j ignores them). */
 export function effectiveDistance(b: Bathroom, i: number, j: number): number {
   const raw = Math.abs(i - j);
-  if (b.slots[j]?.occupant?.quirk === 'talker') return raw;
+  const q = b.slots[j]?.occupant?.quirk;
+  if (q && IGNORES_DIVIDERS.has(q)) return raw;
   return raw + dividersBetween(b, i, j);
 }
 
@@ -140,6 +144,8 @@ interface Cand {
   /** How bad the violations are: 1 per normal guy, 2 per quirk guy. */
   severity: number;
   clearance: number;
+  /** Quirk guys at that tightest room (0 when the tightest neighbour is a normal guy). */
+  tightQuirks: number;
   violatedBy: number[];
 }
 
@@ -149,35 +155,42 @@ function compareCand(b: Bathroom, x: Cand, y: Cand): number {
   if (x.violations !== y.violations) return x.violations - y.violations;
   if (x.severity !== y.severity) return x.severity - y.severity;
   if (x.clearance !== y.clearance) return x.clearance > y.clearance ? -1 : 1;
+  if (x.tightQuirks !== y.tightQuirks) return x.tightQuirks - y.tightQuirks;
   const wx = isWall(b, x.index);
   const wy = isWall(b, y.index);
   if (wx !== wy) return wx ? -1 : 1;
-  return doorDistance(b, y.index) - doorDistance(b, x.index);
+  // The door never decides: spots that tie on everything above are all Clear.
+  return 0;
 }
 
 function analyzeSlot(b: Bathroom, i: number, occ: number[]): Cand {
   const slot = b.slots[i];
-  if (slot.kind === 'stall') return { index: i, tier: 2, violations: 0, severity: 0, clearance: Infinity, violatedBy: [] };
+  if (slot.kind === 'stall') return { index: i, tier: 2, violations: 0, severity: 0, clearance: Infinity, tightQuirks: 0, violatedBy: [] };
   let clearance = Infinity;
+  let tightQuirks = 0;
   const violatedBy: number[] = [];
   for (const j of occ) {
     const room = roomTo(b, i, j);
-    if (room < clearance) clearance = room;
+    const quirky = b.slots[j].occupant?.quirk !== 'normal' ? 1 : 0;
+    if (room < clearance) {
+      clearance = room;
+      tightQuirks = quirky;
+    } else if (room === clearance) tightQuirks += quirky;
     if (clearanceTo(b, i, j) <= 0) violatedBy.push(j);
   }
   const tier = violatedBy.length > 0 ? 3 : slot.flag === 'low' || slot.flag === 'puddle' ? 1 : 0;
   let severity = 0;
   for (const j of violatedBy) severity += b.slots[j].occupant?.quirk === 'normal' ? 1 : 2;
-  return { index: i, tier, violations: violatedBy.length, severity, clearance, violatedBy };
+  return { index: i, tier, violations: violatedBy.length, severity, clearance, tightQuirks, violatedBy };
 }
 
-function strawReason(b: Bathroom, pick: Cand, best: Cand): Reason {
+function strawReason(pick: Cand, best: Cand): Reason {
   if (pick.tier === 2 && best.tier !== 2) return 'stall-coward';
   if (pick.tier === 1 && best.tier === 0) return 'low-urinal';
   if (pick.clearance < best.clearance) return 'too-close';
-  if (isWall(b, best.index) && !isWall(b, pick.index)) return 'not-wall';
-  // "By the door" lines only fit the slot actually at the door end.
-  return doorDistance(b, pick.index) === 0 ? 'near-door' : 'door-side';
+  if (pick.tightQuirks > best.tightQuirks) return 'quirk-neighbor';
+  // Nothing else separates a non-tie (the door never does).
+  return 'not-wall';
 }
 
 function violationReason(b: Bathroom, i: number): Reason {
@@ -209,12 +222,15 @@ export function evaluate(b: Bathroom): Evaluation {
       greens.push(index);
     } else if (
       c.violations === 0 ||
-      (c.violations === best.violations && c.severity === best.severity && c.clearance === best.clearance)
+      (c.violations === best.violations &&
+        c.severity === best.severity &&
+        c.clearance === best.clearance &&
+        c.tightQuirks === best.tightQuirks)
     ) {
       // Lemonade: legal, or (when every spot breaks the code) exactly as bad as the answer and only
-      // lost on the wall/door tiebreak. Breaking it more closely than needed is Apple Juice or worse.
+      // lost on the wall tiebreak. Breaking it more closely than needed is Apple Juice or worse.
       grade = 'straw';
-      reason = strawReason(b, c, best);
+      reason = strawReason(c, best);
     } else {
       reason = violationReason(b, index);
       // AMBER: one violation, of a normal guy. DOCTOR: 2+ violations, or any quirk guy's zone.

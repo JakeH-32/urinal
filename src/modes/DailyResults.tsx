@@ -11,6 +11,8 @@ import { ShareButton } from '../ui/ShareButton';
 import { Tile, TileRow } from '../ui/Tiles';
 import { useNow } from '../ui/hooks';
 import { HydrationChart } from '../ui/HydrationChart';
+import { hydrationPoints, type DayCrowd } from '../net/community';
+import { DayCrowdSummary, ReviewCrowd } from '../ui/Crowd';
 import { clearsIn, gradeCounts, verdictLine, violatorName } from './roundLogic';
 
 export function NextCountdown({ label = 'Hold it. Next Urinal in' }: { label?: string }) {
@@ -37,9 +39,11 @@ export interface DailyResultsProps {
   todayKey: string;
   /** The day's rounds, for the review list. Omit to skip the review. */
   rounds?: Round[];
+  /** How everyone else did today (null until loaded or when stats are off). */
+  crowd?: DayCrowd | null;
 }
 
-export function DailyResults({ record, todayKey, rounds }: DailyResultsProps) {
+export function DailyResults({ record, todayKey, rounds, crowd }: DailyResultsProps) {
   const { save } = useSave();
   const clears = clearsIn(record.results);
   const streak = displayStreak(save.daily, todayKey);
@@ -55,39 +59,48 @@ export function DailyResults({ record, todayKey, rounds }: DailyResultsProps) {
         ev = undefined;
       }
       const name = round ? violatorName(round.bathroom, ev, res.pick) : undefined;
-      return { res, venue: round?.venue ?? `Round ${i + 1}`, line: verdictLine(res.roundId, res.reason, name) };
+      return {
+        res,
+        venue: round?.venue ?? `Round ${i + 1}`,
+        line: verdictLine(res.roundId, res.reason, name),
+      };
     });
   }, [record, rounds]);
 
   return (
     <div className="results">
       <section className="card results-card">
-        <p className="results-kicker">Urinal #{record.number}</p>
-        <p className="results-score">
-          {clears}
-          <span className="results-of">/6</span>
-        </p>
-        <p className="results-title">{rankTitle(clears)}</p>
-        <TileRow results={record.results} />
-        <HydrationChart compact art counts={gradeCounts(record.results)} title="Today" />
-        <dl className="results-meta">
-          <div>
-            <dt>Streak</dt>
-            <dd>
-              {streak} {streak === 1 ? 'day' : 'days'}
-            </dd>
+        <div className="results-main">
+          <p className="results-kicker">Urinal #{record.number}</p>
+          <p className="results-score">
+            {clears}
+            <span className="results-of">/6</span>
+          </p>
+          <p className="results-title">{rankTitle(clears)}</p>
+          <TileRow results={record.results} />
+          {crowd && <DayCrowdSummary crowd={crowd} points={hydrationPoints(record.results)} />}
+          <div className="row row--center">
+            <DailyShare record={record} />
           </div>
-          <div>
-            <dt>Best</dt>
-            <dd>
-              {save.daily.bestStreak} {save.daily.bestStreak === 1 ? 'day' : 'days'}
-            </dd>
-          </div>
-        </dl>
-        <div className="row row--center">
-          <DailyShare record={record} />
+          {record.dateKey === todayKey && <NextCountdown />}
         </div>
-        {record.dateKey === todayKey && <NextCountdown />}
+        <div className="results-side">
+          <HydrationChart compact art counts={gradeCounts(record.results)} title="Today" />
+          <dl className="results-meta">
+            <div>
+              <dt>Streak</dt>
+              <dd>
+                {streak} {streak === 1 ? 'day' : 'days'}
+              </dd>
+            </div>
+            <div>
+              <dt>Best</dt>
+              <dd>
+                {save.daily.bestStreak} {save.daily.bestStreak === 1 ? 'day' : 'days'}
+              </dd>
+            </div>
+          </dl>
+        </div>
       </section>
 
       {review.length > 0 && (
@@ -102,6 +115,7 @@ export function DailyResults({ record, todayKey, rounds }: DailyResultsProps) {
                     {i + 1}. {venue}
                   </span>
                   <span className="review-line">{line}</span>
+                  <ReviewCrowd crowd={crowd?.rounds[i] ?? null} pick={res.pick} />
                 </span>
               </li>
             ))}

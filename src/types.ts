@@ -8,7 +8,8 @@
 //
 //   Effective distance from slot i to an occupant at j:
 //     |i - j| + (number of dividers strictly between them)
-//     ...except dividers don't count for a TALKER (he leans around them).
+//     ...except dividers don't count for a TALKER (he leans around them) or a FACETIME guy
+//     (his camera sees over them), so you can never stand right next to either.
 //
 //   Each occupant has a personal-space radius r (by quirk; DRUNK and GASSY are lopsided; FACETIME's camera side is infinite).
 //   clearance(i, guy) = effDist(i, guy) - r(toward i).  clearance <= 0 = VIOLATION.
@@ -19,14 +20,16 @@
 //     2. violations (fewer is better)
 //     3. min spare room to any occupant: raw |i - j| - r, dividers IGNORED (bigger is better;
 //        +Infinity if the room is empty). Dividers only decide legality; they never add room.
-//     4. against the wall, i.e. the end slot AWAY from the door (better). The door end is
+//     4. who's at that tightest room: fewer quirk guys is better (next to a normal guy beats
+//        next to a drunk on his good side, at the same room)
+//     5. against the wall, i.e. the end slot AWAY from the door (better). The door end is
 //        open to the room, so it is not a wall.
-//     5. distance from the door end (bigger is better)
-//   Equal keys tie. Grades are a hydration chart (display meta in src/grades.ts; players see
+//   Equal keys tie, and every tied spot is Clear. The door never decides a grade.
+//   Grades are a hydration chart (display meta in src/grades.ts; players see
 //   Clear / Lemonade / Apple Juice / See a Doctor, the ids below are internal):
 //     CLEAR  = ties with the best (the Code's answer).
 //     STRAW  = not clear, and legal (0 violations), or exactly as bad as a code-breaking best
-//              (same violation count, severity and room; it only lost on wall/door).
+//              (same violation count, severity, room and neighbours; it only lost on the wall).
 //              Severity = 1 per normal guy, 2 per quirk guy.
 //     AMBER  = otherwise, exactly 1 violation and the violated guy is a normal guy.
 //     DOCTOR = otherwise: 2+ violations or a quirk guy's zone. ("See a doctor.")
@@ -48,7 +51,7 @@ export type Side = 'left' | 'right';
 export interface Guy {
   quirk: Quirk;
   /**
-   * Lopsided quirks only. drunk: the side he sways toward (radius 3 that way, 1 the other).
+   * Lopsided quirks only. drunk: the side he sways toward (radius 2 that way, 1 the other).
    * facetime: the side he holds the phone. The camera films the whole OTHER side (every urinal over
    * there violates); beside the phone the normal 1-urinal rule applies.
    * gassy: always the door side (the smell drifts out the door): radius 3 that way, 1 the other.
@@ -126,9 +129,11 @@ export type Reason =
   | 'stall-forced' // stall was correct because every urinal violated
   // straw
   | 'too-close' // clean, but a roomier clean spot existed
+  | 'quirk-neighbor' // same clearance, but your tightest neighbour was a quirk guy and the answer's wasn't
   | 'not-wall' // same clearance, but a wall spot existed
-  | 'near-door' // same everything, took the slot right at the door, and the far end was free
-  | 'door-side' // same everything, just nearer the door than the answer (not at the door)
+  // legacy: the door used to break ties. Kept so old saves still load and show their verdicts.
+  | 'near-door'
+  | 'door-side'
   | 'low-urinal' // picked low/puddle when a normal clean urinal existed
   | 'stall-coward' // picked the stall when a clean urinal existed
   // amber/doctor (named by the occupant whose zone you violated; the worst one if several)
@@ -189,6 +194,8 @@ export interface SaveData {
     streak: number;
     bestStreak: number;
     lastDate?: string;
+    /** Global "replay today" resets this device has already applied (see DAILY_RESETS). */
+    resets?: string[];
   };
   practice: { played: number; greens: number; bestRun: number };
   /** True after the first-run How To Play has been shown. */

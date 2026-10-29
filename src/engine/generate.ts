@@ -256,6 +256,8 @@ function accepts(b: Bathroom, ev: Evaluation, d: Difficulty, plan: Plan, stage: 
     else if (s.grade === 'amber' || s.grade === 'doctor') broke++;
   }
   const green = ev.slots[ev.greens[0]];
+  // The answer is never right next to the FaceTime guy, whichever hand holds the phone.
+  if (b.slots[green.index - 1]?.occupant?.quirk === 'facetime' || b.slots[green.index + 1]?.occupant?.quirk === 'facetime') return false;
   // From d3 on, a room with a single free spot is a free point: never allowed.
   if (d >= 3 && pickable < 2) return false;
   if (!small) {

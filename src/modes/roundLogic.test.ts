@@ -54,7 +54,7 @@ describe('grading', () => {
     expect(resultFromEvaluation('r', 1, bare)).toMatchObject({ grade: 'amber', reason: 'adjacent' });
   });
 
-  it('names the engine culprit, falling back to violatedBy[0]', () => {
+  it('names the engine culprit, falling back to violatedBy[0], then the closest neighbour', () => {
     expect(violatorName(room, evaluation, 1)).toBe('Mr. Hale');
     const c = culpritOf(room, 2);
     expect(c).not.toBeNull();
@@ -62,7 +62,8 @@ describe('grading', () => {
     // Stall: no culprit from the engine, so the evaluation's violatedBy is used.
     const ev: Evaluation = { slots: [{ index: 5, pickable: true, grade: 'amber', reason: 'adjacent', violatedBy: [4] }], greens: [] };
     expect(violatorName(room, ev, 5)).toBe('Kyle');
-    expect(violatorName(room, evaluation, 5)).toBeUndefined();
+    // A legal pick (the stall) has no culprit: the closest neighbour is named.
+    expect(violatorName(room, evaluation, 5)).toBe('Kyle');
   });
 });
 

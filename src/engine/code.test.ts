@@ -58,8 +58,8 @@ describe('primitives', () => {
     const b = bath('N T P B D< D>');
     const r = (j: number, side: Side) => zoneRadius(b.slots[j].occupant as Guy, side);
     expect([r(0, 'left'), r(1, 'right'), r(2, 'left'), r(3, 'right')]).toEqual([1, 2, 2, 3]);
-    expect([r(4, 'left'), r(4, 'right')]).toEqual([3, 1]);
-    expect([r(5, 'left'), r(5, 'right')]).toEqual([1, 3]);
+    expect([r(4, 'left'), r(4, 'right')]).toEqual([2, 1]);
+    expect([r(5, 'left'), r(5, 'right')]).toEqual([1, 2]);
   });
 
   it('facetime: the whole camera side is in frame, the phone side is the normal rule', () => {
@@ -145,16 +145,16 @@ describe('evaluate', () => {
     expect(grades(bath('_ P | _ | _ | _', 'right'))).toEqual(['D:splasher', '-', 'D:splasher', 'S:too-close', 'C:perfect']);
   });
 
-  it('drunk leaning right: 3 that way, 1 the other', () => {
+  it('drunk leaning right: 2 that way, 1 the other', () => {
     const b = bath('_ _ _ D> _ _ _', 'right');
-    expect(zoneCovers(b, 3)).toEqual([2, 4, 5, 6]);
-    expect(grades(b)).toEqual(['C:perfect', 'S:too-close', 'D:drunk', '-', 'D:drunk', 'D:drunk', 'D:drunk']);
+    expect(zoneCovers(b, 3)).toEqual([2, 4, 5]);
+    expect(grades(b)).toEqual(['C:perfect', 'S:too-close', 'D:drunk', '-', 'D:drunk', 'D:drunk', 'S:too-close']);
   });
 
   it('drunk leaning left: mirrored', () => {
     const b = bath('_ _ _ D< _ _ _', 'left');
-    expect(zoneCovers(b, 3)).toEqual([0, 1, 2, 4]);
-    expect(grades(b)).toEqual(['D:drunk', 'D:drunk', 'D:drunk', '-', 'D:drunk', 'S:too-close', 'C:perfect']);
+    expect(zoneCovers(b, 3)).toEqual([1, 2, 4]);
+    expect(grades(b)).toEqual(['S:too-close', 'D:drunk', 'D:drunk', '-', 'D:drunk', 'S:too-close', 'C:perfect']);
   });
 
   it('boss: radius 3', () => {
@@ -196,17 +196,30 @@ describe('evaluate', () => {
     expect(grades(bath('N _ _ _ N _ _', 'left'))).toEqual(['-', 'A:adjacent', 'S:not-wall', 'A:adjacent', '-', 'A:adjacent', 'C:perfect']);
   });
 
-  it('door-side: same everything, just nearer the door than the answer', () => {
-    const ev = evaluate(bath('N _ _ _ _ _ _ N', 'left'));
-    expect(ev.greens).toEqual([4]);
-    expect(ev.slots[3]).toMatchObject({ grade: 'straw', reason: 'door-side' });
+  it('the door never decides: spots that tie on everything else are all Clear (playtest: bus depot)', () => {
+    expect(evaluate(bath('N _ _ _ _ _ _ N', 'left')).greens).toEqual([3, 4]);
+    expect(evaluate(bath('_ _ N _ _ _ N', 'left')).greens).toEqual([0, 4]);
+    expect(grades(bath('N _ _ N', 'right'))).toEqual(['-', 'C:only-option', 'C:only-option', '-']);
   });
 
-  it('near-door: only for the slot actually at the door', () => {
-    // The wall spot is taken, so the door end vs. the middle comes down to the door.
-    const ev = evaluate(bath('_ _ N _ _ _ N', 'left'));
+  it('same room: next to a normal guy beats next to a quirk guy, even on his good side, even off the wall (playtest)', () => {
+    // Drunk leaning right; the corner is on his good side. The spot by the normal guy wins.
+    const b = parseLayout('_ | D> _ N | _ _ _ T', 'right');
+    const ev = evaluate(b);
     expect(ev.greens).toEqual([4]);
-    expect(ev.slots[0]).toMatchObject({ grade: 'straw', reason: 'near-door' });
+    expect(ev.slots[0]).toMatchObject({ grade: 'straw', reason: 'quirk-neighbor' });
+  });
+
+  it('a divider never makes the spot right next to the FaceTime guy legal (playtest)', () => {
+    const b = parseLayout('_ _ | F< _ _ _ _', 'right');
+    expect(evaluate(b).slots[1]).toMatchObject({ grade: 'doctor', reason: 'facetime' });
+    expect(zoneCovers(b, 2)).toContain(1);
+  });
+
+  it('a leaning drunk reaches two urinals, not three (playtest: wedding)', () => {
+    const b = parseLayout('_ _ D< _ _ _ D> _ _ _', 'right');
+    expect(zoneCovers(b, 6)).toEqual([5, 7, 8]);
+    expect(evaluate(b).greens).toEqual([9]);
   });
 
   it('when every spot breaks the code, crowding a quirk guy is worse than a normal guy (playtest, daily #1 r5)', () => {
@@ -254,8 +267,8 @@ describe('evaluate', () => {
     expect(grades(bath('_ N _ N', 'right'))[2]).toBe('D:adjacent');
   });
 
-  it('exactly one clear whenever something is pickable', () => {
-    for (const s of ['_ _ _', 'N _ _ N', 'S _ B _ S', '_ | _ | _', 'L W L', 'S S N']) {
+  it('exactly one clear whenever the wall or room can break the tie', () => {
+    for (const s of ['_ _ _', 'S _ B _ S', '_ | _ | _', 'L W L', 'N _ _ _ N _']) {
       for (const door of ['left', 'right'] as const) expect(evaluate(bath(s, door)).greens).toHaveLength(1);
     }
     expect(evaluate(bath('N X N')).greens).toEqual([]);

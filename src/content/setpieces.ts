@@ -2,15 +2,18 @@
 // Rounds 2, 4 and 6 of each daily come from here (difficulty must be 2, 4 or 6).
 // Voice: docs/VOICE.md. The premise carries the context (blurbs only show on hover).
 // Stalls are rare on purpose: at most 4 rooms have one, and only 2 (both difficulty 6) answer with it.
+// The door never decides a grade, so every answer wins on something the player can see: room, the
+// far wall, a zone, a flag, a divider, or a normal neighbour over a quirk one. A premise may hint at
+// the answer or stay neutral; it must never push toward a wrong spot (no hurry, no false "safe" spot).
 import type { SetPiece } from '../types';
 
 export const SET_PIECES: SetPiece[] = [
   // ---------------------------------------------------------------------------
   // Difficulty 2: plain guys. One wrinkle each: wall vs door, room vs wall,
-  // low / puddle / broken urinals, the cowardly stall, the least-bad spot.
+  // low / puddle / broken urinals, a divider, the cowardly stall, the least-bad spot.
   // ---------------------------------------------------------------------------
   {
-    // Both ends have the same room. The door end gets the foot traffic.
+    // Both ends have the same room. Only the far one is a wall.
     id: 'sp-open-house',
     difficulty: 2,
     venue: 'Open house, Sunday 1 to 4',
@@ -38,7 +41,7 @@ export const SET_PIECES: SetPiece[] = [
     answer: 1,
   },
   {
-    // The wall urinal is broken, so the new "far end" is one gap from a guy.
+    // The wall urinal is broken and the spot beside it touches a guy. The middle of the big gap has the most room.
     id: 'sp-ballpark-raffle',
     difficulty: 2,
     venue: 'Ballpark, seventh-inning stretch',
@@ -81,7 +84,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-ferry-three',
     difficulty: 2,
     venue: 'Ferry, the 4:10 crossing',
-    premise: 'Three urinals, a man in the middle one, and a line forming behind you.',
+    premise: 'Three urinals, a man in the middle one, and forty minutes of open water.',
     layout: '_ N _',
     door: 'left',
     people: [{ name: 'A man in a fishing vest', blurb: 'Twenty pockets. He’s checking all of them.' }],
@@ -91,8 +94,8 @@ export const SET_PIECES: SetPiece[] = [
     // Crowded, but one urinal still keeps the urinal code. The open stall is the coward's pick.
     id: 'sp-kickoff-stall',
     difficulty: 2,
-    venue: 'Sports bar, two minutes to kickoff',
-    premise: 'Three guys at the urinals, kickoff in two minutes, and the stall door is standing wide open.',
+    venue: 'Sports bar, the pregame show',
+    premise: 'Three guys at the urinals and an open stall. You are a grown man at a sports bar.',
     layout: 'N _ _ _ N _ N S',
     door: 'left',
     people: [
@@ -176,12 +179,12 @@ export const SET_PIECES: SetPiece[] = [
     answer: 3,
   },
   {
-    // The door end ties the middle on room, but the door end isn't a wall.
+    // The door end ties the middle of the big gap on room, but it's a puddle. The clean one wins.
     id: 'sp-delayed-flight',
     difficulty: 2,
     venue: 'Airport, delayed to 9:40',
-    premise: 'Your flight is delayed again, and everyone on it will come through that door eventually.',
-    layout: '_ _ _ N _ _ _ _ _ N',
+    premise: 'Your flight has been delayed three times. Everyone on it is on their third coffee.',
+    layout: 'W _ _ N _ _ _ _ _ N',
     door: 'left',
     people: [
       { name: 'The man in 23C', blurb: 'You’re in 24C. He reclines.' },
@@ -205,18 +208,18 @@ export const SET_PIECES: SetPiece[] = [
     answer: 4,
   },
   {
-    // Both middle spots touch somebody. No wall free, so the one away from the door.
+    // A stranger at each end. The divider makes the spot beside one of them legal; the other middle spot touches a guy.
     id: 'sp-bus-depot',
     difficulty: 2,
     venue: 'Bus depot, 11:55 p.m.',
-    premise: 'Four urinals, a stranger at each end, and your bus leaves in three minutes.',
-    layout: 'N _ _ N',
+    premise: 'Four urinals, a stranger at each end, and your bus doesn’t leave until 6 a.m.',
+    layout: 'N _ _ | N',
     door: 'right',
     people: [
       { name: 'A man with all his luggage', blurb: 'All of it. In here.' },
       { name: 'A man in a security guard uniform', blurb: 'Not a security guard. You asked.' },
     ],
-    answer: 2,
+    answer: 3,
   },
 
   // ---------------------------------------------------------------------------
@@ -252,18 +255,18 @@ export const SET_PIECES: SetPiece[] = [
     answer: 6,
   },
   {
-    // The drunk sways into the wide gap. The cramped side past him is the clean one.
+    // The drunk sways two into the gap, so the whole gap is his or the officiant's. The spot behind him is the only clean one.
     id: 'sp-rehearsal-list',
     difficulty: 4,
     venue: 'Rehearsal dinner, second bottle',
-    premise: 'The groom’s brother has been listing left since the salad course. There’s a nice wide gap on that side.',
-    layout: '_ N _ _ _ _ D< _ _',
+    premise: 'The groom’s brother has been listing left since the salad course. Nobody has mentioned it to him.',
+    layout: '_ N _ _ _ D< _ _',
     door: 'left',
     people: [
       { name: 'The officiant', blurb: 'Got ordained online on Tuesday.' },
       { name: 'The groom’s brother', blurb: 'His toast is ready. It’s mostly about him.' },
     ],
-    answer: 9,
+    answer: 8,
   },
   {
     // The classic spot between the two of them is inside the splash.
@@ -294,7 +297,7 @@ export const SET_PIECES: SetPiece[] = [
     answer: 8,
   },
   {
-    // He leans toward the corner, so the corner is his. The door end is the clean spot.
+    // Both ends have one urinal to spare. The corner's closest man is the drunk; the door end's is a normal guy. Normal wins.
     id: 'sp-eggnog',
     difficulty: 4,
     venue: 'Holiday party, after the gift exchange',
@@ -364,11 +367,11 @@ export const SET_PIECES: SetPiece[] = [
     answer: 1,
   },
   {
-    // He sways into the big gap. The clean spot is past the far guy, in the corner.
+    // He sways into the big gap. Its one legal spot has the drunk as its closest man; the corner past the far guy has a normal one.
     id: 'sp-party-bus',
     difficulty: 4,
     venue: 'Bachelor party, the brewery bus',
-    premise: 'The groom is three IPAs in and tilting toward the far wall like it called his name.',
+    premise: 'The groom is three IPAs in and leaning on things that aren’t there.',
     layout: 'N _ D> _ _ _ _ N _ _',
     door: 'left',
     people: [
@@ -441,7 +444,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-wedding-cocktail',
     difficulty: 6,
     venue: 'Your wedding, cocktail hour',
-    premise: 'Your new father-in-law is in here. So is your best man, who has been tipping toward the corner since the champagne toast.',
+    premise: 'Your new father-in-law is in here. So is your best man, three champagnes ahead of his speech.',
     layout: '_ B _ _ _ _ D> _ _ S',
     door: 'left',
     people: [
@@ -479,7 +482,7 @@ export const SET_PIECES: SetPiece[] = [
     answer: 8,
   },
   {
-    // The drunk leans toward the boss, so the wide gap is his. The puddle behind him is the spot.
+    // The drunk's sway and the boss's reach cover the whole wide gap. The puddle behind the drunk is the only legal spot.
     id: 'sp-awards-banquet',
     difficulty: 6,
     venue: 'Awards banquet, after dessert',
@@ -566,12 +569,12 @@ export const SET_PIECES: SetPiece[] = [
     answer: 10,
   },
   {
-    // The corner is in the sway. Two from the drunk's back and three from the talker is clean.
+    // The corner is two past the drunk's lean, inside his sway. Two from his back and three from the talker is the only clean spot.
     id: 'sp-25-year-reunion',
     difficulty: 6,
     venue: 'Your 25-year reunion',
     premise: 'The old quarterback is recapping the state semifinal, play by play. The class clown is leaning toward the corner, mostly by accident.',
-    layout: 'T _ _ _ _ D> _ _ _',
+    layout: 'T _ _ _ _ D> _ _',
     door: 'left',
     people: [
       { name: 'The old quarterback', blurb: 'Threw four interceptions that night. Remembers a win.' },
@@ -609,7 +612,8 @@ export const SET_PIECES: SetPiece[] = [
     answer: 6,
   },
   {
-    // Two drunks leaning apart. The one clean urinal is between their backs.
+    // Two drunks leaning apart. Between their backs is legal but has a drunk on each side at the same room.
+    // The far end, just past the right one's sway, has the same room and only one drunk near it.
     id: 'sp-groomsmen-feud',
     difficulty: 6,
     venue: 'A wedding, an hour before the ceremony',
@@ -620,7 +624,7 @@ export const SET_PIECES: SetPiece[] = [
       { name: 'The groom’s college roommate', blurb: 'Planned Vegas. Lost the deposit.' },
       { name: 'The groom’s brother', blurb: 'Wanted a cabin. Still bringing up the cabin.' },
     ],
-    answer: 5,
+    answer: 10,
   },
   {
     // The puddle in the corner has more room. The clean urinal behind the divider still outranks it.

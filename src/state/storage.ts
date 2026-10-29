@@ -14,6 +14,7 @@ const REASON_SET: Record<Reason, true> = {
   'only-option': true,
   'stall-forced': true,
   'too-close': true,
+  'quirk-neighbor': true,
   'not-wall': true,
   'near-door': true,
   'door-side': true,
@@ -103,11 +104,13 @@ function migrateDaily(raw: unknown): SaveData['daily'] {
   }
   const streak = int(raw.streak, 0);
   const lastDate = typeof raw.lastDate === 'string' && DATE_KEY_RE.test(raw.lastDate) ? raw.lastDate : undefined;
+  const resets = Array.isArray(raw.resets) ? raw.resets.filter((k): k is string => typeof k === 'string' && DATE_KEY_RE.test(k)) : [];
   return {
     byDate,
     streak,
     bestStreak: Math.max(streak, int(raw.bestStreak, 0)),
     ...(lastDate ? { lastDate } : {}),
+    ...(resets.length ? { resets } : {}),
   };
 }
 

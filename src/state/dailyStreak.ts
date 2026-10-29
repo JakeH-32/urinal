@@ -61,6 +61,31 @@ export function recordRound(save: SaveData, dateKey: string, number: number, res
   return { ...save, daily };
 }
 
+/**
+ * Global "replay today" resets, by date key. When the rules or puzzles change mid-day, add that day
+ * here and deploy: the first load on that same day clears that day's daily (once per device), so
+ * everyone can replay it. Loaded on any later day, a reset is only marked as applied: old days stay.
+ */
+export const DAILY_RESETS: readonly string[] = ['2026-10-29'];
+
+export function applyDailyResets(save: SaveData, todayKey: string, resets: readonly string[] = DAILY_RESETS): SaveData {
+  const done = save.daily.resets ?? [];
+  const pending = resets.filter((k) => !done.includes(k));
+  if (pending.length === 0) return save;
+  const byDate = { ...save.daily.byDate };
+  const wiped = pending.includes(todayKey) && byDate[todayKey] !== undefined;
+  if (wiped) delete byDate[todayKey];
+  let daily: DailyState = { ...save.daily, byDate, resets: [...done, ...pending] };
+  // Rebuild the streak from the remaining finished days (the wiped day may have counted).
+  if (wiped) {
+    let rebuilt: DailyState = { ...daily, streak: 0, bestStreak: 0, lastDate: undefined };
+    for (const key of Object.keys(byDate).sort()) if (byDate[key].finished) rebuilt = applyFinishedDay(rebuilt, key);
+    const { lastDate, ...rest } = rebuilt;
+    daily = lastDate ? { ...rest, lastDate } : rest;
+  }
+  return { ...save, daily };
+}
+
 /** The streak as it stands today: it's broken if you skipped yesterday. */
 export function displayStreak(daily: DailyState, todayKey: string): number {
   if (!daily.lastDate) return 0;

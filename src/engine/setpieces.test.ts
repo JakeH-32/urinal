@@ -36,6 +36,8 @@ describe('set pieces', () => {
     if (sp.people) expect(sp.people.length).toBe(guys);
     const ev = evaluate(b);
     expect(ev.greens.map((i) => i + 1)).toEqual([sp.answer]);
+    // Never right next to the FaceTime guy (playtest).
+    for (const n of [sp.answer - 2, sp.answer]) expect(b.slots[n]?.occupant?.quirk).not.toBe('facetime');
     // A puzzle needs at least one wrong answer.
     expect(ev.slots.filter((s) => s.pickable && s.grade !== 'clear').length).toBeGreaterThan(0);
   });

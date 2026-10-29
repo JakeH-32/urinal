@@ -29,6 +29,7 @@
 
   position: relative;
   width: 100%;
+  max-width: var(--us-max-w, none);
   margin-inline: auto;
   border: 3px solid var(--us-frame);
   border-radius: 16px;
@@ -223,4 +224,27 @@
   .urinal-scene .us-check,
   .urinal-scene .us-plate,
   .urinal-scene .us-band { animation: none; }
+}
+
+/* crowd stats: percent pills at the foot of the wall (BathroomScene `crowd` prop) */
+.urinal-scene .us-crowd { animation: us-pop 300ms ease-out both; }
+.urinal-scene .us-crowd-pill rect {
+  fill: #ffffff;
+  stroke: var(--us-ink);
+  stroke-width: 1.8;
+}
+.urinal-scene .us-crowd-pill text {
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-weight: 800;
+  fill: var(--us-ink);
+  font-variant-numeric: tabular-nums;
+}
+/* the crowd favourite: inverted (neutral ink, so it never reads as a grade colour) */
+.urinal-scene .us-crowd-top rect { fill: var(--us-ink); }
+.urinal-scene .us-crowd-top text { fill: #ffffff; }
+.urinal-scene .us-crowd-zero rect { fill: rgba(255, 255, 255, 0.82); stroke: #8b9aa7; }
+.urinal-scene .us-crowd-zero text { fill: #6f7f8c; }
+.urinal-scene.us-reduced .us-crowd { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .urinal-scene .us-crowd { animation: none; }
 }

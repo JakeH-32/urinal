@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { RoundResult, SaveData } from '../types';
 import { defaultSave } from './storage';
-import { displayStreak, formatCountdown, msUntilNextDaily, recordRound, shiftDateKey, toDateKey } from './dailyStreak';
+import { applyDailyResets, displayStreak, formatCountdown, msUntilNextDaily, recordRound, shiftDateKey, toDateKey } from './dailyStreak';
+import { migrate } from './storage';
 
 const result = (dateKey: string, i: number, grade: RoundResult['grade'] = 'clear'): RoundResult => ({
   roundId: `d${dateKey}-r${i}`,
@@ -107,5 +108,34 @@ describe('countdown', () => {
     expect(msUntilNextDaily(new Date(2026, 9, 15, 23, 59, 0))).toBe(60_000);
     expect(formatCountdown(3_723_000)).toBe('01:02:03');
     expect(formatCountdown(-5)).toBe('00:00:00');
+  });
+});
+
+describe('applyDailyResets', () => {
+  const day = (save: SaveData, key: string, n: number) => {
+    let s = save;
+    for (let i = 0; i < 6; i++) s = recordRound(s, key, n, { roundId: `${key}-${i}`, pick: 0, grade: 'clear', reason: 'perfect' });
+    return s;
+  };
+  const played = day(day(defaultSave(), '2026-10-28', 1), '2026-10-29', 2);
+
+  it('clears the reset day on that day, once, and rebuilds the streak', () => {
+    expect(played.daily.streak).toBe(2);
+    const after = applyDailyResets(played, '2026-10-29', ['2026-10-29']);
+    expect(after.daily.byDate['2026-10-29']).toBeUndefined();
+    expect(after.daily.byDate['2026-10-28']?.finished).toBe(true);
+    expect(after.daily).toMatchObject({ streak: 1, bestStreak: 1, lastDate: '2026-10-28', resets: ['2026-10-29'] });
+    // Replaying today counts again, and a reload doesn't wipe the replay.
+    const replayed = day(after, '2026-10-29', 2);
+    expect(replayed.daily.streak).toBe(2);
+    const reloaded = applyDailyResets(migrate(JSON.stringify(replayed)), '2026-10-29', ['2026-10-29']);
+    expect(reloaded.daily.byDate['2026-10-29']?.finished).toBe(true);
+  });
+
+  it('on a later day only marks it applied: old days are kept', () => {
+    const later = applyDailyResets(played, '2026-10-30', ['2026-10-29']);
+    expect(later.daily.byDate['2026-10-29']?.finished).toBe(true);
+    expect(later.daily.resets).toEqual(['2026-10-29']);
+    expect(applyDailyResets(later, '2026-10-30', ['2026-10-29'])).toBe(later);
   });
 });

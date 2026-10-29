@@ -2,6 +2,15 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { SaveData } from '../types';
 import { STORAGE_KEY, getDefaultStorage, loadSave, resetProgress, saveSave } from './storage';
+import { applyDailyResets, toDateKey } from './dailyStreak';
+
+/** Load, apply any pending global daily reset, and persist that right away so it happens once. */
+function loadWithResets(store: Storage | null): SaveData {
+  const loaded = loadSave(store);
+  const next = applyDailyResets(loaded, toDateKey(new Date()));
+  if (next !== loaded) saveSave(next, store);
+  return next;
+}
 
 export interface SaveContextValue {
   save: SaveData;
@@ -15,7 +24,7 @@ const SaveContext = createContext<SaveContextValue | null>(null);
 
 export function SaveProvider({ children, storage }: { children: ReactNode; storage?: Storage | null }) {
   const store = useMemo(() => (storage === undefined ? getDefaultStorage() : storage), [storage]);
-  const [save, setSave] = useState<SaveData>(() => loadSave(store));
+  const [save, setSave] = useState<SaveData>(() => loadWithResets(store));
   const saveRef = useRef(save);
 
   const update = useCallback(
