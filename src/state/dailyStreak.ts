@@ -66,7 +66,7 @@ export function recordRound(save: SaveData, dateKey: string, number: number, res
  * here and deploy: the first load on that same day clears that day's daily (once per device), so
  * everyone can replay it. Loaded on any later day, a reset is only marked as applied: old days stay.
  */
-export const DAILY_RESETS: readonly string[] = ['2026-10-29'];
+export const DAILY_RESETS: readonly string[] = ['2026-10-29', '2026-11-02'];
 
 export function applyDailyResets(save: SaveData, todayKey: string, resets: readonly string[] = DAILY_RESETS): SaveData {
   const done = save.daily.resets ?? [];
