@@ -12,7 +12,7 @@ import { GRADE_ORDER } from '../grades';
 import { URINAL_EPOCH } from '../engine/daily';
 import { dailyRounds } from '../engine/generate';
 import { shiftDateKey } from '../state/dailyStreak';
-import { getDefaultStorage } from '../state/storage';
+import { ROUNDS_PER_DAY, getDefaultStorage } from '../state/storage';
 import { communityConfig } from './config';
 
 /** Pick counts for one round. bySlot[i] = players who picked slot i (length = the room's slot count). */
@@ -21,7 +21,7 @@ export interface RoundCrowd {
   bySlot: number[];
 }
 
-/** One day's crowd. rounds[0..5] (null = no picks yet); points[0..18] = finished players per hydration total. */
+/** One day's crowd. rounds[0..4] (null = no picks yet); points[0..15] = finished players per hydration total. */
 export interface DayCrowd {
   players: number;
   rounds: (RoundCrowd | null)[];
@@ -31,8 +31,8 @@ export interface DayCrowd {
 /** Device id + which picks/finishes this device has already sent. */
 export const CROWD_STORAGE_KEY = 'urinal:crowd:v1';
 export const REQUEST_TIMEOUT_MS = 4000;
-export const CROWD_ROUNDS = 6;
-export const MAX_POINTS = 18;
+export const CROWD_ROUNDS = ROUNDS_PER_DAY;
+export const MAX_POINTS = 3 * ROUNDS_PER_DAY;
 /** Matches the CHECK on picks.slot (0..9). */
 const MAX_SLOTS = 10;
 /** Sent-keys older than this many days before the newest are pruned from storage. */
@@ -47,7 +47,7 @@ const validDay = (day: unknown): day is number => isInt(day) && day >= 1 && day 
 // Pure helpers
 // ---------------------------------------------------------------------------
 
-/** Hydration points for a day: clear 3, straw (Lemonade) 2, amber (Apple Juice) 1, doctor 0. Max 18. */
+/** Hydration points for a day: clear 3, straw (Lemonade) 2, amber (Apple Juice) 1, doctor 0. Max 15. */
 export function hydrationPoints(results: readonly RoundResult[]): number {
   let total = 0;
   for (const r of results) total += GRADE_POINTS[r?.grade] ?? 0;
@@ -303,7 +303,7 @@ export function communityEnabled(): boolean {
   return communityConfig() !== null;
 }
 
-/** Send one pick (round 1..6, slot index 0..9). Once per device per (day, round). Never throws. */
+/** Send one pick (round 1..5, slot index 0..9). Once per device per (day, round). Never throws. */
 export function recordPick(day: number, round: number, slot: number, grade: Grade): void {
   try {
     if (!communityEnabled()) return;
@@ -315,7 +315,7 @@ export function recordPick(day: number, round: number, slot: number, grade: Grad
   }
 }
 
-/** Send a finished day (points 0..18, clears 0..6). Once per device per day. Never throws. */
+/** Send a finished day (points 0..15, clears 0..5). Once per device per day. Never throws. */
 export function recordFinish(day: number, points: number, clears: number): void {
   try {
     if (!communityEnabled()) return;
@@ -330,7 +330,7 @@ export function recordFinish(day: number, points: number, clears: number): void 
 
 const slotCache = new Map<number, number[]>();
 
-/** Slot count of each of the day's six rooms (the dailies are deterministic). [] if that fails. */
+/** Slot count of each of the day's rooms (the dailies are deterministic). [] if that fails. */
 function slotCountsFor(day: number): number[] {
   const hit = slotCache.get(day);
   if (hit) return hit;

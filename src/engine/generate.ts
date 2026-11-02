@@ -367,20 +367,24 @@ export function generateRound(seed: number, difficulty: Difficulty, id: string):
   return { id, seed, difficulty, venue, bathroom };
 }
 
-/** Seed of round r (1..6) of a date. */
+/** Difficulty of each daily round. No warm-ups: every room has at least one guy with a label. */
+export const DAILY_DIFFICULTIES: readonly Difficulty[] = [3, 4, 5, 6, 6];
+
+/** Seed of round r (1..5) of a date. */
 export function dailyRoundSeed(dateKey: string, r: number): number {
   return hashString(`r${r}`, seedFrom(`urinal:${dateKey}`)) & SEED_MASK;
 }
 
-/** The 6 rounds of a given local date (YYYY-MM-DD), difficulty 1..6. Same for everyone. */
+/** The rounds of a given local date (YYYY-MM-DD), by DAILY_DIFFICULTIES. Same for everyone. */
 export function dailyRounds(dateKey: string): Round[] {
   const rounds: Round[] = [];
-  for (let r = 1; r <= 6; r++) {
+  DAILY_DIFFICULTIES.forEach((d, k) => {
+    const r = k + 1;
     const seed = dailyRoundSeed(dateKey, r);
     const id = `d${dateKey}-r${r}`;
-    const sp = SET_PIECE_ROUNDS.includes(r) ? dailySetPiece(dateKey, r as Difficulty) : undefined;
-    rounds.push(sp ? setPieceRound(sp, seed, id) : generateRound(seed, r as Difficulty, id));
-  }
+    const sp = SET_PIECE_ROUNDS.includes(r) ? dailySetPiece(dateKey, d) : undefined;
+    rounds.push(sp ? setPieceRound(sp, seed, id) : generateRound(seed, d, id));
+  });
   return rounds;
 }
 
@@ -388,8 +392,11 @@ export function dailyRounds(dateKey: string): Round[] {
 // Set pieces (handmade rooms from src/content/setpieces.ts)
 // ---------------------------------------------------------------------------
 
-/** Daily rounds that use a set piece of the same difficulty, when one exists. */
-export const SET_PIECE_ROUNDS: readonly number[] = [2, 4, 6];
+/** Daily rounds (1-based) that use a set piece of that round's difficulty, when one exists. */
+export const SET_PIECE_ROUNDS: readonly number[] = [2, 5];
+
+/** Set pieces come in these difficulties (2 is Endless-only since the daily dropped its warm-ups). */
+export const SET_PIECE_DIFFICULTIES: readonly Difficulty[] = [2, 4, 6];
 
 export function setPieceRound(sp: SetPiece, seed: number, id: string): Round {
   const bathroom = parseLayout(sp.layout, sp.door);

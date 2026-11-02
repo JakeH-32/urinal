@@ -4,6 +4,7 @@ import { FIXTURES, QUIRKS, VERDICTS } from '../content';
 import { hashString } from '../engine/rng';
 import { culpritOf, occupantIndices, roomTo } from '../engine/code';
 import { GRADES, GRADE_ORDER } from '../grades';
+import { ROUNDS_PER_DAY } from '../state/storage';
 
 const FALLBACK_REASON: Record<Grade, Reason> = {
   clear: 'perfect',
@@ -157,7 +158,7 @@ export interface DailyStats {
   perfect: number;
   /** Average clears per finished daily; 0 when none. */
   avgClears: number;
-  /** distribution[n] = finished dailies with exactly n clears (0..6). */
+  /** distribution[n] = finished dailies with exactly n clears (0..ROUNDS_PER_DAY; old six-round days count as perfect at 6). */
   distribution: number[];
   /** Clears today, when today's daily is finished. */
   todayClears?: number;
@@ -167,10 +168,10 @@ export interface DailyStats {
 
 export function dailyStats(save: SaveData, todayKey: string): DailyStats {
   const finished: DailyRecord[] = Object.values(save.daily.byDate).filter((r) => r.finished);
-  const distribution = [0, 0, 0, 0, 0, 0, 0];
+  const distribution: number[] = new Array(ROUNDS_PER_DAY + 1).fill(0);
   let total = 0;
   for (const r of finished) {
-    const n = Math.min(6, clearsIn(r.results));
+    const n = Math.min(ROUNDS_PER_DAY, clearsIn(r.results));
     distribution[n]++;
     total += n;
   }
@@ -182,10 +183,10 @@ export function dailyStats(save: SaveData, todayKey: string): DailyStats {
   const today = save.daily.byDate[todayKey];
   return {
     played: finished.length,
-    perfect: distribution[6],
+    perfect: distribution[ROUNDS_PER_DAY],
     avgClears: finished.length ? total / finished.length : 0,
     distribution,
     lifetime,
-    ...(today?.finished ? { todayClears: Math.min(6, clearsIn(today.results)) } : {}),
+    ...(today?.finished ? { todayClears: Math.min(ROUNDS_PER_DAY, clearsIn(today.results)) } : {}),
   };
 }

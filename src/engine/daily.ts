@@ -1,6 +1,7 @@
 // Daily numbering + share text. Owned by the Engine agent.
 import { RESULT_TITLES } from '../content';
 import { GRADES } from '../grades';
+import { ROUNDS_PER_DAY } from '../state/storage';
 import type { DailyRecord } from '../types';
 
 /** Urinal #1 is this local date. */
@@ -26,8 +27,8 @@ export function dateKeyOf(date: Date = new Date()): string {
 }
 
 /**
- * Urinal #12 4/6
- * 🟦🟦🟨🟦🟧🟦
+ * Urinal #12 4/5
+ * 🟦🟦🟨🟦🟧
  * Regular
  * <url>
  *
@@ -35,7 +36,7 @@ export function dateKeyOf(date: Date = new Date()): string {
  */
 export function buildShareText(record: DailyRecord, url: string): string {
   const clears = record.results.filter((r) => r.grade === 'clear').length;
-  const lines = [`Urinal #${record.number} ${clears}/6`, record.results.map((r) => GRADES[r.grade]?.emoji ?? '').join('')];
+  const lines = [`Urinal #${record.number} ${clears}/${ROUNDS_PER_DAY}`, record.results.map((r) => GRADES[r.grade]?.emoji ?? '').join('')];
   const title = RESULT_TITLES[clears];
   if (record.finished && title) lines.push(title);
   if (url.trim()) lines.push(url.trim());

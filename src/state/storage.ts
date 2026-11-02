@@ -5,7 +5,9 @@ import type { DailyRecord, Grade, PracticeCurrent, Reason, RoundResult, SaveData
 import { GRADE_ORDER } from '../grades';
 
 export const STORAGE_KEY = 'urinal:v1';
-export const ROUNDS_PER_DAY = 6;
+export const ROUNDS_PER_DAY = 5;
+/** Dailies before 2026-11-02 had six rounds; keep those records whole. */
+const MAX_STORED_ROUNDS = 6;
 
 // A Record so the compiler fails if a new Reason is added to types.ts but not here.
 // (A missing reason makes migrate() drop that saved result, which strands the daily.)
@@ -16,6 +18,7 @@ const REASON_SET: Record<Reason, true> = {
   'too-close': true,
   'quirk-neighbor': true,
   'not-wall': true,
+  'past-talker': true,
   'near-door': true,
   'door-side': true,
   'low-urinal': true,
@@ -89,7 +92,7 @@ function migrateRecord(key: string, raw: unknown): DailyRecord | null {
   if (Array.isArray(raw.results)) {
     for (const r of raw.results) {
       const m = migrateResult(r);
-      if (m && results.length < ROUNDS_PER_DAY && !results.some((x) => x.roundId === m.roundId)) results.push(m);
+      if (m && results.length < MAX_STORED_ROUNDS && !results.some((x) => x.roundId === m.roundId)) results.push(m);
     }
   }
   return { dateKey: key, number: int(raw.number, 0), results, finished: results.length >= ROUNDS_PER_DAY };

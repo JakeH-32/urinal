@@ -72,7 +72,7 @@ afterEach(() => {
 const result = (grade: Grade): RoundResult => ({ roundId: `r-${Math.random()}`, pick: 0, grade, reason: 'perfect' });
 /** Histogram from a list of point totals. */
 const hist = (...pts: number[]) => {
-  const h = new Array(19).fill(0);
+  const h = new Array(16).fill(0);
   for (const p of pts) h[p] += 1;
   return h;
 };
@@ -108,7 +108,7 @@ describe('betterThan', () => {
   it('rounds to a whole percent', () => {
     expect(m.betterThan(10, hist(10, 5, 12, 14))).toBe(33);
     expect(m.betterThan(10, hist(10, 5, 6, 14))).toBe(67);
-    expect(m.betterThan(18, hist(18, 0, 1, 2, 3, 4, 5))).toBe(100);
+    expect(m.betterThan(15, hist(15, 0, 1, 2, 3, 4, 5))).toBe(100);
     expect(m.betterThan(0, hist(0, 1, 2))).toBe(0);
   });
 });
@@ -135,18 +135,18 @@ describe('withPick / withFinish / crowdPercents', () => {
 
 describe('toDayCrowd (day_stats JSON → DayCrowd)', () => {
   it('maps rounds and points, pads each round to its room size', () => {
-    const raw = { players: 3, rounds: [[1, 2, 2], [1, 4, 1], [3, 0, 3]], points: [[12, 1], [18, 2]] };
-    const crowd = m.toDayCrowd(raw, [6, 5, 7, 8, 6, 9]);
+    const raw = { players: 3, rounds: [[1, 2, 2], [1, 4, 1], [3, 0, 3]], points: [[12, 1], [15, 2]] };
+    const crowd = m.toDayCrowd(raw, [6, 5, 7, 8, 6]);
     expect(crowd).not.toBeNull();
     expect(crowd!.players).toBe(3);
-    expect(crowd!.rounds).toHaveLength(6);
+    expect(crowd!.rounds).toHaveLength(5);
     expect(crowd!.rounds[0]).toEqual({ total: 3, bySlot: [0, 0, 2, 0, 1, 0] });
     expect(crowd!.rounds[1]).toBeNull();
     expect(crowd!.rounds[2]).toEqual({ total: 3, bySlot: [3, 0, 0, 0, 0, 0, 0] });
-    expect(crowd!.rounds.slice(3)).toEqual([null, null, null]);
-    expect(crowd!.points).toHaveLength(19);
+    expect(crowd!.rounds.slice(3)).toEqual([null, null]);
+    expect(crowd!.points).toHaveLength(16);
     expect(crowd!.points[12]).toBe(1);
-    expect(crowd!.points[18]).toBe(2);
+    expect(crowd!.points[15]).toBe(2);
     expect(crowd!.points.reduce((a, b) => a + b, 0)).toBe(3);
   });
 
@@ -175,7 +175,7 @@ describe('toDayCrowd (day_stats JSON → DayCrowd)', () => {
     expect(m.toDayCrowd(null)).toBeNull();
     expect(m.toDayCrowd([1, 2])).toBeNull();
     expect(m.toDayCrowd('{"players":1}')).toBeNull();
-    expect(m.toDayCrowd({})).toEqual({ players: 0, rounds: [null, null, null, null, null, null], points: new Array(19).fill(0) });
+    expect(m.toDayCrowd({})).toEqual({ players: 0, rounds: [null, null, null, null, null], points: new Array(16).fill(0) });
   });
 });
 
@@ -262,16 +262,16 @@ describe('when configured', () => {
   });
 
   it('sends a finish once per device per day', async () => {
-    m.recordFinish(2, 14, 3);
-    m.recordFinish(2, 14, 3);
+    m.recordFinish(2, 12, 3);
+    m.recordFinish(2, 12, 3);
     await m.whenSent();
-    m.recordFinish(2, 14, 3);
+    m.recordFinish(2, 12, 3);
     await m.whenSent();
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0][0]).toBe(`${URL_}/rest/v1/finishes`);
     const sent = body(fetchMock.mock.calls[0]);
     expect(Object.keys(sent).sort()).toEqual(['clears', 'day', 'device', 'points']);
-    expect(sent).toMatchObject({ day: 2, points: 14, clears: 3 });
+    expect(sent).toMatchObject({ day: 2, points: 12, clears: 3 });
   });
 
   it('never sends values the database would reject', async () => {
@@ -282,8 +282,8 @@ describe('when configured', () => {
     m.recordPick(2, 1, 10, 'clear');
     m.recordPick(2, 1, 1.5, 'clear');
     m.recordPick(2, 1, 0, 'gold' as Grade);
-    m.recordFinish(2, 19, 6);
-    m.recordFinish(2, 18, 2); // 2 clears can score at most 6 + 4 * 2 = 14
+    m.recordFinish(2, 16, 5);
+    m.recordFinish(2, 14, 2); // 2 clears can score at most 6 + 3 * 2 = 12
     m.recordFinish(2, 5, 2); // 2 clears score at least 6
     m.recordFinish(2, 12, 7);
     await m.whenSent();
@@ -318,19 +318,19 @@ describe('when configured', () => {
 
   it('fetchDay calls the day_stats RPC and maps the result', async () => {
     fetchMock.mockResolvedValueOnce(json({ players: 2, rounds: [[1, 0, 1], [1, 2, 1]], points: [[12, 2]] }));
-    const crowd = await m.fetchDay(5, [4, 4, 4, 4, 4, 4]);
+    const crowd = await m.fetchDay(5, [4, 4, 4, 4, 4]);
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe(`${URL_}/rest/v1/rpc/day_stats`);
     expect(JSON.parse(String(init?.body))).toEqual({ p_day: 5 });
     expect(crowd).toEqual({
       players: 2,
-      rounds: [{ total: 2, bySlot: [1, 0, 1, 0] }, null, null, null, null, null],
+      rounds: [{ total: 2, bySlot: [1, 0, 1, 0] }, null, null, null, null],
       points: hist(12, 12),
     });
   });
 
   it("fetchDay sizes rounds to the day's generated rooms by default", async () => {
-    fetchMock.mockResolvedValueOnce(json({ players: 1, rounds: [1, 2, 3, 4, 5, 6].map((r) => [r, 0, 1]), points: [] }));
+    fetchMock.mockResolvedValueOnce(json({ players: 1, rounds: [1, 2, 3, 4, 5].map((r) => [r, 0, 1]), points: [] }));
     const crowd = await m.fetchDay(2);
     const sizes = dailyRounds('2026-10-29').map((r) => r.bathroom.slots.length);
     expect(crowd!.rounds.map((r) => r?.bySlot.length)).toEqual(sizes);

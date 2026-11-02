@@ -31,8 +31,8 @@ describe('generator determinism', () => {
 
   it('ids and difficulties', () => {
     const rs = dailyRounds('2026-10-28');
-    expect(rs.map((r) => r.id)).toEqual([1, 2, 3, 4, 5, 6].map((r) => `d2026-10-28-r${r}`));
-    expect(rs.map((r) => r.difficulty)).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(rs.map((r) => r.id)).toEqual([1, 2, 3, 4, 5].map((r) => `d2026-10-28-r${r}`));
+    expect(rs.map((r) => r.difficulty)).toEqual([3, 4, 5, 6, 6]);
   });
 
   it('practice rounds: id round-trips, difficulty 2..6, deterministic', () => {

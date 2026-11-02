@@ -76,11 +76,14 @@ export function explainPick(b: Bathroom, ev: Evaluation, pick: number): string |
         const mine = tightNeighbors(b, pick);
         const best = ev.greens.length ? tightNeighbors(b, ev.greens[0]) : undefined;
         if (best && best.quirks === 0 && best.normals > 0) return `Same room, but the ✓ spot put you next to a normal guy, not ${noun}.`;
+        if (who === 'talker' && ev.greens.length && tightQuirk(b, ev.greens[0]) !== 'talker') return 'Same room, but the ✓ spot kept the talker farther away.';
         if (best && mine.quirks >= 2 && best.quirks === 1) return 'Same room, but you had a guy with a label on each side. The ✓ spot only had one that close.';
         return 'Same room, but the ✓ spot had fewer guys with labels that close.';
       }
       case 'not-wall':
         return 'Same room, but the ✓ spot was against the wall.';
+      case 'past-talker':
+        return 'Legal, but you walked right past the talker. The ✓ spot never got near him.';
       case 'low-urinal': {
         const what = b.slots[pick].flag === 'puddle' ? 'the puddle one' : 'the low one';
         return `Legal, but any clean normal urinal beats ${what}.`;
@@ -109,7 +112,7 @@ export function explainPick(b: Bathroom, ev: Evaluation, pick: number): string |
     case 'splasher':
       return 'Splashers need two empty urinals between you.';
     case 'boss':
-      return 'The boss needs three empty urinals between you.';
+      return 'The boss needs two empty urinals between you.';
     case 'inlaw':
       return 'Fathers-in-law need two empty urinals between you.';
     case 'pastor':

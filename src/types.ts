@@ -17,11 +17,14 @@
 //
 //   Candidates (pickable slots: unoccupied, not broken) are ranked lexicographically:
 //     1. tier:  0 = clean urinal,  1 = clean low/puddle urinal,  2 = stall,  3 = violating urinal
-//     2. violations (fewer is better)
+//     2. violations (fewer is better), then severity
+//     2b. legal spots only: talkers you'd walk past, i.e. ones between the door and the spot (fewer is
+//        better). This beats room: sneaking into a spot by the door beats a roomier one past the talker.
 //     3. min spare room to any occupant: raw |i - j| - r, dividers IGNORED (bigger is better;
 //        +Infinity if the room is empty). Dividers only decide legality; they never add room.
-//     4. who's at that tightest room: fewer quirk guys is better (next to a normal guy beats
-//        next to a drunk on his good side, at the same room)
+//     4. who's at that tightest room: fewer quirk guys is better, and a talker counts double
+//        (next to a normal guy beats next to a drunk on his good side; next to the boss beats
+//        next to a talker, at the same room)
 //     5. against the wall, i.e. the end slot AWAY from the door (better). The door end is
 //        open to the room, so it is not a wall.
 //   Equal keys tie, and every tied spot is Clear. The door never decides a grade.
@@ -133,6 +136,7 @@ export type Reason =
   | 'too-close' // clean, but a roomier clean spot existed
   | 'quirk-neighbor' // same clearance, but your tightest neighbour was a quirk guy and the answer's wasn't
   | 'not-wall' // same clearance, but a wall spot existed
+  | 'past-talker' // walked past a talker when a spot this side of him was legal
   // legacy: the door used to break ties. Kept so old saves still load and show their verdicts.
   | 'near-door'
   | 'door-side'

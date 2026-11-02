@@ -88,7 +88,7 @@ export const QUIRKS: Record<Quirk, QuirkText> = {
   boss: {
     label: 'Boss',
     emoji: '👔',
-    rule: 'Leave three empty urinals between you.',
+    rule: 'Leave two empty urinals between you.',
     people: [
       { name: 'Your boss, Mr. Haskell', blurb: 'Your annual review is Friday.' },
       { name: 'The CEO', blurb: 'Has never learned a name below VP. Today he might.' },
@@ -395,6 +395,14 @@ export const VERDICTS: Record<Reason, string[]> = {
     'You left the end spot for someone else. Generous.',
     'Fine spacing. Nothing guarding your other side.',
   ],
+  'past-talker': [
+    'You walked past him twice. Once in, once out.',
+    'He saw you coming. He had time to prepare.',
+    'You took the scenic route. He was the scenery.',
+    'He said “Hey.” You said “Hey.” Now it’s a conversation.',
+    'The long way in goes right past him.',
+    'You walked into his range on purpose.',
+  ],
   'near-door': [
     'The far end was free.',
     'Right by the door. Everyone who comes in passes you.',
@@ -478,7 +486,7 @@ export const VERDICTS: Record<Reason, string[]> = {
     '{name} called you by the wrong name. You answered to it.',
     '{name} will remember this. He remembers everything.',
     '{name} said “Funny running into you here.” Nobody laughed.',
-    'Three urinals was the minimum. {name} counted.',
+    'Two empty urinals was the minimum. {name} counted.',
     '{name} nodded. You’ll be thinking about that nod all week.',
     '{name} has asked about your five-year plan.',
     '{name} made small talk. It was a test.',
@@ -554,13 +562,12 @@ export const VERDICTS: Record<Reason, string[]> = {
   ],
 };
 
-/** Result title by number of greens, index 0..6. */
+/** Result title by number of greens, index 0..5. */
 export const RESULT_TITLES: string[] = [
   'Urine Trouble',
   'Code Brown',
   'Leaky Faucet',
   'Pee-destrian',
-  'Relief Pitcher',
   'Whiz Kid',
   'Royal Flush',
 ];
@@ -572,7 +579,7 @@ export const TAGLINES: string[] = [
   'A daily puzzle about the oldest rule nobody wrote down.',
   'Nobody taught you this. Everybody knows it.',
   'The urinal code is unwritten. This is the written version.',
-  'Six bathrooms. No small talk.',
+  'Five bathrooms. No small talk.',
   'Every man knows the rule. Few know the edge cases.',
   'Face the wall. Count the gaps.',
   'One wrong step and it’s small talk.',
@@ -605,7 +612,7 @@ export const FIXTURES = {
 export const HOW_TO_PLAY: { heading: string; body: string }[] = [
   {
     heading: 'Pick a spot',
-    body: 'Six bathrooms a day, easiest first. Tap the urinal you’d use.',
+    body: 'Five bathrooms a day, easiest first. Tap the urinal you’d use.',
   },
   {
     heading: 'The urinal code',

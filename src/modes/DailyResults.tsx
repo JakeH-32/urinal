@@ -1,4 +1,4 @@
-// End-of-day card: score, rank, tiles, streak, share, countdown, and a review of the six rounds.
+// End-of-day card: score, rank, tiles, streak, share, countdown, and a review of the five rounds.
 import { useMemo } from 'react';
 import type { DailyRecord, Evaluation, Round } from '../types';
 import { RESULT_TITLES } from '../content';
@@ -7,6 +7,7 @@ import { evaluate } from '../engine/code';
 import { routeUrl } from '../router';
 import { useSave } from '../state/SaveContext';
 import { displayStreak, formatCountdown, msUntilNextDaily } from '../state/dailyStreak';
+import { ROUNDS_PER_DAY } from '../state/storage';
 import { ShareButton } from '../ui/ShareButton';
 import { Tile, TileRow } from '../ui/Tiles';
 import { useNow } from '../ui/hooks';
@@ -24,7 +25,7 @@ export function NextCountdown({ label = 'Hold it. Next Urinal in' }: { label?: s
   );
 }
 
-/** Rank title by number of clears (0..6). */
+/** Rank title by number of clears (0..5). */
 export function rankTitle(clears: number): string {
   return RESULT_TITLES[Math.max(0, Math.min(RESULT_TITLES.length - 1, clears))] ?? '';
 }
@@ -74,7 +75,7 @@ export function DailyResults({ record, todayKey, rounds, crowd }: DailyResultsPr
           <p className="results-kicker">Urinal #{record.number}</p>
           <p className="results-score">
             {clears}
-            <span className="results-of">/6</span>
+            <span className="results-of">/{ROUNDS_PER_DAY}</span>
           </p>
           <p className="results-title">{rankTitle(clears)}</p>
           <TileRow results={record.results} />
@@ -105,7 +106,7 @@ export function DailyResults({ record, todayKey, rounds, crowd }: DailyResultsPr
 
       {review.length > 0 && (
         <section className="card review">
-          <h2 className="h3">The six bathrooms</h2>
+          <h2 className="h3">The five bathrooms</h2>
           <ol className="review-list">
             {review.map(({ res, venue, line }, i) => (
               <li key={res.roundId} className="review-item">

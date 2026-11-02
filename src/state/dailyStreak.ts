@@ -65,15 +65,16 @@ export function recordRound(save: SaveData, dateKey: string, number: number, res
  * Global "replay today" resets, by date key. When the rules or puzzles change mid-day, add that day
  * here and deploy: the first load on that same day clears that day's daily (once per device), so
  * everyone can replay it. Loaded on any later day, a reset is only marked as applied: old days stay.
+ * A second reset on the same day gets a suffix ('2026-11-02b'); the first 10 characters are the day.
  */
-export const DAILY_RESETS: readonly string[] = ['2026-10-29', '2026-11-02'];
+export const DAILY_RESETS: readonly string[] = ['2026-10-29', '2026-11-02', '2026-11-02b'];
 
 export function applyDailyResets(save: SaveData, todayKey: string, resets: readonly string[] = DAILY_RESETS): SaveData {
   const done = save.daily.resets ?? [];
   const pending = resets.filter((k) => !done.includes(k));
   if (pending.length === 0) return save;
   const byDate = { ...save.daily.byDate };
-  const wiped = pending.includes(todayKey) && byDate[todayKey] !== undefined;
+  const wiped = pending.some((k) => k.slice(0, 10) === todayKey) && byDate[todayKey] !== undefined;
   if (wiped) delete byDate[todayKey];
   let daily: DailyState = { ...save.daily, byDate, resets: [...done, ...pending] };
   // Rebuild the streak from the remaining finished days (the wiped day may have counted).

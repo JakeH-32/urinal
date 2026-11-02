@@ -39,9 +39,14 @@ describe('explainPick', () => {
   });
 
   it('boss, talker through a divider, two men at once', () => {
-    expect(explain('_ _ _ B _ _ _ _ _ _', 'left', 5)).toBe('The boss needs three empty urinals between you.');
+    expect(explain('_ _ _ B _ _ _ _ _ _', 'left', 5)).toBe('The boss needs two empty urinals between you.');
     expect(explain('T | _ _ _ _ _', 'left', 1)).toBe('Talkers need two empty urinals. He leans right around dividers.');
     expect(explain('_ N _ N _ _ _', 'left', 2)).toBe('You were inside two men’s space at once. Leave room on both sides.');
+  });
+
+  it('walking past the talker, and a talker as your closest neighbor', () => {
+    expect(explain('_ _ _ _ T _ _ _', 'right', 0)).toBe('Legal, but you walked right past the talker. The ✓ spot never got near him.');
+    expect(explain('_ _ T _ _ _ _ _ _ B', 'right', 5)).toBe('Same room, but the ✓ spot kept the talker farther away.');
   });
 
   it('father-in-law, pastor, peeper', () => {

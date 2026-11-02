@@ -57,7 +57,7 @@ describe('primitives', () => {
   it('radii by quirk, drunk lopsided', () => {
     const b = bath('N T P B D< D>');
     const r = (j: number, side: Side) => zoneRadius(b.slots[j].occupant as Guy, side);
-    expect([r(0, 'left'), r(1, 'right'), r(2, 'left'), r(3, 'right')]).toEqual([1, 2, 2, 3]);
+    expect([r(0, 'left'), r(1, 'right'), r(2, 'left'), r(3, 'right')]).toEqual([1, 2, 2, 2]);
     expect([r(4, 'left'), r(4, 'right')]).toEqual([2, 1]);
     expect([r(5, 'left'), r(5, 'right')]).toEqual([1, 2]);
   });
@@ -174,10 +174,20 @@ describe('evaluate', () => {
     expect(grades(b)).toEqual(['S:too-close', 'D:peeper', 'D:peeper', '-', 'D:peeper', 'S:too-close', 'C:perfect']);
   });
 
-  it('boss: radius 3', () => {
+  it('walking past a talker: a legal spot by the door beats a roomier one past him', () => {
+    expect(grades(parseLayout('_ _ _ _ T _ _ _', 'right'))).toEqual(['S:past-talker', 'S:past-talker', 'D:talker', 'D:talker', '-', 'D:talker', 'D:talker', 'C:perfect']);
+    // Only between legal spots: once every spot breaks the code, passing him doesn't matter.
+    expect(grades(parseLayout('_ T _ _ D< _', 'left'))[5]).toBe('C:only-option');
+  });
+
+  it('same room: two from the boss beats two from the talker', () => {
+    expect(grades(parseLayout('_ _ T _ _ _ _ _ _ B', 'right')).slice(5, 7)).toEqual(['S:quirk-neighbor', 'C:perfect']);
+  });
+
+  it('boss: radius 2', () => {
     const b = bath('_ _ _ _ B _ _ _ _', 'left');
-    expect(zoneCovers(b, 4)).toEqual([1, 2, 3, 5, 6, 7]);
-    expect(grades(b)).toEqual(['S:not-wall', 'D:boss', 'D:boss', 'D:boss', '-', 'D:boss', 'D:boss', 'D:boss', 'C:perfect']);
+    expect(zoneCovers(b, 4)).toEqual([2, 3, 5, 6]);
+    expect(grades(b)).toEqual(['S:not-wall', 'S:too-close', 'D:boss', 'D:boss', '-', 'D:boss', 'D:boss', 'S:too-close', 'C:perfect']);
   });
 
   it('stall-forced when every urinal violates', () => {
@@ -273,9 +283,9 @@ describe('evaluate', () => {
     // one normal neighbour -> amber
     const one = evaluate(bath('_ _ _ _ N _', 'left'));
     expect(one.slots[3]).toMatchObject({ grade: 'amber', reason: 'adjacent', violatedBy: [4] });
-    // a boss's zone -> doctor, even at distance 3
+    // a boss's zone -> doctor, even at distance 2
     const boss = evaluate(bath('_ _ _ _ _ _ B', 'right'));
-    expect(boss.slots[3]).toMatchObject({ grade: 'doctor', reason: 'boss', violatedBy: [6] });
+    expect(boss.slots[4]).toMatchObject({ grade: 'doctor', reason: 'boss', violatedBy: [6] });
     // between two normal guys -> doctor (2 violations)
     const two = evaluate(bath('_ _ _ N _ N', 'right'));
     expect(two.slots[4]).toMatchObject({ grade: 'doctor', reason: 'adjacent', violatedBy: [3, 5] });

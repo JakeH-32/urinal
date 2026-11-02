@@ -11,9 +11,9 @@ import { clearsIn, legendFor, resultFromEvaluation, verdictLine, violatorName } 
 const DAY = '2026-10-28';
 
 describe('daily flow', () => {
-  it('plays six rounds, grades, records and shares', () => {
+  it('plays five rounds, grades, records and shares', () => {
     const rounds = dailyRounds(DAY);
-    expect(rounds).toHaveLength(6);
+    expect(rounds).toHaveLength(5);
     const number = dailyNumber(DAY);
     let save = defaultSave();
     rounds.forEach((round, i) => {

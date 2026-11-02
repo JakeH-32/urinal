@@ -1,4 +1,4 @@
-// Today's six bathrooms. Every result is saved the moment it's revealed, so a reload resumes mid-day.
+// Today's five bathrooms. Every result is saved the moment it's revealed, so a reload resumes mid-day.
 import { useEffect, useMemo, useState } from 'react';
 import type { RoundResult } from '../types';
 import { dailyRounds } from '../engine/generate';

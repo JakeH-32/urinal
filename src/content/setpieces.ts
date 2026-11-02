@@ -325,7 +325,7 @@ export const SET_PIECES: SetPiece[] = [
     answer: 1,
   },
   {
-    // The boss's reach covers every clean urinal on his side. The puddle is just past it.
+    // Two empty urinals from the boss is enough. The puddle past it is a downgrade.
     id: 'sp-review-break',
     difficulty: 4,
     venue: 'Your annual review, 10-minute break',
@@ -336,7 +336,7 @@ export const SET_PIECES: SetPiece[] = [
       { name: 'Your manager, Mr. Dorsey', blurb: 'Has your review printed out. Highlighted.' },
       { name: 'The guy up for the same promotion', blurb: 'Already ordered a nameplate.' },
     ],
-    answer: 5,
+    answer: 4,
   },
   {
     // Exactly one spot is two clear of both. The divider in the corner doesn't buy enough.
@@ -393,7 +393,7 @@ export const SET_PIECES: SetPiece[] = [
     answer: 1,
   },
   {
-    // A long gap, two big zones. Exactly one urinal clears both.
+    // Same room by the CEO or by the talker. Two from the boss beats two from the talker.
     id: 'sp-orientation',
     difficulty: 4,
     venue: 'Orientation, day one',
@@ -404,7 +404,7 @@ export const SET_PIECES: SetPiece[] = [
       { name: 'The onboarding guy', blurb: 'Has a forty-slide deck about the coffee machine.' },
       { name: 'Your new CEO', blurb: 'Shook your hand this morning. Called you Brian.' },
     ],
-    answer: 6,
+    answer: 7,
   },
   {
     // Two middles look equal. The splasher needs one more urinal, so shade toward the other guy.
@@ -583,7 +583,7 @@ export const SET_PIECES: SetPiece[] = [
     answer: 4,
   },
   {
-    // Both ends have exactly enough room. One of them is a wall.
+    // Both ends have exactly enough room. The wall end means walking past the moderator.
     id: 'sp-panel-moderator',
     difficulty: 6,
     venue: 'Industry conference, before your panel',
@@ -594,7 +594,7 @@ export const SET_PIECES: SetPiece[] = [
       { name: 'The panel moderator', blurb: 'Has seven “quick questions” before the panel.' },
       { name: 'Your boss, the conference founder', blurb: 'Picks next year’s speakers. Writes nothing down.' },
     ],
-    answer: 1,
+    answer: 10,
   },
   {
     // The only legal spot is beside the quiet cousin, and only because of the divider.
@@ -627,7 +627,7 @@ export const SET_PIECES: SetPiece[] = [
     answer: 10,
   },
   {
-    // The puddle in the corner has more room. The clean urinal behind the divider still outranks it.
+    // Two empty urinals from the boss, a clean urinal, and the splasher far away.
     id: 'sp-member-guest',
     difficulty: 6,
     venue: 'Member-guest tournament, the clubhouse',
@@ -638,7 +638,7 @@ export const SET_PIECES: SetPiece[] = [
       { name: 'Your boss, the club president', blurb: 'Signed you in as his guest. Can sign you out.' },
       { name: 'The man who birdied 18', blurb: 'Has described the putt to the bartender, the cart attendant and the ice machine.' },
     ],
-    answer: 10,
+    answer: 2,
   },
   {
     // Two mirror-image spots behind two dividers. The splasher's divider counts. The talker's doesn't.

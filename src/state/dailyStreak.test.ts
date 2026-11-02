@@ -46,10 +46,10 @@ describe('recordRound', () => {
     expect(s.daily.lastDate).toBeUndefined();
   });
 
-  it('finishes at 6 and starts a streak', () => {
+  it('finishes at 5 and starts a streak', () => {
     const s = finishDays(['2026-10-28']);
     expect(s.daily.byDate['2026-10-28'].finished).toBe(true);
-    expect(s.daily.byDate['2026-10-28'].results).toHaveLength(6);
+    expect(s.daily.byDate['2026-10-28'].results).toHaveLength(5);
     expect(s.daily.streak).toBe(1);
     expect(s.daily.bestStreak).toBe(1);
     expect(s.daily.lastDate).toBe('2026-10-28');

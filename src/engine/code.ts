@@ -9,7 +9,7 @@ export const BASE_RADIUS: Record<Quirk, number> = {
   normal: 1,
   talker: 2,
   splasher: 2,
-  boss: 3,
+  boss: 2,
   drunk: 2,
   facetime: 2,
   gassy: 3,
@@ -154,8 +154,10 @@ interface Cand {
   violations: number;
   /** How bad the violations are: 1 per normal guy, 2 per quirk guy. */
   severity: number;
+  /** Talkers you walk past to get there (between the door and the spot). */
+  pastTalkers: number;
   clearance: number;
-  /** Quirk guys at that tightest room (0 when the tightest neighbour is a normal guy). */
+  /** Who's at that tightest room: 1 per quirk guy, 2 per talker (0 when it's only normal guys). */
   tightQuirks: number;
   violatedBy: number[];
 }
@@ -165,6 +167,8 @@ function compareCand(b: Bathroom, x: Cand, y: Cand): number {
   if (x.tier !== y.tier) return x.tier - y.tier;
   if (x.violations !== y.violations) return x.violations - y.violations;
   if (x.severity !== y.severity) return x.severity - y.severity;
+  // Between legal spots only: once you're in someone's space anyway, walking past the talker is moot.
+  if (x.violations === 0 && x.pastTalkers !== y.pastTalkers) return x.pastTalkers - y.pastTalkers;
   if (x.clearance !== y.clearance) return x.clearance > y.clearance ? -1 : 1;
   if (x.tightQuirks !== y.tightQuirks) return x.tightQuirks - y.tightQuirks;
   const wx = isWall(b, x.index);
@@ -174,15 +178,28 @@ function compareCand(b: Bathroom, x: Cand, y: Cand): number {
   return 0;
 }
 
+/** Talkers between the door and slot i: you pass each one on the way in and again on the way out. */
+export function talkersPassed(b: Bathroom, i: number): number {
+  let n = 0;
+  for (const j of occupantIndices(b)) {
+    const between = b.door === 'left' ? j < i : j > i;
+    if (between && b.slots[j].occupant?.quirk === 'talker') n++;
+  }
+  return n;
+}
+
 function analyzeSlot(b: Bathroom, i: number, occ: number[]): Cand {
   const slot = b.slots[i];
-  if (slot.kind === 'stall') return { index: i, tier: 2, violations: 0, severity: 0, clearance: Infinity, tightQuirks: 0, violatedBy: [] };
+  const pastTalkers = talkersPassed(b, i);
+  if (slot.kind === 'stall') return { index: i, tier: 2, violations: 0, severity: 0, pastTalkers, clearance: Infinity, tightQuirks: 0, violatedBy: [] };
   let clearance = Infinity;
   let tightQuirks = 0;
   const violatedBy: number[] = [];
   for (const j of occ) {
     const room = roomTo(b, i, j);
-    const quirky = b.slots[j].occupant?.quirk !== 'normal' ? 1 : 0;
+    const q = b.slots[j].occupant?.quirk;
+    // At the same room, a talker is the worst neighbour: he'll start a conversation.
+    const quirky = q === 'normal' ? 0 : q === 'talker' ? 2 : 1;
     if (room < clearance) {
       clearance = room;
       tightQuirks = quirky;
@@ -192,12 +209,13 @@ function analyzeSlot(b: Bathroom, i: number, occ: number[]): Cand {
   const tier = violatedBy.length > 0 ? 3 : slot.flag === 'low' || slot.flag === 'puddle' ? 1 : 0;
   let severity = 0;
   for (const j of violatedBy) severity += b.slots[j].occupant?.quirk === 'normal' ? 1 : 2;
-  return { index: i, tier, violations: violatedBy.length, severity, clearance, tightQuirks, violatedBy };
+  return { index: i, tier, violations: violatedBy.length, severity, pastTalkers, clearance, tightQuirks, violatedBy };
 }
 
 function strawReason(pick: Cand, best: Cand): Reason {
   if (pick.tier === 2 && best.tier !== 2) return 'stall-coward';
   if (pick.tier === 1 && best.tier === 0) return 'low-urinal';
+  if (pick.pastTalkers > best.pastTalkers) return 'past-talker';
   if (pick.clearance < best.clearance) return 'too-close';
   if (pick.tightQuirks > best.tightQuirks) return 'quirk-neighbor';
   // Nothing else separates a non-tie (the door never does).
@@ -235,6 +253,7 @@ export function evaluate(b: Bathroom): Evaluation {
       c.violations === 0 ||
       (c.violations === best.violations &&
         c.severity === best.severity &&
+        c.pastTalkers === best.pastTalkers &&
         c.clearance === best.clearance &&
         c.tightQuirks === best.tightQuirks)
     ) {

@@ -3,7 +3,7 @@ import { RESULT_TITLES } from '../content';
 import type { DailyRecord, Grade } from '../types';
 import { buildShareText, dailyNumber, dateKeyOf } from './daily';
 
-function record(grades: Grade[], finished = grades.length === 6): DailyRecord {
+function record(grades: Grade[], finished = grades.length === 5): DailyRecord {
   return {
     dateKey: '2026-11-08',
     number: 12,
@@ -44,16 +44,16 @@ describe('dailyNumber', () => {
 
 describe('buildShareText', () => {
   it('finished record', () => {
-    const text = buildShareText(record(['clear', 'clear', 'straw', 'clear', 'amber', 'clear']), 'https://urinal.example');
-    expect(text).toBe(`Urinal #12 4/6\n🟦🟦🟨🟦🟧🟦\n${RESULT_TITLES[4]}\nhttps://urinal.example`);
+    const text = buildShareText(record(['clear', 'clear', 'straw', 'clear', 'amber']), 'https://urinal.example');
+    expect(text).toBe(`Urinal #12 3/5\n🟦🟦🟨🟦🟧\n${RESULT_TITLES[3]}\nhttps://urinal.example`);
   });
 
   it('omits the url line when empty; doctor tile', () => {
-    const text = buildShareText(record(['doctor', 'doctor', 'doctor', 'doctor', 'doctor', 'doctor']), '');
-    expect(text).toBe(`Urinal #12 0/6\n🟫🟫🟫🟫🟫🟫\n${RESULT_TITLES[0]}`);
+    const text = buildShareText(record(['doctor', 'doctor', 'doctor', 'doctor', 'doctor']), '');
+    expect(text).toBe(`Urinal #12 0/5\n🟫🟫🟫🟫🟫\n${RESULT_TITLES[0]}`);
   });
 
   it('in progress: tiles so far, no title', () => {
-    expect(buildShareText(record(['clear', 'straw']), '')).toBe('Urinal #12 1/6\n🟦🟨');
+    expect(buildShareText(record(['clear', 'straw']), '')).toBe('Urinal #12 1/5\n🟦🟨');
   });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SET_PIECES } from '../content/setpieces';
 import { evaluate } from './code';
-import { SET_PIECE_ROUNDS, dailyRounds, dailySetPiece, practiceRound } from './generate';
+import { DAILY_DIFFICULTIES, SET_PIECE_DIFFICULTIES, SET_PIECE_ROUNDS, dailyRounds, dailySetPiece, practiceRound } from './generate';
 import { parseLayout } from './layout';
 
 describe('parseLayout', () => {
@@ -34,7 +34,7 @@ describe('set pieces', () => {
   });
 
   it.each(SET_PIECES.map((sp) => [sp.id, sp] as const))('%s: the engine agrees with the answer', (_id, sp) => {
-    expect(SET_PIECE_ROUNDS).toContain(sp.difficulty);
+    expect(SET_PIECE_DIFFICULTIES).toContain(sp.difficulty);
     expect(sp.premise.length).toBeGreaterThan(0);
     const b = parseLayout(sp.layout, sp.door);
     expect(b.slots.length).toBeLessThanOrEqual(10);
@@ -48,10 +48,10 @@ describe('set pieces', () => {
     expect(ev.slots.filter((s) => s.pickable && s.grade !== 'clear').length).toBeGreaterThan(0);
   });
 
-  it('show up in the daily on rounds 2, 4 and 6 with their premise', () => {
+  it('show up in the daily on rounds 2 and 5 with their premise', () => {
     const rounds = dailyRounds('2026-10-29');
     for (const r of SET_PIECE_ROUNDS) {
-      const sp = dailySetPiece('2026-10-29', r as 2 | 4 | 6);
+      const sp = dailySetPiece('2026-10-29', DAILY_DIFFICULTIES[r - 1]);
       if (!sp) continue;
       expect(rounds[r - 1].premise).toBe(sp.premise);
       expect(rounds[r - 1].venue).toBe(sp.venue);
