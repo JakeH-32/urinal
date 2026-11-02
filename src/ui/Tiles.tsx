@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { Grade, RoundResult } from '../types';
 import { GRADES } from '../grades';
+import { ROUNDS_PER_DAY } from '../state/storage';
 
 /** Small glyph drawn on each tile so grades never rely on color alone. */
 export const GRADE_GLYPH: Record<Grade, string> = { clear: '✓', straw: '·', amber: '!', doctor: '✚' };
@@ -38,7 +39,7 @@ export function Tile({ grade, label, active, flip, size = 'md' }: TileProps) {
 
 export interface TileRowProps {
   results: readonly RoundResult[];
-  /** Total slots (6 for a daily). */
+  /** Total slots (one per daily round by default). */
   total?: number;
   /** Index of the round in play (outlined). */
   activeIndex?: number;
@@ -48,7 +49,7 @@ export interface TileRowProps {
   size?: 'sm' | 'md';
 }
 
-export function TileRow({ results, total = 6, activeIndex, flipIndex, numbered, size = 'md' }: TileRowProps) {
+export function TileRow({ results, total = ROUNDS_PER_DAY, activeIndex, flipIndex, numbered, size = 'md' }: TileRowProps) {
   return (
     <div className={`tile-row tile-row--${size}`}>
       {Array.from({ length: total }, (_, i) => {
