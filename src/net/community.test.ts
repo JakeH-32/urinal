@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Grade, RoundResult } from '../types';
 import { dailyRounds } from '../engine/generate';
+import { parseLayout } from '../engine/layout';
 
 type Community = typeof import('./community');
 
@@ -130,6 +131,15 @@ describe('withPick / withFinish / crowdPercents', () => {
     expect(m.crowdPercents({ total: 3, bySlot: [1, 0, 2, 0] }, 2)).toEqual([(1 / 3) * 100, 0, (2 / 3) * 100, 0]);
     // Your pick is added when missing: 4 others + you.
     expect(m.crowdPercents({ total: 4, bySlot: [4, 0] }, 1)).toEqual([80, 20]);
+  });
+});
+
+describe('pickableOnly', () => {
+  it('drops picks on spots this room has a guy at or that are out of order', () => {
+    const b = parseLayout('_ N _ X _', 'left');
+    expect(m.pickableOnly({ total: 4, bySlot: [1, 2, 0, 0, 1] }, b)).toEqual({ total: 2, bySlot: [1, 0, 0, 0, 1] });
+    expect(m.pickableOnly({ total: 1, bySlot: [0, 0, 0, 1, 0] }, b)).toBeNull();
+    expect(m.pickableOnly(null, b)).toBeNull();
   });
 });
 

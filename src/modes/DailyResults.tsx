@@ -12,7 +12,7 @@ import { ShareButton } from '../ui/ShareButton';
 import { Tile, TileRow } from '../ui/Tiles';
 import { useNow } from '../ui/hooks';
 import { HydrationChart } from '../ui/HydrationChart';
-import { hydrationPoints, type DayCrowd } from '../net/community';
+import { hydrationPoints, pickableOnly, type DayCrowd } from '../net/community';
 import { DayCrowdSummary, ReviewCrowd } from '../ui/Crowd';
 import { clearsIn, gradeCounts, verdictLine, violatorName } from './roundLogic';
 
@@ -116,7 +116,7 @@ export function DailyResults({ record, todayKey, rounds, crowd }: DailyResultsPr
                     {i + 1}. {venue}
                   </span>
                   <span className="review-line">{line}</span>
-                  <ReviewCrowd crowd={crowd?.rounds[i] ?? null} pick={res.pick} />
+                  <ReviewCrowd crowd={pickableOnly(crowd?.rounds[i], rounds?.[i]?.bathroom)} pick={res.pick} />
                 </span>
               </li>
             ))}

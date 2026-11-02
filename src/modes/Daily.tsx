@@ -4,7 +4,7 @@ import type { RoundResult } from '../types';
 import { dailyRounds } from '../engine/generate';
 import { dailyNumber } from '../engine/daily';
 import { sfx } from '../audio/sfx';
-import { hydrationPoints, recordFinish, recordPick } from '../net/community';
+import { hydrationPoints, pickableOnly, recordFinish, recordPick } from '../net/community';
 import { useDayCrowd } from '../net/useCrowd';
 import { useSave } from '../state/SaveContext';
 import { recordRound, toDateKey } from '../state/dailyStreak';
@@ -107,7 +107,7 @@ export function Daily() {
       onNext={onNext}
       nextLabel={last ? 'See results' : 'Next bathroom'}
       header={header}
-      crowd={dayCrowd?.rounds[index] ?? null}
+      crowd={pickableOnly(dayCrowd?.rounds[index], round.bathroom)}
     />
   );
 }

@@ -7,8 +7,9 @@
 // - Only day, round, slot, grade, points, clears and a random per-device id are ever sent.
 //
 // Backend: supabase/schema.sql (tables `picks` + `finishes`, insert-only for anon; `day_stats` RPC).
-import type { Grade, RoundResult } from '../types';
+import type { Bathroom, Grade, RoundResult } from '../types';
 import { GRADE_ORDER } from '../grades';
+import { isPickable } from '../engine/code';
 import { URINAL_EPOCH } from '../engine/daily';
 import { dailyRounds } from '../engine/generate';
 import { shiftDateKey } from '../state/dailyStreak';
@@ -81,6 +82,18 @@ export function withPick(crowd: RoundCrowd, pick: number): RoundCrowd {
   while (bySlot.length <= pick) bySlot.push(0);
   bySlot[pick] += 1;
   return { total: crowd.total + 1, bySlot };
+}
+
+/**
+ * Drop picks on spots nobody can pick in this room (a guy is standing there, or it's out of order). Those
+ * only exist when a day's rooms changed after people played it, so they describe a different room.
+ */
+export function pickableOnly(crowd: RoundCrowd | null | undefined, b: Bathroom | undefined): RoundCrowd | null {
+  if (!crowd) return null;
+  if (!b) return crowd;
+  const bySlot = crowd.bySlot.map((n, i) => (b.slots[i] && isPickable(b.slots[i]) ? n : 0));
+  const total = bySlot.reduce((a, n) => a + n, 0);
+  return total > 0 ? { total, bySlot } : null;
 }
 
 /** The points histogram with your own finish counted (same reason as withPick). */
