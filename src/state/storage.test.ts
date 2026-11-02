@@ -98,6 +98,17 @@ describe('migrate', () => {
   });
 });
 
+describe('warm-up flag', () => {
+  it('new players get the warm-up; saves from players who already played skip it', () => {
+    expect(defaultSave().warmupDone).toBe(false);
+    expect(migrate({}).warmupDone).toBe(false);
+    expect(migrate({ practice: { played: 3, greens: 1, bestRun: 1 } }).warmupDone).toBe(true);
+    expect(migrate({ daily: { byDate: { '2026-11-01': { number: 5, results: [] } } } }).warmupDone).toBe(true);
+    expect(migrate({ warmupDone: true }).warmupDone).toBe(true);
+    expect(resetProgress({ ...defaultSave(), warmupDone: true }).warmupDone).toBe(true);
+  });
+});
+
 describe('every reason survives a reload', () => {
   it('keeps saved results for all reasons the engine can produce (VERDICTS keys)', () => {
     // One reason per day (a day holds at most 6 results).

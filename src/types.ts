@@ -224,4 +224,6 @@ export interface SaveData {
   };
   /** True after the first-run How To Play has been shown. */
   seenTutorial: boolean;
+  /** True once the first-visit warm-up (three easy rooms before the first daily) is done or skipped. */
+  warmupDone: boolean;
 }

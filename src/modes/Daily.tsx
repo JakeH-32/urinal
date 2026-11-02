@@ -14,6 +14,7 @@ import { TileRow } from '../ui/Tiles';
 import { useReducedMotion } from '../ui/hooks';
 import { DailyResults } from './DailyResults';
 import { RoundPlayer } from './RoundPlayer';
+import { Warmup } from './Warmup';
 
 const clearsOf = (rs: readonly RoundResult[]) => rs.filter((r) => r.grade === 'clear').length;
 
@@ -44,6 +45,9 @@ export function Daily() {
 
   const [view, setView] = useState<'play' | 'results'>(() => (record?.finished ? 'results' : 'play'));
   const [index, setIndex] = useState(() => Math.min(results.length, ROUNDS_PER_DAY - 1));
+
+  // First visit ever: three easy rooms before the first daily.
+  if (!save.warmupDone) return <Warmup number={number} onDone={() => update((s) => ({ ...s, warmupDone: true }))} />;
 
   if (view === 'results' && record) {
     return (

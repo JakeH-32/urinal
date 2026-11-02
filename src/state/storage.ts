@@ -48,6 +48,7 @@ export function defaultSave(): SaveData {
     daily: { byDate: {}, streak: 0, bestStreak: 0 },
     practice: { played: 0, greens: 0, bestRun: 0 },
     seenTutorial: false,
+    warmupDone: false,
   };
 }
 
@@ -160,12 +161,17 @@ export function migrate(raw: unknown): SaveData {
     }
   }
   if (!isObj(data)) return defaultSave();
+  const daily = migrateDaily(data.daily);
+  const practice = migratePractice(data.practice);
+  // Saves from before the warm-up existed: anyone who has already played skips it.
+  const played = Object.keys(daily.byDate).length > 0 || practice.played > 0;
   return {
     version: 1,
     settings: migrateSettings(data.settings),
-    daily: migrateDaily(data.daily),
-    practice: migratePractice(data.practice),
+    daily,
+    practice,
     seenTutorial: bool(data.seenTutorial, false),
+    warmupDone: bool(data.warmupDone, played),
   };
 }
 
@@ -224,7 +230,7 @@ export function recordPractice(save: SaveData, grade: Grade, run: number): SaveD
   };
 }
 
-/** Wipe progress but keep settings (and don't force the tutorial again). */
+/** Wipe progress but keep settings (and don't force the tutorial or warm-up again). */
 export function resetProgress(save: SaveData): SaveData {
-  return { ...defaultSave(), settings: { ...save.settings }, seenTutorial: save.seenTutorial };
+  return { ...defaultSave(), settings: { ...save.settings }, seenTutorial: save.seenTutorial, warmupDone: save.warmupDone };
 }

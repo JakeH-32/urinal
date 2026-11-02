@@ -495,6 +495,22 @@ button {
   align-items: center;
   text-align: center;
 }
+/* First-visit warm-up */
+.warmup-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.linklike {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
 .round-count {
   font-size: 0.8rem;
   font-weight: 800;

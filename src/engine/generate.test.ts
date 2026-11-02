@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { Round } from '../types';
 import { evaluate } from './code';
 import { dateKeyOf } from './daily';
-import { SMALL_ROOM, dailyRoundSeed, dailyRounds, generateRound, isTrap, naivePicks, practiceDifficulty, practiceRound } from './generate';
+import { SMALL_ROOM, dailyDifficulties, dailyRoundSeed, dailyRounds, generateRound, isTrap, naivePicks, practiceDifficulty, practiceRound, warmupRounds } from './generate';
 import { decodePracticeCode } from './rng';
 
 function days(count: number, start = '2026-10-28'): string[] {
@@ -172,5 +172,29 @@ describe('400 days of dailies', () => {
       const lines = Object.entries(stats).map(([d, st]) => `d${d} ${JSON.stringify(Object.fromEntries(Object.entries(st).sort()))}`);
       writeFileSync(process.env.STATS_OUT, lines.join('\n'));
     }
+  });
+});
+
+describe('daily shape and warm-up', () => {
+  it('keeps the plain shape before variation started, varies a little after', () => {
+    expect(dailyDifficulties('2026-11-02')).toEqual([3, 4, 5, 6, 6]);
+    const seen = new Map<string, number>();
+    for (let k = 0; k < 400; k++) {
+      const key = dateKeyOf(new Date(2026, 10, 3 + k, 12));
+      const shape = dailyDifficulties(key);
+      expect(shape).toHaveLength(5);
+      expect([shape[1], shape[4]]).toEqual([4, 6]); // the set-piece rounds
+      expect(dailyRounds(key).map((r) => r.difficulty)).toEqual(shape);
+      seen.set(shape.join(), (seen.get(shape.join()) ?? 0) + 1);
+    }
+    expect(seen.size).toBe(4);
+    expect(seen.get('3,4,5,6,6')!).toBeGreaterThan(180);
+  });
+
+  it('warm-up: easy, easy, medium, one clear answer each, stable', () => {
+    const rs = warmupRounds();
+    expect(rs.map((r) => r.difficulty)).toEqual([1, 2, 3]);
+    for (const r of rs) expect(evaluate(r.bathroom).greens).toHaveLength(1);
+    expect(JSON.stringify(warmupRounds())).toBe(JSON.stringify(rs));
   });
 });

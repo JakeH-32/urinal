@@ -367,18 +367,43 @@ export function generateRound(seed: number, difficulty: Difficulty, id: string):
   return { id, seed, difficulty, venue, bathroom };
 }
 
-/** Difficulty of each daily round. No warm-ups: every room has at least one guy with a label. */
+/**
+ * The usual daily: 1 easy, 1 medium, 3 hard. Every room has at least one guy with a label. Rounds 2 and 5
+ * are always 4 and 6, the set-piece rounds.
+ */
 export const DAILY_DIFFICULTIES: readonly Difficulty[] = [3, 4, 5, 6, 6];
+
+/** Some days vary the usual shape a little (weights out of 10). */
+const DAILY_SHAPES: readonly { shape: readonly Difficulty[]; weight: number }[] = [
+  { shape: DAILY_DIFFICULTIES, weight: 6 },
+  { shape: [3, 4, 5, 5, 6], weight: 2 }, // a gentler middle
+  { shape: [3, 4, 6, 6, 6], weight: 1 }, // brutal
+  { shape: [2, 4, 5, 6, 6], weight: 1 }, // a softer opener
+];
+
+/** Days before this keep the plain shape, so rooms already played never change. */
+const SHAPE_VARIES_FROM = '2026-11-03';
+
+/** Difficulty of each round on a date. Same for everyone. */
+export function dailyDifficulties(dateKey: string): readonly Difficulty[] {
+  if (dateKey < SHAPE_VARIES_FROM) return DAILY_DIFFICULTIES;
+  return createRng(`shape:${dateKey}`).weighted(DAILY_SHAPES, (s) => s.weight).shape;
+}
+
+/** The first-visit warm-up: easy, easy, medium. Fixed rooms, the same for everyone; never scored. */
+export function warmupRounds(): Round[] {
+  return ([1, 2, 3] as const).map((d) => generateRound(hashString(`warmup-${d}`) & SEED_MASK, d, `w-r${d}`));
+}
 
 /** Seed of round r (1..5) of a date. */
 export function dailyRoundSeed(dateKey: string, r: number): number {
   return hashString(`r${r}`, seedFrom(`urinal:${dateKey}`)) & SEED_MASK;
 }
 
-/** The rounds of a given local date (YYYY-MM-DD), by DAILY_DIFFICULTIES. Same for everyone. */
+/** The rounds of a given local date (YYYY-MM-DD), by dailyDifficulties. Same for everyone. */
 export function dailyRounds(dateKey: string): Round[] {
   const rounds: Round[] = [];
-  DAILY_DIFFICULTIES.forEach((d, k) => {
+  dailyDifficulties(dateKey).forEach((d, k) => {
     const r = k + 1;
     const seed = dailyRoundSeed(dateKey, r);
     const id = `d${dateKey}-r${r}`;
