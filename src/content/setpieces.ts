@@ -231,11 +231,11 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-final-interview',
     difficulty: 4,
     venue: 'Job interview, final round',
-    premise: 'The man interviewing you is in here. So is the other finalist, and he won’t stop talking.',
+    premise: 'The man who’d be your boss is in here between interviews. So is the other finalist, and he won’t stop talking.',
     layout: 'B _ _ _ _ T _ _ _',
     door: 'right',
     people: [
-      { name: 'The man interviewing you', blurb: 'Asked where you see yourself in five years. You said “here.”' },
+      { name: 'Your would-be boss', blurb: 'Asked where you see yourself in five years. You said “here.”' },
       { name: 'The other finalist', blurb: 'Has a portfolio. Has it with him now.' },
     ],
     answer: 9,
@@ -440,18 +440,18 @@ export const SET_PIECES: SetPiece[] = [
   // wall vs door on equal room, and the two rooms where the stall is right.
   // ---------------------------------------------------------------------------
   {
-    // Boss reach plus drunk sway cover every urinal. The stall is correct.
+    // Father-in-law reach plus drunk sway cover every urinal. The stall is correct.
     id: 'sp-wedding-cocktail',
     difficulty: 6,
     venue: 'Your wedding, cocktail hour',
     premise: 'Your new father-in-law is in here. So is your best man, three champagnes ahead of his speech.',
-    layout: '_ B _ _ _ _ D> _ _ S',
+    layout: '_ I _ _ _ D> _ _ S',
     door: 'left',
     people: [
       { name: 'Your new father-in-law', blurb: 'Toasted “the man she chose.” Paused before “chose.”' },
       { name: 'Your best man', blurb: 'Lost the rings once today. Found them in the ice sculpture.' },
     ],
-    answer: 10,
+    answer: 9,
   },
   {
     // A divider everywhere and none of them help. The stall by the door is correct.
@@ -497,16 +497,16 @@ export const SET_PIECES: SetPiece[] = [
     answer: 3,
   },
   {
-    // No stall, no clean spot. Beside your cousin by the door beats the corner in the lawyer's zone.
+    // No stall, no clean spot. Beside her cousin by the door beats the corner in the father-in-law's zone.
     id: 'sp-reading-of-the-will',
     difficulty: 6,
     venue: 'The reading of the will',
-    premise: 'The estate lawyer is in here an hour before the reading. So is your cousin, who also thinks he’s getting the boat.',
-    layout: '_ N _ _ B _ _',
+    premise: 'Your wife’s grandfather’s will gets read in an hour. Your father-in-law is in here. So is her cousin, who also thinks he’s getting the boat.',
+    layout: '_ N _ _ I _ _',
     door: 'left',
     people: [
-      { name: 'Your cousin Rodney', blurb: 'Visited Grandpa twice. Both this year.' },
-      { name: 'The estate lawyer', blurb: 'Knows who gets the boat. Isn’t saying.' },
+      { name: 'Her cousin Rodney', blurb: 'Visited Grandpa twice. Both this year.' },
+      { name: 'Your father-in-law', blurb: 'Knows who gets the boat. Isn’t saying.' },
     ],
     answer: 1,
   },
@@ -559,11 +559,11 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-gala-auction',
     difficulty: 6,
     venue: 'Charity gala, after the live auction',
-    premise: 'The gala chairman is in here, and so is the man who won the auction, still celebrating like it was a touchdown.',
+    premise: 'Your boss chairs this gala, and he’s in here. So is the man who won the auction, still celebrating like it was a touchdown.',
     layout: '_ _ B _ _ _ _ P _ L',
     door: 'left',
     people: [
-      { name: 'The gala chairman', blurb: 'Seated you at table 31. There are 31 tables.' },
+      { name: 'Your boss, the gala chairman', blurb: 'Seated you at table 31. There are 31 tables.' },
       { name: 'The man who won the auction', blurb: 'Paid $40,000 for a week at a lake house. Still pumping his fist.' },
     ],
     answer: 10,
@@ -587,12 +587,12 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-panel-moderator',
     difficulty: 6,
     venue: 'Industry conference, before your panel',
-    premise: 'The moderator wants to rehearse your answers, and the conference founder is two down from him. Attendees keep coming through that door.',
+    premise: 'The moderator wants to rehearse your answers, and your boss, who founded this conference, is two down from him. Attendees keep coming through that door.',
     layout: '_ _ _ T _ B _ _ _ _',
     door: 'right',
     people: [
       { name: 'The panel moderator', blurb: 'Has seven “quick questions” before the panel.' },
-      { name: 'The conference founder', blurb: 'Picks next year’s speakers. Writes nothing down.' },
+      { name: 'Your boss, the conference founder', blurb: 'Picks next year’s speakers. Writes nothing down.' },
     ],
     answer: 1,
   },
@@ -602,7 +602,7 @@ export const SET_PIECES: SetPiece[] = [
     difficulty: 6,
     venue: 'Your sister’s wedding, the receiving line',
     premise: 'Your sister’s new father-in-law has the corner. Her new brother-in-law is by the door, still dancing.',
-    layout: 'B _ _ _ N | _ _ _ P',
+    layout: 'I _ _ _ N | _ _ _ P',
     door: 'right',
     people: [
       { name: 'Your sister’s new father-in-law', blurb: 'Called your family “very down-to-earth.” Twice.' },
@@ -631,11 +631,11 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-member-guest',
     difficulty: 6,
     venue: 'Member-guest tournament, the clubhouse',
-    premise: 'You’re a guest at this club, and the club president is in here. So is the man who just birdied 18, still in his follow-through.',
+    premise: 'You’re your boss’s guest at his club, and he’s in here. So is the man who just birdied 18, still in his follow-through.',
     layout: 'W _ _ _ B _ _ P | _ _',
     door: 'right',
     people: [
-      { name: 'The club president', blurb: 'Asked who you’re “here with.” Wrote it down.' },
+      { name: 'Your boss, the club president', blurb: 'Signed you in as his guest. Can sign you out.' },
       { name: 'The man who birdied 18', blurb: 'Has described the putt to the bartender, the cart attendant and the ice machine.' },
     ],
     answer: 10,

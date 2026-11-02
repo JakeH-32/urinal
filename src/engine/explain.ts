@@ -12,6 +12,9 @@ const QUIRK_NOUN: Record<Exclude<Quirk, 'normal'>, string> = {
   drunk: 'the drunk',
   facetime: 'the FaceTime guy',
   gassy: 'the gassy guy',
+  inlaw: 'your father-in-law',
+  pastor: 'the pastor',
+  peeper: 'the peeping tom',
 };
 
 /** Who sits at slot i's tightest room: how many quirk guys and how many normal guys. */
@@ -107,6 +110,17 @@ export function explainPick(b: Bathroom, ev: Evaluation, pick: number): string |
       return 'Splashers need two empty urinals between you.';
     case 'boss':
       return 'The boss needs three empty urinals between you.';
+    case 'inlaw':
+      return 'Fathers-in-law need two empty urinals between you.';
+    case 'pastor':
+      return 'Pastors need two empty urinals between you.';
+    case 'peeper': {
+      const look = guy.lean;
+      if (!look) return 'Peeping toms need two empty urinals between you.';
+      return side === look
+        ? `He was looking ${look}. Go to his ${other(look)} side, or leave two empty urinals.`
+        : 'He was looking the other way. Still leave one empty urinal.';
+    }
     case 'drunk': {
       const lean = guy.lean;
       if (!lean) return 'Drunks need two empty urinals between you.';

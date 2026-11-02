@@ -26,6 +26,10 @@ function slotFor(tok: string): Slot {
     case 'F<': return { kind: 'urinal', occupant: guy('facetime', 'left') };
     case 'F>': return { kind: 'urinal', occupant: guy('facetime', 'right') };
     case 'G': return { kind: 'urinal', occupant: guy('gassy') }; // pointed at the door below
+    case 'I': return { kind: 'urinal', occupant: guy('inlaw') };
+    case 'R': return { kind: 'urinal', occupant: guy('pastor') };
+    case 'E<': return { kind: 'urinal', occupant: guy('peeper', 'left') };
+    case 'E>': return { kind: 'urinal', occupant: guy('peeper', 'right') };
     default: throw new Error(`bad layout token "${tok}"`);
   }
 }

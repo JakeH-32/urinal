@@ -13,6 +13,12 @@ describe('parseLayout', () => {
     expect(b.door).toBe('right');
   });
 
+  it('reads the father-in-law, pastor and peeper', () => {
+    const b = parseLayout('I R E< E>', 'left');
+    expect(b.slots.map((s) => s.occupant?.quirk)).toEqual(['inlaw', 'pastor', 'peeper', 'peeper']);
+    expect(b.slots.map((s) => s.occupant?.lean)).toEqual([undefined, undefined, 'left', 'right']);
+  });
+
   it('rejects junk', () => {
     expect(() => parseLayout('_ Q _', 'left')).toThrow();
     expect(() => parseLayout('| _ _', 'left')).toThrow();

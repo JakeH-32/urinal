@@ -50,7 +50,7 @@ const PLACEHOLDER_LOOK: Guy['look'] = { shirt: 0, pants: 0, hair: 0, skin: 0, he
 
 function guy(quirk: Quirk, rng: Rng): Guy {
   const g: Guy = { quirk, name: '', blurb: '', look: PLACEHOLDER_LOOK };
-  if (quirk === 'drunk' || quirk === 'facetime') g.lean = rng.chance(0.5) ? 'left' : 'right';
+  if (quirk === 'drunk' || quirk === 'facetime' || quirk === 'peeper') g.lean = rng.chance(0.5) ? 'left' : 'right';
   return g;
 }
 
@@ -101,9 +101,9 @@ function addFlags(rng: Rng, b: Bathroom, count: number, kinds: readonly UrinalFl
 }
 
 const ALL_FLAGS: readonly UrinalFlag[] = ['low', 'puddle', 'broken'];
-const SOFT_QUIRKS: readonly Quirk[] = ['talker', 'splasher', 'facetime'];
-const BIG_QUIRKS: readonly Quirk[] = ['boss', 'drunk', 'gassy'];
-const ANY_QUIRK: readonly Quirk[] = ['talker', 'splasher', 'boss', 'drunk', 'facetime', 'gassy'];
+const SOFT_QUIRKS: readonly Quirk[] = ['talker', 'splasher', 'facetime', 'inlaw', 'pastor'];
+const BIG_QUIRKS: readonly Quirk[] = ['boss', 'drunk', 'gassy', 'peeper'];
+const ANY_QUIRK: readonly Quirk[] = ['talker', 'splasher', 'boss', 'drunk', 'facetime', 'gassy', 'inlaw', 'pastor', 'peeper'];
 
 /** Per-round intent decided once, before rejection sampling. */
 interface Plan {

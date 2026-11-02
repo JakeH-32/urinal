@@ -79,7 +79,7 @@ function bathroomId(b: Bathroom): number {
 }
 
 // Reveal reactions. The talker's always-on bubble switches to "So…" instead; the splasher splashes;
-// the FaceTime guy turns the phone to you and grandma asks.
+// the FaceTime guy turns the phone to you and grandma asks. Keep them short: the bubble points at you.
 const REACTION_TEXT: Record<Guy['quirk'], string | null> = {
   normal: '!',
   drunk: '!',
@@ -88,22 +88,26 @@ const REACTION_TEXT: Record<Guy['quirk'], string | null> = {
   splasher: null,
   facetime: null,
   gassy: null,
+  inlaw: 'Son.',
+  pastor: 'Oh my.',
+  peeper: 'Hi!',
 };
 const FACETIME_REACTION = 'Who’s this?';
 const TALKER_LINE = 'Hey, buddy!';
 
-/** Drunk lean in degrees (positive = clockwise = toward the right). */
-function drunkTilt(guy: Guy): number {
-  if (guy.quirk !== 'drunk') return 0;
-  return guy.lean === 'left' ? -9 : 9;
+/** Body lean in degrees (positive = clockwise = toward the right): the drunk sways, the peeper leans in to look. */
+function bodyTilt(guy: Guy): number {
+  if (guy.quirk === 'drunk') return guy.lean === 'left' ? -9 : 9;
+  if (guy.quirk === 'peeper' && guy.lean) return guy.lean === 'left' ? -4 : 4;
+  return 0;
 }
 
 /** Which way a urinal occupant's head faces: toward you when reacting; the talker faces the door
- * (where you walk in); the FaceTime guy looks at his phone. */
+ * (where you walk in); the FaceTime guy looks at his phone; the peeper looks where his zone runs long. */
 function headTurn(guy: Guy, door: Side, reactDir: -1 | 1 | undefined): -1 | 0 | 1 {
   if (reactDir) return reactDir;
   if (guy.quirk === 'talker') return door === 'left' ? -1 : 1;
-  if (guy.quirk === 'facetime') return guy.lean === 'left' ? -1 : 1;
+  if (guy.quirk === 'facetime' || guy.quirk === 'peeper') return guy.lean === 'left' ? -1 : 1;
   return 0;
 }
 
@@ -116,10 +120,10 @@ function propSideFor(b: Bathroom, i: number): -1 | 1 {
   return rightBusy && !leftBusy ? -1 : 1;
 }
 
-/** Scene-space centre of a standing guy's head (accounts for the drunk's tilt). */
+/** Scene-space centre of a standing guy's head (accounts for the drunk's and peeper's tilt). */
 function headPoint(guy: Guy, cx: number): { x: number; y: number; top: number } {
   const s = heightScale(guy.look.height);
-  const rad = (drunkTilt(guy) * Math.PI) / 180;
+  const rad = (bodyTilt(guy) * Math.PI) / 180;
   const r = 163 * s;
   const rt = -guyTop(guy.look.height);
   return { x: cx + Math.sin(rad) * r, y: FEET_Y - Math.cos(rad) * r, top: FEET_Y - Math.cos(rad) * rt };
@@ -377,15 +381,13 @@ export function BathroomScene(props: BathroomSceneProps) {
           const stall = g.kind === 'stall';
           const head = stall ? { x: g.cx, y: STALL_TOP_Y + 14 } : headPoint(guy, g.cx);
           const text = stall
-            ? guy.quirk === 'boss'
-              ? '…'
-              : guy.quirk === 'talker'
-                ? 'So…'
-                : guy.quirk === 'facetime'
-                  ? FACETIME_REACTION
-                  : guy.quirk === 'gassy'
-                    ? null
-                    : '!'
+            ? guy.quirk === 'talker'
+              ? 'So…'
+              : guy.quirk === 'facetime'
+                ? FACETIME_REACTION
+                : guy.quirk === 'gassy'
+                  ? null
+                  : (REACTION_TEXT[guy.quirk] ?? '!')
             : REACTION_TEXT[guy.quirk];
           if (guy.quirk === 'gassy') {
             // PFFT over him (at his hip, downwind side); the cloud on "you" is drawn in its own layer.
@@ -425,7 +427,15 @@ export function BathroomScene(props: BathroomSceneProps) {
                   <Droplets dir={dir} />
                 </g>
               ) : null}
-              {text && <SideBubble x={head.x + dir * 19} y={head.y + 4} text={text} dir={dir} />}
+              {/* right next to you, a wordy bubble drops to shoulder height so it doesn't cover your head */}
+              {text && (
+                <SideBubble
+                  x={head.x + dir * 19}
+                  y={head.y + (text.length > 3 && Math.abs((reveal.picked ?? index) - index) === 1 ? 30 : 4)}
+                  text={text}
+                  dir={dir}
+                />
+              )}
             </g>
           );
         })}
@@ -604,7 +614,7 @@ interface OccupantProps {
 
 function Occupant({ guy, cx, index, turn, chipX, propSide, straddle }: OccupantProps) {
   const look = useMemo(() => resolveLook(guy.look, guy.quirk), [guy.look, guy.quirk]);
-  const tilt = drunkTilt(guy);
+  const tilt = bodyTilt(guy);
   const head = headPoint(guy, cx);
   const drunk = guy.quirk === 'drunk';
   return (
@@ -635,8 +645,13 @@ function Occupant({ guy, cx, index, turn, chipX, propSide, straddle }: OccupantP
           <StinkCloud dir={guy.lean === 'left' ? -1 : 1} />
         </g>
       )}
-      {/* chip stays upright even when the guy leans */}
-      <QuirkChip x={chipX ?? head.x} y={head.top - 5} quirk={guy.quirk} lean={guy.quirk === 'drunk' ? guy.lean : undefined} />
+      {/* chip stays upright even when the guy leans; the drunk's and peeper's point the long way */}
+      <QuirkChip
+        x={chipX ?? head.x}
+        y={head.top - 5}
+        quirk={guy.quirk}
+        lean={guy.quirk === 'drunk' || guy.quirk === 'peeper' ? guy.lean : undefined}
+      />
     </g>
   );
 }

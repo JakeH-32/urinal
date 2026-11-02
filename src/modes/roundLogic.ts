@@ -141,7 +141,7 @@ export function legendFor(b: Bathroom): Legend {
       name: g.name,
       blurb: g.blurb,
       rule: q.rule,
-      ...((g.quirk === 'drunk' || g.quirk === 'facetime' || g.quirk === 'gassy') && g.lean ? { lean: g.lean } : {}),
+      ...((g.quirk === 'drunk' || g.quirk === 'facetime' || g.quirk === 'gassy' || g.quirk === 'peeper') && g.lean ? { lean: g.lean } : {}),
     });
   });
   if (b.dividers.some(Boolean)) present.add('divider');

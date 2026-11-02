@@ -1,15 +1,15 @@
 // A guy seen from behind, standing facing the wall. Local coords: feet centre at (0, 0), y up is negative.
-import type { CSSProperties } from 'react';
+import { useId, type CSSProperties } from 'react';
 import type { Quirk, Side } from '../types';
 import { GUY_H, heightScale } from './geometry';
-import { QUIRK_STYLE, SHOE, type ResolvedLook } from './looks';
+import { OXFORD, QUIRK_STYLE, SHOE, shade, type ResolvedLook } from './looks';
 import { legPose } from './pose';
 
 interface GuyFigureProps {
   look: ResolvedLook;
   /** Yellow hoodie with a hood (the player). */
   hoodie?: boolean;
-  /** Drives silhouette + props (suit and coffee, beer bottle, wide stance). */
+  /** Drives silhouette + props (suit and coffee, beer bottle, wide stance, vest, collar and Bible, side-eye). */
   quirk?: Quirk;
   /** Head turned to the side in profile: -1 left, 1 right. */
   turn?: -1 | 0 | 1;
@@ -21,7 +21,8 @@ interface GuyFigureProps {
   straddle?: number;
 }
 
-function Hair({ look }: { look: ResolvedLook }) {
+/** `turn`: the head is in profile (the caller has already shifted the hair toward the back of the head). */
+function Hair({ look, turn = 0 }: { look: ResolvedLook; turn?: -1 | 0 | 1 }) {
   if (!look.hair) {
     return <ellipse cx={-5} cy={-170} rx={4} ry={2.4} fill="#fff" opacity={0.45} />;
   }
@@ -61,6 +62,34 @@ function Hair({ look }: { look: ResolvedLook }) {
           <path d={crop} />
         </g>
       );
+    case 'fringe':
+      // Horseshoe: shiny bald crown, one brave comb-over strand, a fluffy band round the back with
+      // tufts puffing out over the ears.
+      if (turn) {
+        // In profile: drawn facing right, then undo the caller's shift and mirror for a left turn.
+        return (
+          <g transform={`translate(${turn * 6},0) scale(${turn},1)`}>
+            <path
+              className="us-ink"
+              fill={color}
+              d="M1.5,-165.5 Q-3,-170 -9.5,-169.5 Q-17.5,-169 -16,-160.5 Q-15.5,-153 -10,-151.5 Q-4,-151 -0.5,-155 Q2.5,-160 1.5,-165.5 Z"
+            />
+            <ellipse cx={2} cy={-172.5} rx={4.5} ry={2.4} fill="#fff" opacity={0.55} />
+            <path d="M-9,-169.5 Q-2,-177.5 7,-173" fill="none" stroke={shade(color, 0.22)} strokeWidth={1.3} strokeLinecap="round" />
+          </g>
+        );
+      }
+      return (
+        <g>
+          <path
+            className="us-ink"
+            fill={color}
+            d="M-16.2,-161 Q-18.5,-169.5 -12.5,-169 Q-8.8,-169.2 -7.5,-165.5 Q-3.8,-166.8 -2.5,-162.8 Q0,-165.8 2.5,-162.8 Q3.8,-166.8 7.5,-165.5 Q8.8,-169.2 12.5,-169 Q18.5,-169.5 16.2,-161 Q17,-156.5 13.4,-153.5 Q0,-148.5 -13.4,-153.5 Q-17,-156.5 -16.2,-161 Z"
+          />
+          <ellipse cx={-4} cy={-172} rx={4.5} ry={2.4} fill="#fff" opacity={0.55} />
+          <path d="M-9,-168 Q-1,-177.5 9.5,-170.5" fill="none" stroke={shade(color, 0.22)} strokeWidth={1.3} strokeLinecap="round" />
+        </g>
+      );
     case 'slick':
       return (
         <g>
@@ -80,12 +109,47 @@ const ARM_R = 'M21,-140 C29,-136 31,-118 29,-100 L20,-98 C20,-112 19,-124 16,-13
 const AKIMBO = 'M20,-137 L37,-116 L23,-93';
 /** Arm hanging straight down to hold something at the hip. */
 const ARM_DOWN_R = 'M21,-140 C29,-136 32,-118 33,-96 L25,-94 C23,-112 19,-124 16,-132 Z';
+const TORSO = 'M-19,-143 C-24,-143 -24,-137 -23,-131 L-19,-78 L19,-78 L23,-131 C24,-137 24,-143 19,-143 Z';
+
+/** Argyle on the back of the in-law's sweater vest: two-tone diamonds, a ribbed hem. Clipped to the torso. */
+function VestBack({ color }: { color: string }) {
+  const clip = `us-vest-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  const light = shade(color, -0.24); // negative amt lightens
+  const diamonds: [number, number][] = [
+    [-22, -128],
+    [0, -128],
+    [22, -128],
+    [-11, -106],
+    [11, -106],
+  ];
+  return (
+    <g>
+      <clipPath id={clip}>
+        <path d={TORSO} />
+      </clipPath>
+      <g clipPath={`url(#${clip})`}>
+        {diamonds.map(([x, y]) => (
+          <path key={`${x},${y}`} d={`M${x},${y - 11} L${x + 11},${y} L${x},${y + 11} L${x - 11},${y} Z`} fill={light} />
+        ))}
+        <path d="M-22,-139 L11,-95 M22,-139 L-11,-95 M0,-139 L-22,-110 M0,-139 L22,-110" fill="none" stroke={OXFORD} strokeWidth={0.9} opacity={0.75} />
+        <rect x={-24} y={-87} width={48} height={9} fill={shade(color, 0.16)} />
+        {[-15, -10, -5, 0, 5, 10, 15].map((x) => (
+          <path key={x} d={`M${x},-86 V-79`} stroke={shade(color, 0.34)} strokeWidth={1} />
+        ))}
+      </g>
+    </g>
+  );
+}
 
 export function GuyFigure({ look, hoodie, quirk = 'normal', turn = 0, talking, propSide = 1, straddle = 0 }: GuyFigureProps) {
   const s = heightScale(look.height);
   const wide = quirk === 'splasher';
   const suit = quirk === 'boss';
-  const prop = quirk === 'boss' ? 'coffee' : quirk === 'drunk' ? 'beer' : quirk === 'facetime' ? 'phone' : null;
+  const prop =
+    quirk === 'boss' ? 'coffee' : quirk === 'drunk' ? 'beer' : quirk === 'facetime' ? 'phone' : quirk === 'pastor' ? 'bible' : null;
+  const sleeve = look.sleeve ?? look.shirtShade;
+  // The peeper cranes his neck toward whatever he's looking at.
+  const peek = quirk === 'peeper' && turn !== 0;
   const shoe = hoodie ? '#f4f4f4' : SHOE;
   const legs = legPose(straddle, wide);
   const akimbo = quirk === 'gassy';
@@ -96,7 +160,7 @@ export function GuyFigure({ look, hoodie, quirk = 'normal', turn = 0, talking, p
       ? 'M-21,-144 C-27,-144 -27,-137 -26,-131 L-22,-70 L22,-70 L26,-131 C27,-137 27,-144 21,-144 Z'
       : quirk === 'drunk'
         ? 'M-19,-143 C-24,-143 -24,-137 -23,-131 L-21,-72 L-8,-74 L4,-71 L21,-74 L23,-131 C24,-137 24,-143 19,-143 Z'
-        : 'M-19,-143 C-24,-143 -24,-137 -23,-131 L-19,-78 L19,-78 L23,-131 C24,-137 24,-143 19,-143 Z';
+        : TORSO;
   // The prop hand hangs down at the hip; mirrored via scale(-1,1) for the left hand.
   const propArm = prop === 'phone' ? (
     <g transform={propSide < 0 ? 'scale(-1,1)' : undefined}>
@@ -106,13 +170,21 @@ export function GuyFigure({ look, hoodie, quirk = 'normal', turn = 0, talking, p
     </g>
   ) : prop ? (
     <g transform={propSide < 0 ? 'scale(-1,1)' : undefined}>
-      <path className="us-ink" fill={look.shirtShade} d={ARM_DOWN_R} />
+      <path className="us-ink" fill={sleeve} d={ARM_DOWN_R} />
       {prop === 'coffee' ? (
         <g>
           <path className="us-ink" fill="#fff" d="M23,-90 L35,-90 L33.5,-72 L24.5,-72 Z" />
           <rect x={24} y={-85} width={10} height={6} fill="#a0703f" />
           <rect className="us-ink" x={22} y={-93} width={14} height={4} rx={1.5} fill="#e9e3d8" strokeWidth={1.6} />
           <circle className="us-ink" cx={29} cy={-91} r={4} fill={look.skin} />
+        </g>
+      ) : prop === 'bible' ? (
+        <g>
+          {/* a small Bible carried by the spine: burgundy cover, gold cross, page edges */}
+          <rect className="us-ink" x={22} y={-91} width={14} height={20} rx={1.6} fill="#6e1d2a" strokeWidth={1.8} />
+          <rect x={33.2} y={-89.5} width={1.6} height={17} fill="#f1e6cc" />
+          <path d="M28.5,-84 V-74.5 M25,-81 H32" stroke="#e2b84a" strokeWidth={1.9} strokeLinecap="round" />
+          <circle className="us-ink" cx={29} cy={-91.5} r={4.2} fill={look.skin} />
         </g>
       ) : (
         <g>
@@ -135,6 +207,7 @@ export function GuyFigure({ look, hoodie, quirk = 'normal', turn = 0, talking, p
       <path className="us-ink" fill={look.shirt} d={torso} />
       {hoodie && <path d="M-20,-86 L20,-86 L21,-76 L-21,-76 Z" fill={look.shirtShade} />}
       {suit && <path d="M0,-70 L0,-96" stroke="#151922" strokeWidth={2} />}
+      {quirk === 'inlaw' && <VestBack color={look.shirt} />}
       {/* arms (bent forward, so we mostly see the upper arms) */}
       {akimbo ? (
         // hands on hips, elbows out: relaxed and unbothered
@@ -147,8 +220,8 @@ export function GuyFigure({ look, hoodie, quirk = 'normal', turn = 0, talking, p
         ))
       ) : (
         <>
-          {prop && propSide < 0 ? null : <path className="us-ink" fill={look.shirtShade} d={ARM_L} />}
-          {prop && propSide > 0 ? null : <path className="us-ink" fill={look.shirtShade} d={ARM_R} />}
+          {prop && propSide < 0 ? null : <path className="us-ink" fill={sleeve} d={ARM_L} />}
+          {prop && propSide > 0 ? null : <path className="us-ink" fill={sleeve} d={ARM_R} />}
         </>
       )}
       {propArm}
@@ -162,8 +235,12 @@ export function GuyFigure({ look, hoodie, quirk = 'normal', turn = 0, talking, p
           <path className="us-ink" fill={QUIRK_STYLE.boss.color} d="M5,-145 L11,-146 L17,-124 L13,-117 L9,-123 Z" strokeWidth={1.8} />
         </g>
       )}
+      {/* in-law: the oxford's collar above the vest */}
+      {quirk === 'inlaw' && <path className="us-ink" fill={OXFORD} d="M-9,-141 L-8,-148.5 L8,-148.5 L9,-141 Q0,-138.5 -9,-141 Z" strokeWidth={1.8} />}
+      {/* pastor: the white clerical band, right round the back of the neck */}
+      {quirk === 'pastor' && <rect className="us-ink" x={-8.5} y={-149} width={17} height={6.5} rx={1.5} fill="#fff" strokeWidth={1.8} />}
       {/* head */}
-      <g transform={turn ? `translate(${turn * 2},0)` : undefined}>
+      <g transform={peek ? `translate(${turn * 5},-1)` : turn ? `translate(${turn * 2},0)` : undefined}>
         {turn === 0 ? (
           <>
             <ellipse className="us-ink" cx={-14} cy={-161} rx={3.5} ry={5} fill={look.skin} />
@@ -178,10 +255,14 @@ export function GuyFigure({ look, hoodie, quirk = 'normal', turn = 0, talking, p
         ) : (
           <g>
             <g transform={`translate(${-turn * 6},0)`}>
-              <Hair look={look} />
+              <Hair look={look} turn={turn} />
             </g>
             <ellipse className="us-ink" cx={-turn * 2} cy={-161} rx={3} ry={4.5} fill={look.skin} strokeWidth={1.6} />
-            <circle cx={turn * 8.5} cy={-166} r={1.7} fill="#1d1d22" />
+            {peek ? (
+              <PeekEye turn={turn} />
+            ) : (
+              <circle cx={turn * 8.5} cy={-166} r={1.7} fill="#1d1d22" />
+            )}
             {talking ? (
               <ellipse cx={turn * 10.5} cy={-155.5} rx={2.8} ry={2.4} fill="#5a1d1d" stroke="#1d1d22" strokeWidth={1.2} />
             ) : (
@@ -197,6 +278,29 @@ export function GuyFigure({ look, hoodie, quirk = 'normal', turn = 0, talking, p
         </g>
       )}
       </g>
+    </g>
+  );
+}
+
+/**
+ * The peeper's side-eye (head in profile, facing `turn`): a wide eye with the pupil pressed to the
+ * front, one eyebrow up, and a dashed sight line out past his face so the direction reads at a glance.
+ */
+function PeekEye({ turn }: { turn: -1 | 1 }) {
+  return (
+    <g>
+      <path
+        className="us-peek-line"
+        d={`M${turn * 18},-166.5 L${turn * 42},-165`}
+        fill="none"
+        stroke="var(--us-ink)"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeDasharray="3.5 4"
+      />
+      <ellipse cx={turn * 9} cy={-166} rx={3.1} ry={2.6} fill="#fff" stroke="#1d1d22" strokeWidth={1.1} />
+      <circle cx={turn * 10.6} cy={-166} r={1.5} fill="#1d1d22" />
+      <path d={`M${turn * 5},-170.5 Q${turn * 8.5},-174.5 ${turn * 11.8},-171.5`} fill="none" stroke="#1d1d22" strokeWidth={1.5} strokeLinecap="round" />
     </g>
   );
 }
@@ -298,7 +402,7 @@ export const CHIP_W = 66;
 export function QuirkChip({ x, y, quirk, lean }: { x: number; y: number; quirk: Quirk; lean?: Side }) {
   const st = QUIRK_STYLE[quirk];
   if (!st.tag) return null;
-  // A drunk's chip points the way he sways, so the lopsided zone is readable at a glance.
+  // A drunk's chip points the way he sways (a peeper's, the way he looks), so the lopsided zone reads at a glance.
   const tag = lean ? (lean === 'left' ? `◀ ${st.tag}` : `${st.tag} ▶`) : st.tag;
   const w = CHIP_W;
   const h = 18;

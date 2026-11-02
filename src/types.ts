@@ -11,7 +11,7 @@
 //     ...except dividers don't count for a TALKER (he leans around them) or a FACETIME guy
 //     (his camera sees over them), so you can never stand right next to either.
 //
-//   Each occupant has a personal-space radius r (by quirk; DRUNK and GASSY are lopsided; FACETIME's camera side is infinite).
+//   Each occupant has a personal-space radius r (by quirk; DRUNK, GASSY and PEEPER are lopsided; FACETIME's camera side is infinite).
 //   clearance(i, guy) = effDist(i, guy) - r(toward i).  clearance <= 0 = VIOLATION.
 //   A free STALL never violates (it has walls) and has no clearance.
 //
@@ -45,7 +45,7 @@ export interface Rng {
   fork(label: string): Rng;
 }
 
-export type Quirk = 'normal' | 'talker' | 'splasher' | 'boss' | 'drunk' | 'facetime' | 'gassy';
+export type Quirk = 'normal' | 'talker' | 'splasher' | 'boss' | 'drunk' | 'facetime' | 'gassy' | 'inlaw' | 'pastor' | 'peeper';
 export type Side = 'left' | 'right';
 
 export interface Guy {
@@ -55,6 +55,7 @@ export interface Guy {
    * facetime: the side he holds the phone. The camera films the whole OTHER side (every urinal over
    * there violates); beside the phone the normal 1-urinal rule applies.
    * gassy: always the door side (the smell drifts out the door): radius 3 that way, 1 the other.
+   * peeper: the side he's looking (radius 2 that way, 1 the other).
    */
   lean?: Side;
   /** Display name + one-line description, filled from content pools. */
@@ -101,6 +102,7 @@ export interface Round {
  *   N normal guy   T talker   P splasher   B boss   D< drunk leaning left   D> drunk leaning right
  *   F< on FaceTime, phone in his left hand (camera films everything to his right)   F> the mirror
  *   G  gassy (his smell drifts toward the door; the parser points him at `door`)
+ *   I  father-in-law   R  pastor   E< peeping tom looking left   E> looking right
  *   | divider between the neighbouring slots
  * e.g. "T | _ | L _ _ P _ S"
  */
@@ -143,7 +145,10 @@ export type Reason =
   | 'boss'
   | 'drunk'
   | 'facetime'
-  | 'gassy';
+  | 'gassy'
+  | 'inlaw'
+  | 'pastor'
+  | 'peeper';
 
 export interface SlotAnalysis {
   index: number;

@@ -16,7 +16,7 @@ Report the bathroom the way a building inspector would. The joke is in the speci
 Red verdicts insert a full name phrase: "Gary from Accounts Payable", "Your father-in-law", "The CEO". Put `{name}` at the start of a sentence or after a colon so the capital always reads right. Names never end in punctuation. Blurbs never repeat the name.
 
 ## Hard lines (never)
-- **Nothing sexual, ever.** No genitals, no anatomy, no size jokes, no innuendo, no double meanings. Nobody looks, glances, peeks or compares. Men are seen from behind, fully clothed, facing the wall.
+- **Nothing sexual, ever.** No genitals, no anatomy, no size jokes, no innuendo, no double meanings. Nobody looks, glances, peeks or compares. The one exception is the Peeping Tom, and he only reads your stuff: phone, paper, screen, never you. Men are seen from behind, fully clothed, facing the wall.
 - **The rule is about courtesy, not sexuality.** The joke is never "standing close = gay", and no line implies it ("a little familiar", "cozy", "getting close" are out). Closeness costs you small talk and reputation, nothing else.
 - **No kids in the bathroom, ever,** in text or as characters. The low urinal is a fixture. Don't describe it by who it's for.
 - **No slurs. Never punch down at identity** (race, religion, ethnicity, sexuality, gender identity, disability, age). Mock behavior and choices: the speakerphone, the open bar, the folder in HR.

@@ -157,6 +157,23 @@ describe('evaluate', () => {
     expect(grades(b)).toEqual(['S:too-close', 'D:drunk', 'D:drunk', '-', 'D:drunk', 'S:too-close', 'C:perfect']);
   });
 
+  it('father-in-law and pastor: two empty urinals, dividers count', () => {
+    expect(grades(parseLayout('_ I _ _ _', 'right'))).toEqual(['D:inlaw', '-', 'D:inlaw', 'D:inlaw', 'C:perfect']);
+    expect(grades(parseLayout('_ R | _ | _ | _', 'right'))).toEqual(['D:pastor', '-', 'D:pastor', 'S:too-close', 'C:perfect']);
+  });
+
+  it('peeper looking right: 2 that way, 1 behind his back', () => {
+    const b = parseLayout('_ _ _ E> _ _ _', 'right');
+    expect(zoneCovers(b, 3)).toEqual([2, 4, 5]);
+    expect(grades(b)).toEqual(['C:perfect', 'S:too-close', 'D:peeper', '-', 'D:peeper', 'D:peeper', 'S:too-close']);
+  });
+
+  it('peeper looking left: mirrored', () => {
+    const b = parseLayout('_ _ _ E< _ _ _', 'left');
+    expect(zoneCovers(b, 3)).toEqual([1, 2, 4]);
+    expect(grades(b)).toEqual(['S:too-close', 'D:peeper', 'D:peeper', '-', 'D:peeper', 'S:too-close', 'C:perfect']);
+  });
+
   it('boss: radius 3', () => {
     const b = bath('_ _ _ _ B _ _ _ _', 'left');
     expect(zoneCovers(b, 4)).toEqual([1, 2, 3, 5, 6, 7]);

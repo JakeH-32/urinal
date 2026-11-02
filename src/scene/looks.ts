@@ -22,6 +22,9 @@ export const QUIRK_STYLE: Record<Quirk, QuirkStyle> = {
   drunk: { color: '#ef7d00', ink: '#1d1300', tag: 'DRUNK', emoji: '🍺' },
   facetime: { color: '#0f9d8a', ink: '#ffffff', tag: 'FACETIME', emoji: '📱' },
   gassy: { color: '#6f8418', ink: '#ffffff', tag: 'GASSY', emoji: '💨' },
+  inlaw: { color: '#86603f', ink: '#ffffff', tag: 'IN-LAW', emoji: '👴' },
+  pastor: { color: '#25262d', ink: '#ffffff', tag: 'PASTOR', emoji: '⛪' },
+  peeper: { color: '#c72683', ink: '#ffffff', tag: 'PEEPER', emoji: '👀' },
 };
 
 /** Just the chip colours, for legends and UI. */
@@ -33,9 +36,12 @@ export const QUIRK_COLORS: Record<Quirk, string> = {
   drunk: QUIRK_STYLE.drunk.color,
   facetime: QUIRK_STYLE.facetime.color,
   gassy: QUIRK_STYLE.gassy.color,
+  inlaw: QUIRK_STYLE.inlaw.color,
+  pastor: QUIRK_STYLE.pastor.color,
+  peeper: QUIRK_STYLE.peeper.color,
 };
 
-export type HairStyle = 'crop' | 'buzz' | 'curly' | 'swoop' | 'long' | 'bun' | 'slick';
+export type HairStyle = 'crop' | 'buzz' | 'curly' | 'swoop' | 'long' | 'bun' | 'slick' | 'fringe';
 
 /** look.shirt 0..7. Muted on purpose so quirk guys (and yellow "you") pop. */
 export const SHIRTS = ['#8d9aa8', '#a39a8e', '#8fa293', '#b0b3b8', '#6b717b', '#9c95a8', '#b5a48f', '#d3d0c8'] as const;
@@ -58,6 +64,8 @@ export const SHOE = '#2a2523';
 export interface ResolvedLook {
   shirt: string;
   shirtShade: string;
+  /** Arm colour when the sleeves aren't the torso's (the in-law's vest over a shirt). Default shirtShade. */
+  sleeve?: string;
   pants: string;
   hair: { style: HairStyle; color: string } | null;
   skin: string;
@@ -81,20 +89,38 @@ export function shade(hex: string, amt: number): string {
 
 /** Boss outfit: charcoal suit, slicked grey hair (or bald). */
 export const SUIT = '#2e3442';
+/** Father-in-law: sweater vest (his chip colour) over a pale blue oxford, khakis, grey horseshoe. */
+export const OXFORD = '#c9dcef';
 
 export function resolveLook(look: Guy['look'], quirk: Quirk = 'normal'): ResolvedLook {
   let shirt: string = SHIRTS[wrap(look.shirt, SHIRTS.length)];
   let hair = look.bald ? null : HAIRS[wrap(look.hair, HAIRS.length)];
   let pants: string = PANTS[wrap(look.pants, PANTS.length)];
-  if (quirk === 'talker' || quirk === 'splasher' || quirk === 'drunk' || quirk === 'facetime' || quirk === 'gassy') shirt = QUIRK_STYLE[quirk].color;
+  let sleeve: string | undefined;
+  if (quirk === 'talker' || quirk === 'splasher' || quirk === 'drunk' || quirk === 'facetime' || quirk === 'gassy' || quirk === 'peeper')
+    shirt = QUIRK_STYLE[quirk].color;
   if (quirk === 'boss') {
     shirt = SUIT;
     pants = '#262b37';
     hair = look.bald ? null : { style: 'slick', color: '#a9afb8' };
   }
+  if (quirk === 'inlaw') {
+    // Always the horseshoe (it's what reads "older" from behind); grey or white.
+    shirt = QUIRK_STYLE.inlaw.color;
+    sleeve = shade(OXFORD, 0.08);
+    pants = PANTS[1];
+    hair = { style: 'fringe', color: wrap(look.hair, 2) ? '#e4e2dc' : '#b9bdc3' };
+  }
+  if (quirk === 'pastor') {
+    shirt = QUIRK_STYLE.pastor.color;
+    pants = PANTS[2];
+    // Short hair only: anything long would hide the collar band.
+    if (hair && hair.style !== 'crop' && hair.style !== 'buzz' && hair.style !== 'swoop') hair = { style: 'crop', color: hair.color };
+  }
   return {
     shirt,
     shirtShade: shade(shirt, 0.18),
+    sleeve,
     pants,
     hair,
     skin: SKINS[wrap(look.skin, SKINS.length)],

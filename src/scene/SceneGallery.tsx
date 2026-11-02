@@ -37,6 +37,8 @@ function radius(g: Guy, toward: Side): number {
   switch (g.quirk) {
     case 'talker':
     case 'splasher':
+    case 'inlaw':
+    case 'pastor':
       return 2;
     case 'boss':
       return 3;
@@ -46,6 +48,8 @@ function radius(g: Guy, toward: Side): number {
       return toward === g.lean ? 2 : 1;
     case 'gassy':
       return toward === g.lean ? 3 : 1;
+    case 'peeper':
+      return toward === g.lean ? 2 : 1;
     default:
       return 1;
   }
@@ -146,6 +150,36 @@ const crowded = room(
   'left',
   [4],
 );
+// The newer guys: in-law (grey horseshoe, if bald or not), pastor (with and without hair), a peeper looking each way.
+const newGuys = room(
+  [
+    U(guy('inlaw')),
+    U(),
+    U(guy('peeper', { lean: 'left' })),
+    U(),
+    U(guy('pastor')),
+    U(),
+    U(guy('peeper', { lean: 'right', height: 2 })),
+    U(),
+    U(guy('inlaw', { bald: true, hair: 1, height: 0 })),
+    U(guy('pastor', { bald: true, hair: 3 })),
+  ],
+  'left',
+);
+// Shoulder to shoulder: peepers facing each other and away, next to other quirks (chips must not collide).
+const newCrowded = room(
+  [
+    U(guy('peeper', { lean: 'right' })),
+    U(guy('peeper', { lean: 'left' })),
+    U(guy('drunk', { lean: 'right' })),
+    U(guy('inlaw')),
+    U(guy('pastor', { hair: 3 })),
+    U(guy('peeper', { lean: 'left', bald: true })),
+    U(),
+    U(guy('peeper', { lean: 'right', hair: 2 })),
+  ],
+  'right',
+);
 const looksRow = room(
   Array.from({ length: 10 }, (_, i) => U(guy('normal', { hair: i % 6, shirt: i % 8, pants: i % 5, skin: i % 5, height: i % 3, bald: i === 9 }))),
   'left',
@@ -161,6 +195,10 @@ const puddleRoom = room([U(guy('normal'), 'puddle'), U(), U(), U(undefined, 'pud
 // Gassy at 2, door on the right so his smell drifts right: zone covers 1 (r=1) and 3..5 (r=3).
 const revealGassyRoom = room([U(), U(), U(guy('gassy', { lean: 'right' })), U(), U(), U()], 'right');
 const revealStallRoom = room([U(guy()), U(), U(guy('boss')), U(), U(guy()), S()], 'left');
+// Peeper at 2 looking right: zone covers 1 (r=1) and 3..4 (r=2); the in-law at 6 covers 4..5. You pick 4.
+const revealPeeperRoom = room([U(), U(), U(guy('peeper', { lean: 'right' })), U(), U(), U(), U(guy('inlaw'))], 'left');
+// Pastor at 1 and in-law at 4 (both r=2): 2 and 3 sit in both zones; only 7 is clear.
+const revealPastorRoom = room([U(), U(guy('pastor')), U(), U(), U(guy('inlaw')), U(), U(), U()], 'right');
 
 const evalOf = (b: Bathroom, picks: Record<number, Grade>, greens: number[], violated: Record<number, number[]> = {}): Evaluation => ({
   slots: b.slots.map((s, index) => {
@@ -196,6 +234,19 @@ const revealGassy = evalOf(revealGassyRoom, { 0: 'clear', 1: 'amber', 3: 'doctor
   5: [2],
 });
 const revealStall = evalOf(revealStallRoom, { 5: 'clear', 1: 'doctor', 3: 'doctor' }, [5], { 1: [0, 2], 3: [2, 4] });
+const revealPeeper = evalOf(revealPeeperRoom, { 0: 'clear', 1: 'amber', 3: 'doctor', 4: 'doctor', 5: 'doctor' }, [0], {
+  1: [2],
+  3: [2],
+  4: [2, 6],
+  5: [6],
+});
+const revealPastor = evalOf(revealPastorRoom, { 7: 'clear', 0: 'doctor', 2: 'doctor', 3: 'doctor', 5: 'doctor', 6: 'doctor' }, [7], {
+  0: [1],
+  2: [1, 4],
+  3: [1, 4],
+  5: [4],
+  6: [4],
+});
 
 // ---- Page ------------------------------------------------------------------------------
 
@@ -261,6 +312,9 @@ export function SceneGallery() {
       <Section title="Interactive" note="Pick → walk in → fake reveal (gallery-only evaluator). Arrow keys move between free spots.">
         <Live bathroom={room([U(guy()), U(), U(), U(guy('talker')), U(), U(undefined, 'puddle'), U(), S()], 'left', [5])} />
       </Section>
+      <Section title="Interactive: peeper looking left, pastor, in-law">
+        <Live bathroom={room([U(), U(), U(), U(guy('peeper', { lean: 'left' })), U(), U(), U(guy('pastor')), U(), U(guy('inlaw'))], 'left')} />
+      </Section>
       <Section title="Interactive, reduced motion" note="No walk, no sway: you appear instantly.">
         <Live bathroom={room([U(), U(guy('boss')), U(), U(), U(guy()), U()], 'right')} reducedMotion />
       </Section>
@@ -282,6 +336,15 @@ export function SceneGallery() {
       </Section>
       <Section title="Quirks (10 slots): FaceTime →, talker, splasher, drunk ←, boss (tall), drunk → (bald); divider after 1">
         <BathroomScene bathroom={quirks} />
+      </Section>
+      <Section
+        title="New guys: in-law, peeper ←, pastor, peeper → (tall), in-law (bald, short), pastor (bald)"
+        note="The peeper's head, eye, sight line, lean and chip arrow all point the same way: the side where he needs two empty urinals."
+      >
+        <BathroomScene bathroom={newGuys} slotNumbers />
+      </Section>
+      <Section title="New guys shoulder to shoulder: peepers face to face and back to back, next to a drunk, in-law and pastor">
+        <BathroomScene bathroom={newCrowded} />
       </Section>
       <Section title="Looks: every hair style, shirt, pants, skin, height, bald">
         <BathroomScene bathroom={looksRow} />
@@ -307,6 +370,12 @@ export function SceneGallery() {
       </Section>
       <Section title="Reveal: downwind of the gassy guy (door right)">
         <BathroomScene bathroom={revealGassyRoom} picked={4} evaluation={revealGassy} />
+      </Section>
+      <Section title="Reveal: doctor pick two away on the peeper's looking side (he turns to you)">
+        <BathroomScene bathroom={revealPeeperRoom} picked={4} evaluation={revealPeeper} slotNumbers />
+      </Section>
+      <Section title="Reveal: doctor pick between the pastor and the in-law (door right)">
+        <BathroomScene bathroom={revealPastorRoom} picked={3} evaluation={revealPastor} />
       </Section>
       <Section title="Reveal: stall pick (you're in the stall)">
         <BathroomScene bathroom={revealStallRoom} picked={5} evaluation={revealStall} />

@@ -1,5 +1,6 @@
 // Pure scene logic (labels, keyboard focus order, reveal model). No React.
 import type { Bathroom, Evaluation, Grade, Quirk, Slot } from '../types';
+import { QUIRK_STYLE } from './looks';
 
 /** Grades that broke the urinal code: show zone bands and reactions. */
 export function isViolationGrade(g: Grade | undefined): boolean {
@@ -14,6 +15,9 @@ export const QUIRK_BADGES: Record<Quirk, string | null> = {
   drunk: '🍺',
   facetime: '📱',
   gassy: '💨',
+  inlaw: '👴',
+  pastor: '⛪',
+  peeper: '👀',
 };
 
 /** Pickable = unoccupied and not broken. */
@@ -40,7 +44,10 @@ export function slotLabel(slot: Slot, index: number): string {
   const base = slot.flag === 'low' ? `Low urinal ${n}` : `Urinal ${n}`;
   const extra = slot.flag === 'puddle' ? ', puddle' : '';
   if (slot.occupant) {
-    const q = slot.occupant.quirk === 'normal' ? '' : ` (${slot.occupant.quirk})`;
+    const { quirk, lean } = slot.occupant;
+    // The peeper's direction is the whole puzzle with him, so say it.
+    const look = quirk === 'peeper' && lean ? `, looking ${lean}` : '';
+    const q = quirk === 'normal' ? '' : ` (${QUIRK_STYLE[quirk].tag.toLowerCase()}${look})`;
     return `${base}${extra}, occupied${q}`;
   }
   return `${base}${extra}, free`;

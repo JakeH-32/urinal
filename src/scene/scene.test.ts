@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Bathroom, Evaluation, Guy, Slot } from '../types';
 import { DOOR_W, MIN_W, PITCH, contentWidth, headTopY, layoutBathroom, solidEnd, walkPose } from './geometry';
 import { buildReveal, firstPickable, isPickable, lastPickable, nextPickable, slotLabel, zoneOf } from './logic';
-import { SHIRTS, resolveLook } from './looks';
+import { PANTS, QUIRK_STYLE, SHIRTS, resolveLook } from './looks';
 
 const g: Guy = { quirk: 'normal', name: 'G', blurb: '', look: { shirt: 0, pants: 0, hair: 0, skin: 0, height: 1, bald: false } };
 const U = (occupant?: Guy, flag?: Slot['flag']): Slot => ({ kind: 'urinal', flag, occupant });
@@ -86,6 +86,13 @@ describe('picking logic', () => {
     expect(slotLabel(b.slots[2], 2)).toBe('Urinal 3, out of order');
     expect(slotLabel(U(undefined, 'puddle'), 0)).toBe('Urinal 1, puddle, free');
   });
+
+  it('names quirk occupants by their chip, and says which way a peeper is looking', () => {
+    expect(slotLabel(U({ ...g, quirk: 'boss' }), 0)).toBe('Urinal 1, occupied (boss)');
+    expect(slotLabel(U({ ...g, quirk: 'inlaw' }), 0)).toBe('Urinal 1, occupied (in-law)');
+    expect(slotLabel(U({ ...g, quirk: 'peeper', lean: 'left' }), 2)).toBe('Urinal 3, occupied (peeper, looking left)');
+    expect(slotLabel(U({ ...g, quirk: 'peeper' }), 2)).toBe('Urinal 3, occupied (peeper)');
+  });
 });
 
 describe('reveal', () => {
@@ -133,6 +140,29 @@ describe('looks', () => {
     expect(l.hair).toBeNull();
     expect(l.height).toBeGreaterThanOrEqual(0);
     expect(l.height).toBeLessThanOrEqual(2);
+  });
+});
+
+describe('quirk looks', () => {
+  it('every quirk chip has its own colour', () => {
+    const colors = Object.values(QUIRK_STYLE).map((st) => st.color.toLowerCase());
+    expect(new Set(colors).size).toBe(colors.length);
+  });
+
+  it('dresses the in-law, pastor and peeper', () => {
+    const look = { shirt: 0, pants: 0, hair: 3, skin: 0, height: 1, bald: false };
+    const inlaw = resolveLook(look, 'inlaw');
+    expect(inlaw.hair?.style).toBe('fringe');
+    expect(resolveLook({ ...look, bald: true }, 'inlaw').hair?.style).toBe('fringe');
+    expect(inlaw.shirt).toBe(QUIRK_STYLE.inlaw.color);
+    expect(inlaw.sleeve).toBeDefined();
+    expect(inlaw.pants).toBe(PANTS[1]);
+    const pastor = resolveLook(look, 'pastor'); // hair 3 is long: cut short so the collar shows
+    expect(pastor.shirt).toBe(QUIRK_STYLE.pastor.color);
+    expect(pastor.hair?.style).toBe('crop');
+    expect(resolveLook({ ...look, bald: true }, 'pastor').hair).toBeNull();
+    expect(resolveLook(look, 'peeper').shirt).toBe(QUIRK_STYLE.peeper.color);
+    expect(resolveLook(look, 'peeper').sleeve).toBeUndefined();
   });
 });
 

@@ -44,6 +44,13 @@ describe('explainPick', () => {
     expect(explain('_ N _ N _ _ _', 'left', 2)).toBe('You were inside two men’s space at once. Leave room on both sides.');
   });
 
+  it('father-in-law, pastor, peeper', () => {
+    expect(explain('_ _ I _ _ _ _', 'left', 4)).toBe('Fathers-in-law need two empty urinals between you.');
+    expect(explain('_ _ R _ _ _ _', 'left', 4)).toBe('Pastors need two empty urinals between you.');
+    expect(explain('_ _ E> _ _ _ _', 'left', 4)).toBe('He was looking right. Go to his left side, or leave two empty urinals.');
+    expect(explain('_ _ E> _ _ _ _', 'left', 1)).toBe('He was looking the other way. Still leave one empty urinal.');
+  });
+
   it('Lemonade explains which tiebreak you lost', () => {
     expect(explain('_ _ _ N _ N', 'left', 1)).toBe('Legal, but the ✓ spot had more room.');
     expect(explain('_ N _', 'right', 2)).toBe('Same room, but the ✓ spot was against the wall.');
