@@ -64,6 +64,7 @@ export interface Guy {
    * there violates); beside the phone the normal 1-urinal rule applies.
    * gassy: always the door side (the smell drifts out the door): radius 3 that way, 1 the other.
    * peeper: the side he's looking (radius 2 that way, 1 the other).
+   * pastor: always the door side (he greets everyone who comes in): radius 2 that way, 1 the other.
    */
   lean?: Side;
   /**

@@ -638,7 +638,7 @@ export const WHOS_WHO: { quirk: Exclude<Quirk, 'normal'>; line: string }[] = [
   { quirk: 'splasher', line: 'Confident. Not accurate.' },
   { quirk: 'boss', line: 'Signs your paychecks. Check his mood before you pick.' },
   { quirk: 'inlaw', line: 'Gave his blessing. Still reviewing it.' },
-  { quirk: 'pastor', line: 'Knows everyone’s business. Calls it pastoral care.' },
+  { quirk: 'pastor', line: 'Greets everyone who comes through the door. Everyone.' },
   { quirk: 'drunk', line: 'Swaying. Watch which way.' },
   { quirk: 'peeper', line: 'Can’t keep his eyes on his own wall. Check which way they wander.' },
   { quirk: 'facetime', line: 'On a video call with his grandma back home. Nobody wants to be in the background.' },

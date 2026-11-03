@@ -118,7 +118,10 @@ export function explainPick(b: Bathroom, ev: Evaluation, pick: number): string |
     case 'inlaw':
       return 'Fathers-in-law need two empty urinals between you.';
     case 'pastor':
-      return 'Pastors need two empty urinals between you.';
+      if (!guy.lean) return 'Pastors need two empty urinals between you.';
+      return side === guy.lean
+        ? 'He greets everyone who comes through the door, and you were on his door side. Go to his far side, or two urinals away.'
+        : 'Even on his far side, leave one empty urinal.';
     case 'peeper': {
       const look = guy.lean;
       if (!look) return 'Peeping toms need two empty urinals between you.';

@@ -53,7 +53,10 @@ describe('explainPick', () => {
 
   it('father-in-law, pastor, peeper', () => {
     expect(explain('_ _ I _ _ _ _', 'left', 4)).toBe('Fathers-in-law need two empty urinals between you.');
-    expect(explain('_ _ R _ _ _ _', 'left', 4)).toBe('Pastors need two empty urinals between you.');
+    expect(explain('_ _ R _ _ _ _', 'left', 0)).toBe(
+      'He greets everyone who comes through the door, and you were on his door side. Go to his far side, or two urinals away.',
+    );
+    expect(explain('_ _ R _ _ _ _', 'left', 3)).toBe('Even on his far side, leave one empty urinal.');
     expect(explain('_ _ E> _ _ _ _', 'left', 4)).toBe('He was looking right. Go to his left side, or leave two empty urinals.');
     expect(explain('_ _ E> _ _ _ _', 'left', 1)).toBe('He was looking the other way. Still leave one empty urinal.');
   });

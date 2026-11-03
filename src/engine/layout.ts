@@ -52,7 +52,7 @@ export function parseLayout(spec: string, door: Side): Bathroom {
     slots.push(slotFor(tok));
   }
   if (pending) throw new Error(`trailing divider in "${spec}"`);
-  for (const s of slots) if (s.occupant?.quirk === 'gassy') s.occupant.lean = door;
+  for (const s of slots) if (s.occupant?.quirk === 'gassy' || s.occupant?.quirk === 'pastor') s.occupant.lean = door;
   if (slots.length < 2) throw new Error(`layout needs 2+ slots: "${spec}"`);
   return { slots, dividers, door };
 }

@@ -95,8 +95,8 @@ describe('400 days of dailies', () => {
           expect(g.look.hair).toBeLessThanOrEqual(5);
           expect(g.look.skin).toBeLessThanOrEqual(4);
           expect(g.look.height).toBeLessThanOrEqual(2);
-          expect(g.lean !== undefined).toBe(g.quirk === 'drunk' || g.quirk === 'peeper' || g.quirk === 'facetime' || g.quirk === 'gassy');
-          if (g.quirk === 'gassy') expect(g.lean, where).toBe(b.door);
+          expect(g.lean !== undefined).toBe(g.quirk === 'drunk' || g.quirk === 'peeper' || g.quirk === 'facetime' || g.quirk === 'gassy' || g.quirk === 'pastor');
+          if (g.quirk === 'gassy' || g.quirk === 'pastor') expect(g.lean, where).toBe(b.door);
         }
         for (const s of b.slots) if (s.kind === 'stall') expect(s.occupant).toBeUndefined();
 

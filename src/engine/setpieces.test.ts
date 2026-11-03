@@ -16,7 +16,7 @@ describe('parseLayout', () => {
   it('reads the father-in-law, pastor and peeper', () => {
     const b = parseLayout('I R E< E>', 'left');
     expect(b.slots.map((s) => s.occupant?.quirk)).toEqual(['inlaw', 'pastor', 'peeper', 'peeper']);
-    expect(b.slots.map((s) => s.occupant?.lean)).toEqual([undefined, undefined, 'left', 'right']);
+    expect(b.slots.map((s) => s.occupant?.lean)).toEqual([undefined, 'left', 'left', 'right']); // the pastor faces the door
   });
 
   it('rejects junk', () => {

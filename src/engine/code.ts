@@ -35,9 +35,10 @@ export function zoneRadius(guy: Guy, toward: Side): number {
     if (!guy.lean) return BASE_RADIUS.facetime;
     return guy.lean === toward ? 1 : Infinity;
   }
-  if (guy.quirk === 'drunk' || guy.quirk === 'gassy' || guy.quirk === 'peeper') {
+  if (guy.quirk === 'drunk' || guy.quirk === 'gassy' || guy.quirk === 'peeper' || guy.quirk === 'pastor') {
     // Lopsided: the full radius toward his lean (drunk 2: sway; gassy 3: the door, where the smell
-    // drifts; peeper 2: where he's looking), 1 the other way. No lean: both ways.
+    // drifts; peeper 2: where he's looking; pastor 2: the door, where he greets everyone), 1 the other
+    // way. No lean: both ways.
     if (!guy.lean) return BASE_RADIUS[guy.quirk];
     return guy.lean === toward ? BASE_RADIUS[guy.quirk] : 1;
   }

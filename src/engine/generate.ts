@@ -105,7 +105,7 @@ function placeGuys(rng: Rng, b: Bathroom, quirks: Quirk[]): void {
     const free = freeUrinals(b);
     if (free.length === 0) return;
     const g = guy(q, rng);
-    if (q === 'gassy') g.lean = b.door; // his smell drifts out the door
+    if (q === 'gassy' || q === 'pastor') g.lean = b.door; // the smell drifts out the door; the pastor greets everyone at it
     b.slots[rng.pick(free)].occupant = g;
   }
 }

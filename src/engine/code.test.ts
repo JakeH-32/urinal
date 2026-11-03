@@ -162,6 +162,12 @@ describe('evaluate', () => {
     expect(grades(parseLayout('_ R | _ | _ | _', 'right'))).toEqual(['D:pastor', '-', 'D:pastor', 'S:too-close', 'C:perfect']);
   });
 
+  it('pastor greets the door: 2 on his door side, 1 on the wall side', () => {
+    const b = parseLayout('_ _ _ R _ _ _', 'left');
+    expect(zoneCovers(b, 3)).toEqual([1, 2, 4]);
+    expect(grades(b)[5]).not.toMatch(/^D:/);
+  });
+
   it('peeper looking right: 2 that way, 1 behind his back', () => {
     const b = parseLayout('_ _ _ E> _ _ _', 'right');
     expect(zoneCovers(b, 3)).toEqual([2, 4, 5]);
