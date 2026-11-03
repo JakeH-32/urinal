@@ -227,18 +227,20 @@ export const SET_PIECES: SetPiece[] = [
   // drunk sways into the roomy side, the splasher and the boss reach farther.
   // ---------------------------------------------------------------------------
   {
-    // The middle is boss on one side, talker on the other. Only the spot by the door clears both.
+    // Two spots with the same room: one beside the boss and the HR rep, one nearer the finalist.
+    // At equal room the talker is the worst neighbour, so the roomier-looking one is wrong.
     id: 'sp-final-interview',
     difficulty: 4,
     venue: 'Job interview, final round',
-    premise: 'The man who’d be your boss is in here between interviews. So is the other finalist, and he won’t stop talking.',
-    layout: 'B _ _ _ _ T _ _ _',
+    premise: 'The man who’d be your boss is in here between interviews, with someone from HR. So is the other finalist, and he won’t stop talking.',
+    layout: '_ _ B N _ _ _ _ _ T',
     door: 'right',
     people: [
       { name: 'Your would-be boss', blurb: 'Asked where you see yourself in five years. You said “here.”' },
+      { name: 'The HR rep', blurb: 'Took notes on your handshake.' },
       { name: 'The other finalist', blurb: 'Has a portfolio. Has it with him now.' },
     ],
-    answer: 9,
+    answer: 6,
   },
   {
     // The corner behind the divider looks safe. The talker talks over it.
@@ -255,32 +257,34 @@ export const SET_PIECES: SetPiece[] = [
     answer: 6,
   },
   {
-    // The drunk sways two into the gap, so the whole gap is his or the officiant's. The spot behind him is the only clean one.
+    // The drunk has the corner and sways two into the gap. The middle of the gap is closest to him;
+    // one step toward the officiant has the same room with a sober neighbour.
     id: 'sp-rehearsal-list',
     difficulty: 4,
     venue: 'Rehearsal dinner, second bottle',
     premise: 'The groom’s brother has been listing left since the salad course. Nobody has mentioned it to him.',
-    layout: '_ N _ _ _ D< _ _',
+    layout: '_ N _ _ _ _ _ D<',
     door: 'left',
     people: [
       { name: 'The officiant', blurb: 'Got ordained online on Tuesday.' },
       { name: 'The groom’s brother', blurb: 'His toast is ready. It’s mostly about him.' },
     ],
-    answer: 8,
+    answer: 4,
   },
   {
-    // The classic spot between the two of them is inside the splash.
+    // The classic spot halfway between them has the splasher as its closest man at that room.
+    // One step toward the man who skipped boot camp has the same room and no splash.
     id: 'sp-boot-camp',
     difficulty: 4,
     venue: 'Gym, after the 6 a.m. boot camp',
     premise: 'Your trainer is in here. He has never done anything at less than full intensity.',
-    layout: 'N _ _ _ P _ _ _',
+    layout: 'N _ _ _ _ _ P _',
     door: 'left',
     people: [
       { name: 'A man who skipped boot camp', blurb: 'Came for the smoothie bar.' },
       { name: 'Your trainer, Brandon', blurb: 'Charges $90 an hour to yell “one more.”' },
     ],
-    answer: 8,
+    answer: 3,
   },
   {
     // The corner is two empty urinals from the boss. He needs three.
@@ -325,18 +329,19 @@ export const SET_PIECES: SetPiece[] = [
     answer: 1,
   },
   {
-    // Two empty urinals from the boss is enough. The puddle past it is a downgrade.
+    // Two empty urinals from the boss is legal, but at that room the boss is a worse neighbour than
+    // the other candidate. The puddle in between is a downgrade. One past it has a plain neighbour.
     id: 'sp-review-break',
     difficulty: 4,
     venue: 'Your annual review, 10-minute break',
     premise: 'Your review is in ten minutes, and the man giving it just walked in ahead of you.',
-    layout: 'B _ _ _ W _ N',
+    layout: 'B _ _ _ W _ _ N',
     door: 'left',
     people: [
       { name: 'Your manager, Mr. Dorsey', blurb: 'Has your review printed out. Highlighted.' },
       { name: 'The guy up for the same promotion', blurb: 'Already ordered a nameplate.' },
     ],
-    answer: 4,
+    answer: 6,
   },
   {
     // Exactly one spot is two clear of both. The divider in the corner doesn't buy enough.
@@ -367,41 +372,44 @@ export const SET_PIECES: SetPiece[] = [
     answer: 1,
   },
   {
-    // He sways into the big gap. Its one legal spot has the drunk as its closest man; the corner past the far guy has a normal one.
+    // He sways into the big gap. Its middle has the drunk as its closest man; one step toward the
+    // bride's brother has the same room and a sober one.
     id: 'sp-party-bus',
     difficulty: 4,
     venue: 'Bachelor party, the brewery bus',
     premise: 'The groom is three IPAs in and leaning on things that aren’t there.',
-    layout: 'N _ D> _ _ _ _ N _ _',
+    layout: 'N _ D> _ _ _ _ _ N _',
     door: 'left',
     people: [
       { name: 'The best man', blurb: 'Planned all of this. Has a spreadsheet.' },
       { name: 'The groom', blurb: 'Has hugged the bus driver twice.' },
       { name: 'The bride’s brother', blurb: 'Here to report back.' },
     ],
-    answer: 10,
+    answer: 7,
   },
   {
-    // Three urinals, both free ones touch him. Stand behind his lean, not in it.
+    // The roomy side is the side he sways into. Behind his back, the divider makes the close spot legal.
     id: 'sp-power-ballad',
     difficulty: 4,
     venue: 'Karaoke bar, last call',
-    premise: 'Three urinals. The man who closed karaoke with a power ballad is in the middle, swaying toward the door.',
-    layout: '_ D> _',
+    premise: 'Four urinals. The man who closed karaoke with a power ballad is second from the wall, swaying toward the door.',
+    layout: '_ | D> _ _',
     door: 'right',
     people: [{ name: 'The power ballad guy', blurb: 'Held the last note for forty seconds. Bowed to the bartender.' }],
     answer: 1,
   },
   {
-    // Same room by the CEO or by the talker. Two from the boss beats two from the talker.
+    // The corner looks roomiest, but it's past the onboarding guy. This side of him, the one legal
+    // spot is between the other new hire and the CEO.
     id: 'sp-orientation',
     difficulty: 4,
     venue: 'Orientation, day one',
-    premise: 'Your new CEO is by the door. The onboarding guy is near the corner, still onboarding.',
-    layout: '_ _ T _ _ _ _ _ _ B',
+    premise: 'Your new CEO is by the door. The onboarding guy is halfway to the corner, still onboarding.',
+    layout: '_ _ _ T N _ _ _ _ B',
     door: 'right',
     people: [
       { name: 'The onboarding guy', blurb: 'Has a forty-slide deck about the coffee machine.' },
+      { name: 'The other new hire', blurb: 'Started today too. Has already asked about the 401(k) match.' },
       { name: 'Your new CEO', blurb: 'Shook your hand this morning. Called you Brian.' },
     ],
     answer: 7,
@@ -468,18 +476,18 @@ export const SET_PIECES: SetPiece[] = [
     answer: 8,
   },
   {
-    // The low urinal beside your dad is legal thanks to the divider, so the stall is cowardice.
+    // The talker covers the middle and your dad has the low urinal beside him. Every urinal breaks the code: stall.
     id: 'sp-dads-retirement',
     difficulty: 6,
     venue: 'Your dad’s retirement dinner',
     premise: 'Your dad’s old business partner is telling the 1987 sales conference story again. Your dad has never used a stall in his life.',
-    layout: 'S _ _ T _ _ N | L',
+    layout: 'S _ _ T _ _ N L',
     door: 'left',
     people: [
       { name: 'Your dad’s old business partner', blurb: 'Bought your dad out in 1994. Brings it up as a joke.' },
       { name: 'Your dad', blurb: 'Thirty-one years at one company. They gave him a clock.' },
     ],
-    answer: 8,
+    answer: 1,
   },
   {
     // The drunk's sway and the boss's reach cover the whole wide gap. The puddle behind the drunk is the only legal spot.
@@ -525,12 +533,13 @@ export const SET_PIECES: SetPiece[] = [
     answer: 2,
   },
   {
-    // No clean spot. Right behind the uncle's back is the smallest violation in the room.
+    // No clean spot. The divider would cover a sober man, but the uncle sways two. Right behind his
+    // back is the smallest violation in the room.
     id: 'sp-wedding-dj',
     difficulty: 6,
     venue: 'Your brother’s wedding, the after-party',
     premise: 'The DJ is pitching his podcast to anyone in range. Your uncle is tilting toward the DJ like he’s interested.',
-    layout: '_ T _ _ D< _',
+    layout: 'T _ _ _ | D< _',
     door: 'left',
     people: [
       { name: 'The DJ', blurb: 'Also hosts a podcast about being a DJ.' },
@@ -539,12 +548,13 @@ export const SET_PIECES: SetPiece[] = [
     answer: 6,
   },
   {
-    // Every spot touches someone. The corner beside the foreman is the only one-rule break with no talker in it.
+    // Every spot touches someone. The open middle is inside the holdout's reach; the corner beside
+    // the foreman is a one-rule break with a normal man, on the wall.
     id: 'sp-holdout',
     difficulty: 6,
     venue: 'Jury duty, day three of deliberations',
     premise: 'Eleven of you agree. The holdout is in here, walking everyone through the timeline again.',
-    layout: 'N _ N _ _ T _ _ N _',
+    layout: 'N _ N _ _ _ T _ N _',
     door: 'left',
     people: [
       { name: 'Juror No. 3', blurb: 'Has a flight Friday. Mentions it hourly.' },
@@ -583,18 +593,20 @@ export const SET_PIECES: SetPiece[] = [
     answer: 4,
   },
   {
-    // Both ends have exactly enough room. The wall end means walking past the moderator.
+    // The moderator reaches the far corner and the boss needs two empty. The only legal spot is
+    // behind the divider, beside the attendee who just came in.
     id: 'sp-panel-moderator',
     difficulty: 6,
     venue: 'Industry conference, before your panel',
     premise: 'The moderator wants to rehearse your answers, and your boss, who founded this conference, is two down from him. Attendees keep coming through that door.',
-    layout: '_ _ _ T _ B _ _ _ _',
+    layout: '_ _ T _ B _ _ _ | N _',
     door: 'right',
     people: [
       { name: 'The panel moderator', blurb: 'Has seven “quick questions” before the panel.' },
       { name: 'Your boss, the conference founder', blurb: 'Picks next year’s speakers. Writes nothing down.' },
+      { name: 'An attendee', blurb: 'Has a question that’s more of a comment.' },
     ],
-    answer: 10,
+    answer: 8,
   },
   {
     // The only legal spot is beside the quiet cousin, and only because of the divider.
@@ -612,46 +624,48 @@ export const SET_PIECES: SetPiece[] = [
     answer: 6,
   },
   {
-    // Two drunks leaning apart. Between their backs is legal but has a drunk on each side at the same room.
-    // The far end, just past the right one's sway, has the same room and only one drunk near it.
+    // Two drunks leaning apart, their sways covering both ends. Between their backs, the divider
+    // behind the left one makes his side the one legal spot.
     id: 'sp-groomsmen-feud',
     difficulty: 6,
     venue: 'A wedding, an hour before the ceremony',
     premise: 'Two groomsmen have been leaning away from each other since the argument about the bachelor party.',
-    layout: '_ _ D< _ _ _ D> _ _ _',
+    layout: '_ _ D< | _ _ D> _ _',
     door: 'right',
     people: [
       { name: 'The groom’s college roommate', blurb: 'Planned Vegas. Lost the deposit.' },
       { name: 'The groom’s brother', blurb: 'Wanted a cabin. Still bringing up the cabin.' },
     ],
-    answer: 10,
+    answer: 4,
   },
   {
-    // Two empty urinals from the boss, a clean urinal, and the splasher far away.
+    // The roomy middle is a puddle. The boss and the splasher cover the rest, except the end spot
+    // two past the splasher's divider.
     id: 'sp-member-guest',
     difficulty: 6,
     venue: 'Member-guest tournament, the clubhouse',
     premise: 'You’re your boss’s guest at his club, and he’s in here. So is the man who just birdied 18, still in his follow-through.',
-    layout: 'W _ _ _ B _ _ P | _ _',
+    layout: '_ B _ _ W _ _ P | _ _',
     door: 'right',
     people: [
       { name: 'Your boss, the club president', blurb: 'Signed you in as his guest. Can sign you out.' },
       { name: 'The man who birdied 18', blurb: 'Has described the putt to the bartender, the cart attendant and the ice machine.' },
     ],
-    answer: 2,
+    answer: 10,
   },
   {
-    // Two mirror-image spots behind two dividers. The splasher's divider counts. The talker's doesn't.
+    // Two dividers. The talker leans around his; the splasher's buys the spot past it. The roomy
+    // middle is a low urinal.
     id: 'sp-small-claims',
     difficulty: 6,
     venue: 'Small claims court, recess',
     premise: 'The man you’re suing is in the corner, eager to settle this out loud. The man who just won his case is near the door, still celebrating.',
-    layout: 'T | _ _ _ _ P | _ _',
+    layout: 'T | _ _ L _ _ P | _ _',
     door: 'right',
     people: [
       { name: 'The man you’re suing', blurb: 'Built his fence eleven inches into your yard. Wants to “talk it out.”' },
       { name: 'A man who just won his case', blurb: 'Got $1,400 back from his landscaper. Still celebrating.' },
     ],
-    answer: 8,
+    answer: 9,
   },
 ];

@@ -277,5 +277,14 @@ export function evaluate(b: Bathroom): Evaluation {
       violatedBy: c.violatedBy,
     };
   });
+  // Legal only thanks to a divider = still right next to a guy. Then the stall is just as good.
+  if (best && best.tier <= 1 && best.clearance <= 0) {
+    for (const c of cands) {
+      if (c.tier !== 2 || greens.includes(c.index)) continue;
+      slots[c.index] = { ...slots[c.index], grade: 'clear', reason: 'perfect' };
+      greens.push(c.index);
+    }
+    greens.sort((a, b) => a - b);
+  }
   return { slots, greens };
 }

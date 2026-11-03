@@ -187,7 +187,7 @@ describe('daily shape and warm-up', () => {
       expect(dailyRounds(key).map((r) => r.difficulty)).toEqual(shape);
       seen.set(shape.join(), (seen.get(shape.join()) ?? 0) + 1);
     }
-    expect(seen.size).toBe(4);
+    expect(seen.size).toBe(3);
     expect(seen.get('3,4,5,6,6')!).toBeGreaterThan(180);
   });
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SET_PIECES } from '../content/setpieces';
 import { evaluate } from './code';
-import { DAILY_DIFFICULTIES, SET_PIECE_DIFFICULTIES, SET_PIECE_ROUNDS, dailyRounds, dailySetPiece, practiceRound } from './generate';
+import { DAILY_DIFFICULTIES, SET_PIECE_DIFFICULTIES, SET_PIECE_ROUNDS, dailyRounds, dailySetPiece, labelsMatter, practiceRound } from './generate';
 import { parseLayout } from './layout';
 
 describe('parseLayout', () => {
@@ -46,6 +46,8 @@ describe('set pieces', () => {
     for (const n of [sp.answer - 2, sp.answer]) expect(b.slots[n]?.occupant?.quirk).not.toBe('facetime');
     // A puzzle needs at least one wrong answer.
     expect(ev.slots.filter((s) => s.pickable && s.grade !== 'clear').length).toBeGreaterThan(0);
+    // Every label changes the answer: no room is solved by "don't stand next to anyone" (playtest).
+    expect(labelsMatter(b, ev)).toBe(true);
   });
 
   it('show up in the daily on rounds 2 and 5 with their premise', () => {

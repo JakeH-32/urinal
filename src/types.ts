@@ -28,6 +28,8 @@
 //     5. against the wall, i.e. the end slot AWAY from the door (better). The door end is
 //        open to the room, so it is not a wall.
 //   Equal keys tie, and every tied spot is Clear. The door never decides a grade.
+//   Exception: when the best urinal is legal only thanks to a divider (you'd still be right next to a
+//   guy), a free stall is Clear too.
 //   Grades are a hydration chart (display meta in src/grades.ts; players see
 //   Clear / Lemonade / Apple Juice / See a Doctor, the ids below are internal):
 //     CLEAR  = ties with the best (the Code's answer).

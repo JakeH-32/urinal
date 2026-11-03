@@ -67,7 +67,7 @@ export function recordRound(save: SaveData, dateKey: string, number: number, res
  * everyone can replay it. Loaded on any later day, a reset is only marked as applied: old days stay.
  * A second reset on the same day gets a suffix ('2026-11-02b'); the first 10 characters are the day.
  */
-export const DAILY_RESETS: readonly string[] = ['2026-10-29', '2026-11-02', '2026-11-02b'];
+export const DAILY_RESETS: readonly string[] = ['2026-10-29', '2026-11-02', '2026-11-02b', '2026-11-03'];
 
 export function applyDailyResets(save: SaveData, todayKey: string, resets: readonly string[] = DAILY_RESETS): SaveData {
   const done = save.daily.resets ?? [];

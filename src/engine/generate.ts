@@ -36,6 +36,20 @@ export function naivePicks(b: Bathroom): number[] {
   return out;
 }
 
+/**
+ * True when every guy with a label changes the answer: swap him for a plain guy and the ✓ moves.
+ * Otherwise his label is decoration and "don't stand next to anyone" solves the room.
+ */
+export function labelsMatter(b: Bathroom, ev: Evaluation = evaluate(b)): boolean {
+  const key = ev.greens.join();
+  return b.slots.every((s, j) => {
+    const g = s.occupant;
+    if (!g || g.quirk === 'normal' || s.kind !== 'urinal') return true;
+    const plain: Bathroom = { ...b, slots: b.slots.map((x, k) => (k === j ? { ...x, occupant: { ...g, quirk: 'normal', lean: undefined } } : x)) };
+    return evaluate(plain).greens.join() !== key;
+  });
+}
+
 /** True when no naive pick is clear (the round punishes eyeballing). */
 export function isTrap(b: Bathroom, ev: Evaluation = evaluate(b)): boolean {
   const naive = naivePicks(b);
@@ -266,6 +280,8 @@ function accepts(b: Bathroom, ev: Evaluation, d: Difficulty, plan: Plan, stage: 
     if ((d === 4 || d === 5) && !isTrap(b, ev)) return false;
   }
   if (stage >= 2) return true;
+  // Every label has to change the answer (playtest: rooms were solvable without reading them).
+  if (d >= 3 && !labelsMatter(b, ev)) return false;
 
   if (d === 1 && !small) {
     // The clear spot must be the single roomiest spot, not a tiebreak.
@@ -375,10 +391,9 @@ export const DAILY_DIFFICULTIES: readonly Difficulty[] = [3, 4, 5, 6, 6];
 
 /** Some days vary the usual shape a little (weights out of 10). */
 const DAILY_SHAPES: readonly { shape: readonly Difficulty[]; weight: number }[] = [
-  { shape: DAILY_DIFFICULTIES, weight: 6 },
+  { shape: DAILY_DIFFICULTIES, weight: 7 },
   { shape: [3, 4, 5, 5, 6], weight: 2 }, // a gentler middle
   { shape: [3, 4, 6, 6, 6], weight: 1 }, // brutal
-  { shape: [2, 4, 5, 6, 6], weight: 1 }, // a softer opener
 ];
 
 /** Days before this keep the plain shape, so rooms already played never change. */

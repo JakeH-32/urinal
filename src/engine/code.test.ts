@@ -190,6 +190,13 @@ describe('evaluate', () => {
     expect(grades(b)).toEqual(['S:not-wall', 'S:too-close', 'D:boss', 'D:boss', '-', 'D:boss', 'D:boss', 'S:too-close', 'C:perfect']);
   });
 
+  it('a urinal legal only thanks to a divider is still next to a guy: the stall is Clear too', () => {
+    const ev = evaluate(parseLayout('S _ _ T _ _ N | _', 'left'));
+    expect(ev.greens).toEqual([0, 7]);
+    // With real room at a urinal, the stall is still second best.
+    expect(grades(parseLayout('S _ _ _ N _ _ _', 'left'))[0]).toBe('S:stall-coward');
+  });
+
   it('stall-forced when every urinal violates', () => {
     const b = bath('S _ _ B _', 'left');
     const ev = evaluate(b);
