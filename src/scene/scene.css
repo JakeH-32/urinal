@@ -265,8 +265,41 @@
 .urinal-scene .us-crowd-top rect { fill: var(--us-ink); }
 .urinal-scene .us-crowd-top text { fill: #ffffff; }
 .urinal-scene .us-crowd-zero rect { fill: rgba(255, 255, 255, 0.82); stroke: #8b9aa7; }
+.urinal-scene .us-crowd-zero { opacity: 0.45; }
 .urinal-scene .us-crowd-zero text { fill: #6f7f8c; }
 .urinal-scene.us-reduced .us-crowd { animation: none; }
 @media (prefers-reduced-motion: reduce) {
   .urinal-scene .us-crowd { animation: none; }
+}
+
+/* Gassy rooms: a small vent over the door and a faint draft drifting to it. Barely there on purpose. */
+.us-vent rect {
+  fill: #e9edf1;
+  stroke: #8a96a8;
+  stroke-width: 1.2;
+}
+.us-vent line {
+  stroke: #8a96a8;
+  stroke-width: 1;
+}
+.us-draft path {
+  fill: none;
+  stroke: #7d9a2e;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-dasharray: 2 7;
+  opacity: 0.22;
+}
+.us-draft.is-moving path {
+  animation: us-draft-drift 2.6s linear infinite;
+}
+@keyframes us-draft-drift {
+  to {
+    stroke-dashoffset: -18;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .us-draft.is-moving path {
+    animation: none;
+  }
 }

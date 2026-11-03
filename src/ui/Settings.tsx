@@ -47,7 +47,7 @@ export function Settings() {
                 reset();
                 sfx.play('dryer');
                 setConfirming(false);
-                toast('Progress reset.');
+                toast('Progress reset');
               }}
             >
               Yes, reset everything

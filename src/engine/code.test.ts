@@ -184,6 +184,15 @@ describe('evaluate', () => {
     expect(grades(parseLayout('_ _ T _ _ _ _ _ _ B', 'right')).slice(5, 7)).toEqual(['S:quirk-neighbor', 'C:perfect']);
   });
 
+  it('boss moods: happy acts like a regular guy, stressed needs two, angry three', () => {
+    const covers = (tok: string) => zoneCovers(parseLayout(`_ _ _ _ ${tok} _ _ _ _`, 'left'), 4);
+    expect(covers('B+')).toEqual([3, 5]);
+    expect(covers('B')).toEqual([2, 3, 5, 6]);
+    expect(covers('B!')).toEqual([1, 2, 3, 5, 6, 7]);
+    // A happy boss is a regular guy: right beside him is Apple Juice, not See a Doctor.
+    expect(grades(parseLayout('_ _ B+ _ _ _ _', 'left'))[1]).toBe('A:adjacent');
+  });
+
   it('boss: radius 2', () => {
     const b = bath('_ _ _ _ B _ _ _ _', 'left');
     expect(zoneCovers(b, 4)).toEqual([2, 3, 5, 6]);
@@ -195,6 +204,11 @@ describe('evaluate', () => {
     expect(ev.greens).toEqual([0, 7]);
     // With real room at a urinal, the stall is still second best.
     expect(grades(parseLayout('S _ _ _ N _ _ _', 'left'))[0]).toBe('S:stall-coward');
+  });
+
+  it('legal spots: right beside a guy (through a divider) loses to a gap, even next to a quirk guy (playtest: awards night)', () => {
+    const g = grades(parseLayout('_ N I | _ | _ | _ | N N I _', 'left'));
+    expect([g[4], g[5]]).toEqual(['C:perfect', 'S:too-close']);
   });
 
   it('stall-forced when every urinal violates', () => {

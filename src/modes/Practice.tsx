@@ -72,7 +72,7 @@ export function Practice({ code }: { code?: string }) {
       </div>
       <p className="round-meta">
         <span className="round-count">
-          Endless · Level {round.difficulty} · <span className="code">{roomCode}</span>
+          Endless
         </span>
         <span className="round-venue">{round.venue}</span>
       </p>

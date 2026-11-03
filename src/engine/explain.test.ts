@@ -39,7 +39,9 @@ describe('explainPick', () => {
   });
 
   it('boss, talker through a divider, two men at once', () => {
-    expect(explain('_ _ _ B _ _ _ _ _ _', 'left', 5)).toBe('The boss needs two empty urinals between you.');
+    expect(explain('_ _ _ B _ _ _ _ _ _', 'left', 5)).toBe('The boss is stressed. Stressed bosses need two empty urinals.');
+    expect(explain('_ _ _ B! _ _ _ _ _ _', 'left', 6)).toBe('The boss is angry. Angry bosses need three empty urinals.');
+    expect(explain('_ _ _ B+ _ _ _ _ _ _', 'left', 4)).toBe('You stood right next to him. Leave at least one empty urinal.');
     expect(explain('T | _ _ _ _ _', 'left', 1)).toBe('Talkers need two empty urinals. He leans right around dividers.');
     expect(explain('_ N _ N _ _ _', 'left', 2)).toBe('You were inside two men’s space at once. Leave room on both sides.');
   });

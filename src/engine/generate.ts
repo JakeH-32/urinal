@@ -38,14 +38,17 @@ export function naivePicks(b: Bathroom): number[] {
 
 /**
  * True when every guy with a label changes the answer: swap him for a plain guy and the ✓ moves.
- * Otherwise his label is decoration and "don't stand next to anyone" solves the room.
+ * Otherwise his label is decoration and "don't stand next to anyone" solves the room. A happy boss
+ * already acts like a plain guy, so his test is the other way round: treat him as stressed and the
+ * ✓ moves (he's a trap for anyone who flinches at the BOSS chip without reading his mood).
  */
 export function labelsMatter(b: Bathroom, ev: Evaluation = evaluate(b)): boolean {
   const key = ev.greens.join();
   return b.slots.every((s, j) => {
     const g = s.occupant;
     if (!g || g.quirk === 'normal' || s.kind !== 'urinal') return true;
-    const plain: Bathroom = { ...b, slots: b.slots.map((x, k) => (k === j ? { ...x, occupant: { ...g, quirk: 'normal', lean: undefined } } : x)) };
+    const swapped: Guy = g.quirk === 'boss' && g.mood === 'happy' ? { ...g, mood: 'stressed' } : { ...g, quirk: 'normal', lean: undefined, mood: undefined };
+    const plain: Bathroom = { ...b, slots: b.slots.map((x, k) => (k === j ? { ...x, occupant: swapped } : x)) };
     return evaluate(plain).greens.join() !== key;
   });
 }
@@ -65,6 +68,7 @@ const PLACEHOLDER_LOOK: Guy['look'] = { shirt: 0, pants: 0, hair: 0, skin: 0, he
 function guy(quirk: Quirk, rng: Rng): Guy {
   const g: Guy = { quirk, name: '', blurb: '', look: PLACEHOLDER_LOOK };
   if (quirk === 'drunk' || quirk === 'facetime' || quirk === 'peeper') g.lean = rng.chance(0.5) ? 'left' : 'right';
+  if (quirk === 'boss') g.mood = rng.pick(['happy', 'stressed', 'angry'] as const);
   return g;
 }
 

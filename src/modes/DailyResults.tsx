@@ -1,5 +1,5 @@
 // End-of-day card: score, rank, tiles, streak, share, countdown, and a review of the five rounds.
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { DailyRecord, Evaluation, Round } from '../types';
 import { RESULT_TITLES } from '../content';
 import { buildShareText } from '../engine/daily';
@@ -14,6 +14,7 @@ import { useNow } from '../ui/hooks';
 import { HydrationChart } from '../ui/HydrationChart';
 import { hydrationPoints, pickableOnly, type DayCrowd } from '../net/community';
 import { DayCrowdSummary, ReviewCrowd } from '../ui/Crowd';
+import { RoomReview } from './RoomReview';
 import { clearsIn, gradeCounts, verdictLine, violatorName } from './roundLogic';
 
 export function NextCountdown({ label = 'Hold it. Next Urinal in' }: { label?: string }) {
@@ -48,6 +49,7 @@ export function DailyResults({ record, todayKey, rounds, crowd }: DailyResultsPr
   const { save } = useSave();
   const clears = clearsIn(record.results);
   const streak = displayStreak(save.daily, todayKey);
+  const [reviewing, setReviewing] = useState<number | null>(null);
 
   const review = useMemo(() => {
     if (!rounds) return [];
@@ -68,8 +70,13 @@ export function DailyResults({ record, todayKey, rounds, crowd }: DailyResultsPr
     });
   }, [record, rounds]);
 
+  const reviewRes = reviewing === null ? undefined : record.results[reviewing];
+  const reviewRound = reviewRes && rounds ? (rounds.find((r) => r.id === reviewRes.roundId) ?? rounds[reviewing ?? 0]) : undefined;
   return (
     <div className="results">
+      {reviewRound && reviewRes && reviewing !== null && (
+        <RoomReview round={reviewRound} result={reviewRes} title={`Urinal #${record.number} · Round ${reviewing + 1}`} onClose={() => setReviewing(null)} />
+      )}
       <section className="card results-card">
         <div className="results-main">
           <p className="results-kicker">Urinal #{record.number}</p>
@@ -78,7 +85,7 @@ export function DailyResults({ record, todayKey, rounds, crowd }: DailyResultsPr
             <span className="results-of">/{ROUNDS_PER_DAY}</span>
           </p>
           <p className="results-title">{rankTitle(clears)}</p>
-          <TileRow results={record.results} />
+          <TileRow results={record.results} onSelect={rounds ? setReviewing : undefined} />
           {crowd && <DayCrowdSummary crowd={crowd} points={hydrationPoints(record.results)} />}
           <div className="row row--center">
             <DailyShare record={record} />
@@ -110,7 +117,7 @@ export function DailyResults({ record, todayKey, rounds, crowd }: DailyResultsPr
           <ol className="review-list">
             {review.map(({ res, venue, line }, i) => (
               <li key={res.roundId} className="review-item">
-                <Tile grade={res.grade} size="sm" />
+                <Tile grade={res.grade} size="sm" onClick={() => setReviewing(i)} />
                 <span className="review-text">
                   <span className="review-venue">
                     {i + 1}. {venue}

@@ -24,14 +24,22 @@ export interface RoundPlayerProps {
   extra?: ReactNode;
   /** How everyone else picked this round (daily only; null until loaded or when stats are off). */
   crowd?: RoundCrowd | null;
+  /**
+   * Warm-up: a miss keeps the ✓ hidden and offers Try again instead of Next, so you find the spot
+   * yourself. Learning by doing, never a formula.
+   */
+  onRetry?: () => void;
 }
+
+/** Next ignores taps this soon after it appears, so a fast double tap can't skip the verdict. */
+const NEXT_GUARD_MS = 400;
 
 /** If the scene never reports the walk finishing, reveal anyway after this long. */
 const WALK_FALLBACK_MS = 5000;
 const STEP_MS = 300;
 const MAX_STEPS = 10;
 
-export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel, header, extra, crowd }: RoundPlayerProps) {
+export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel, header, extra, crowd, onRetry }: RoundPlayerProps) {
   // Pure and cheap. Computed up front so a broken engine fails loudly into the ErrorBoundary.
   const evaluation = useMemo(() => evaluate(round.bathroom), [round]);
   const [picked, setPicked] = useState<number | undefined>(undefined);
@@ -40,6 +48,7 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
   const stepTimer = useRef<number | undefined>(undefined);
   const fallbackTimer = useRef<number | undefined>(undefined);
   const nextRef = useRef<HTMLButtonElement>(null);
+  const shownAt = useRef(0);
 
   // Latest callbacks, so timers never call stale props.
   const onGradedRef = useRef(onGraded);
@@ -86,6 +95,7 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
 
   useEffect(() => {
     if (!result) return;
+    shownAt.current = performance.now();
     const next = nextRef.current;
     next?.focus({ preventScroll: true });
     // Short screens: bring Next into view so nobody has to scroll for it (no-op when it's visible).
@@ -94,7 +104,16 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
 
   const named = result ? violatorName(round.bathroom, evaluation, result.pick) : undefined;
   const line = result ? verdictLine(round.id, result.reason, named) : '';
-  const why = result ? explainPick(round.bathroom, evaluation, result.pick) : null;
+  const retry = !!onRetry && !!result && result.grade !== 'clear';
+  // A retry keeps the answer hidden: no ✓ on the scene, and no why note that points at it.
+  const shownEvaluation = result ? (retry ? { ...evaluation, greens: [] } : evaluation) : undefined;
+  const rawWhy = result ? explainPick(round.bathroom, evaluation, result.pick) : null;
+  const why = retry && rawWhy?.includes('✓') ? null : rawWhy;
+  const act = () => {
+    if (performance.now() - shownAt.current < NEXT_GUARD_MS) return;
+    if (retry) onRetry?.();
+    else onNext();
+  };
 
   return (
     <div className="round">
@@ -106,7 +125,7 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
           onPick={onPick}
           disabled={picked !== undefined}
           picked={picked}
-          evaluation={result ? evaluation : undefined}
+          evaluation={shownEvaluation}
           reducedMotion={reducedMotion}
           onWalkDone={onWalkDone}
           crowd={result ? crowdPercents(crowd ?? null, result.pick) : undefined}
@@ -114,7 +133,7 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
       </div>
       <div className="round-foot" aria-live="polite">
         {!result ? (
-          <p className="round-prompt">{picked === undefined ? 'Tap a spot.' : 'Walking in…'}</p>
+          <p className="round-prompt">{picked === undefined ? 'Tap a spot' : 'Walking in…'}</p>
         ) : (
           <div className={`verdict verdict--${result.grade}`}>
             <GradeUrinal grade={result.grade} size={80} animate={!reducedMotion} />
@@ -124,8 +143,8 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
               {crowd && <RoundCrowdLine crowd={crowd} pick={result.pick} greens={evaluation.greens} />}
             </div>
             <div className="row verdict-actions">
-              <Button ref={nextRef} variant="primary" size="lg" onClick={onNext} sound={false}>
-                {nextLabel}
+              <Button ref={nextRef} variant="primary" size="lg" onClick={act} sound={false}>
+                {retry ? 'Try again' : nextLabel}
               </Button>
               {extra}
             </div>

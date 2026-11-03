@@ -334,6 +334,9 @@ export function SceneGallery() {
       <Section title="Stalls: occupied, free (ajar), boss in a stall; divider after 3">
         <BathroomScene bathroom={stalls} />
       </Section>
+      <Section title="Boss moods (happy, stressed, angry) and a gassy guy: the vent and draft by the door">
+        <Live bathroom={room([U(), U({ ...guy('boss'), mood: 'happy' }), U(), U({ ...guy('boss'), mood: 'stressed' }), U(), U({ ...guy('boss'), mood: 'angry' }), U(), U(guy('gassy', { lean: 'right' })), U()], 'right')} reducedMotion />
+      </Section>
       <Section title="Quirks (10 slots): FaceTime →, talker, splasher, drunk ←, boss (tall), drunk → (bald); divider after 1">
         <BathroomScene bathroom={quirks} />
       </Section>

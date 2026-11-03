@@ -45,7 +45,7 @@ export function HydrationChart({ compact, counts, title = 'Hydration chart', art
 /** One horizontal bar split by grade, for lifetime counts. */
 export function HydrationBar({ counts }: { counts: Record<Grade, number> }) {
   const total = GRADE_ORDER.reduce((n, g) => n + counts[g], 0);
-  if (total === 0) return <p className="muted small">No picks yet.</p>;
+  if (total === 0) return <p className="muted small">No picks yet</p>;
   return (
     <div className="hbar-wrap">
       <div className="hbar" role="img" aria-label={GRADE_ORDER.map((g) => `${GRADES[g].label}: ${counts[g]}`).join(', ')}>

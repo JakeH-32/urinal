@@ -1,5 +1,7 @@
 // First visit only: three easy rooms (easy, easy, medium) before the first daily. Never scored or
-// sent to crowd stats; finishing or skipping it sets save.warmupDone.
+// sent to crowd stats; finishing or skipping it sets save.warmupDone. It teaches instead of
+// punishing: a miss hides the ✓ and offers Try again until you find the spot. The tile keeps your
+// first try.
 import { useMemo, useState } from 'react';
 import type { RoundResult } from '../types';
 import { warmupRounds } from '../engine/generate';
@@ -13,6 +15,7 @@ export function Warmup({ number, onDone }: { number: number; onDone(): void }) {
   const reducedMotion = useReducedMotion();
   const rounds = useMemo(() => warmupRounds(), []);
   const [index, setIndex] = useState(0);
+  const [attempt, setAttempt] = useState(0);
   const [results, setResults] = useState<RoundResult[]>([]);
   const [finished, setFinished] = useState(false);
 
@@ -40,6 +43,7 @@ export function Warmup({ number, onDone }: { number: number; onDone(): void }) {
     } else {
       sfx.play('click');
       setIndex((i) => i + 1);
+      setAttempt(0);
     }
   };
 
@@ -49,25 +53,25 @@ export function Warmup({ number, onDone }: { number: number; onDone(): void }) {
       <p className="round-meta">
         <span className="round-count">
           Warm-up · Room {index + 1} of {rounds.length}
-          {' · '}
-          <button type="button" className="linklike" onClick={onDone}>
-            Skip
-          </button>
         </span>
         <span className="round-venue">{round.venue}</span>
       </p>
+      <Button variant="ghost" size="sm" className="warmup-skip" onClick={onDone}>
+        Skip warm-up
+      </Button>
     </header>
   );
 
   return (
     <RoundPlayer
-      key={round.id}
+      key={`${round.id}-${attempt}`}
       round={round}
       reducedMotion={reducedMotion}
       onGraded={onGraded}
       onNext={onNext}
       nextLabel={last ? 'Done' : 'Next bathroom'}
       header={header}
+      onRetry={() => setAttempt((a) => a + 1)}
     />
   );
 }

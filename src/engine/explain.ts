@@ -1,7 +1,7 @@
 // One plain sentence saying why a pick graded the way it did (shown under the verdict).
 // Dry on purpose: the verdict line carries the joke, this carries the rule.
 import type { Bathroom, Evaluation, Quirk, Side } from '../types';
-import { culpritOf, dividersBetween, roomTo, sideOf } from './code';
+import { actsNormal, culpritOf, dividersBetween, roomTo, sideOf } from './code';
 
 const other = (s: Side): Side => (s === 'left' ? 'right' : 'left');
 
@@ -32,7 +32,7 @@ function tightNeighbors(b: Bathroom, i: number): { quirks: number; normals: numb
       normals = 0;
     }
     if (r === room) {
-      if (q === 'normal') normals++;
+      if (actsNormal(s.occupant)) normals++;
       else quirks++;
     }
   });
@@ -45,7 +45,7 @@ function tightQuirk(b: Bathroom, i: number): Exclude<Quirk, 'normal'> | undefine
   let bestRoom = Infinity;
   b.slots.forEach((s, j) => {
     const q = s.occupant?.quirk;
-    if (!q || q === 'normal' || j === i) return;
+    if (!q || q === 'normal' || actsNormal(s.occupant) || j === i) return;
     const room = roomTo(b, i, j);
     if (room < bestRoom) {
       bestRoom = room;
@@ -102,6 +102,8 @@ export function explainPick(b: Bathroom, ev: Evaluation, pick: number): string |
   if (j === null || !guy) return 'You stood right next to him. Leave at least one empty urinal.';
   const side = sideOf(pick, j); // which side of him you were on
 
+  if (actsNormal(guy)) return 'You stood right next to him. Leave at least one empty urinal.';
+
   switch (guy.quirk) {
     case 'normal':
       return 'You stood right next to him. Leave at least one empty urinal.';
@@ -112,7 +114,7 @@ export function explainPick(b: Bathroom, ev: Evaluation, pick: number): string |
     case 'splasher':
       return 'Splashers need two empty urinals between you.';
     case 'boss':
-      return 'The boss needs two empty urinals between you.';
+      return guy.mood === 'angry' ? 'The boss is angry. Angry bosses need three empty urinals.' : 'The boss is stressed. Stressed bosses need two empty urinals.';
     case 'inlaw':
       return 'Fathers-in-law need two empty urinals between you.';
     case 'pastor':

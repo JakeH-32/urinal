@@ -8,6 +8,7 @@ import { clearsIn } from '../modes/roundLogic';
 import { LinkButton } from './Button';
 import { TileRow } from './Tiles';
 import { useNow, useReducedMotion, useRotating } from './hooks';
+import { ROUNDS_PER_DAY } from '../state/storage';
 
 export function Menu() {
   const { save } = useSave();
@@ -39,7 +40,7 @@ export function Menu() {
         <section className="card today">
           <p className="today-kicker">Urinal #{record.number}</p>
           <p className="today-score">
-            {clearsIn(record.results)}/6 · {rankTitle(clearsIn(record.results))}
+            {clearsIn(record.results)}/{ROUNDS_PER_DAY} · {rankTitle(clearsIn(record.results))}
           </p>
           <TileRow results={record.results} />
           <NextCountdown />
@@ -53,9 +54,9 @@ export function Menu() {
       ) : (
         <div className="menu-primary">
           <LinkButton href="#/daily" variant="primary" size="lg" block>
-            {done > 0 ? `Resume Urinal #${number} (${done}/6)` : `Play Urinal #${number}`}
+            {done > 0 ? `Resume Urinal #${number} (${done}/${ROUNDS_PER_DAY})` : `Play Urinal #${number}`}
           </LinkButton>
-          <p className="muted small center">Six bathrooms. Same six for everyone today.</p>
+          <p className="muted small center">Five bathrooms. Same five for everyone today.</p>
         </div>
       )}
 

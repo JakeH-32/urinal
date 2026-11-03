@@ -19,12 +19,21 @@ export interface TileProps {
   /** Play the flip-in animation when the tile mounts with a grade. */
   flip?: boolean;
   size?: 'sm' | 'md';
+  /** Played tiles only: tap to see that room again. */
+  onClick?: () => void;
 }
 
-export function Tile({ grade, label, active, flip, size = 'md' }: TileProps) {
+export function Tile({ grade, label, active, flip, size = 'md', onClick }: TileProps) {
   const cls = ['tile', `tile--${size}`, grade ? `tile--${grade}` : 'tile--empty', active ? 'is-active' : '', flip && grade ? 'tile--flip' : '']
     .filter(Boolean)
     .join(' ');
+  if (onClick && grade) {
+    return (
+      <button type="button" className={`${cls} tile--button`} style={gradeStyle(grade)} onClick={onClick} aria-label={`${GRADES[grade].label}. See this room again`}>
+        <span aria-hidden="true">{GRADE_GLYPH[grade]}</span>
+      </button>
+    );
+  }
   return (
     <span
       className={cls}
@@ -47,9 +56,11 @@ export interface TileRowProps {
   flipIndex?: number;
   numbered?: boolean;
   size?: 'sm' | 'md';
+  /** When set, played tiles are buttons that open that room again. */
+  onSelect?: (index: number) => void;
 }
 
-export function TileRow({ results, total = ROUNDS_PER_DAY, activeIndex, flipIndex, numbered, size = 'md' }: TileRowProps) {
+export function TileRow({ results, total = ROUNDS_PER_DAY, activeIndex, flipIndex, numbered, size = 'md', onSelect }: TileRowProps) {
   return (
     <div className={`tile-row tile-row--${size}`}>
       {Array.from({ length: total }, (_, i) => {
@@ -62,6 +73,7 @@ export function TileRow({ results, total = ROUNDS_PER_DAY, activeIndex, flipInde
             active={i === activeIndex && !grade}
             flip={i === flipIndex}
             size={size}
+            onClick={onSelect && grade ? () => onSelect(i) : undefined}
           />
         );
       })}

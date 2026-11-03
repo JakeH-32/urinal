@@ -1,6 +1,6 @@
 // A guy seen from behind, standing facing the wall. Local coords: feet centre at (0, 0), y up is negative.
 import { useId, type CSSProperties } from 'react';
-import type { Quirk, Side } from '../types';
+import type { BossMood, Quirk, Side } from '../types';
 import { GUY_H, heightScale } from './geometry';
 import { OXFORD, QUIRK_STYLE, SHOE, shade, type ResolvedLook } from './looks';
 import { legPose } from './pose';
@@ -399,9 +399,13 @@ export function PfftBurst({ x, y }: { x: number; y: number }) {
 export const CHIP_W = 66;
 
 /** Quirk chip above a guy's head: emoji disc + coloured label. Bottom centre at (x, y). */
-export function QuirkChip({ x, y, quirk, lean }: { x: number; y: number; quirk: Quirk; lean?: Side }) {
+/** The boss's mood is his emoji: the only tell for how much room he wants. */
+export const BOSS_MOOD_EMOJI: Record<BossMood, string> = { happy: '😊', stressed: '😰', angry: '😠' };
+
+export function QuirkChip({ x, y, quirk, lean, mood }: { x: number; y: number; quirk: Quirk; lean?: Side; mood?: BossMood }) {
   const st = QUIRK_STYLE[quirk];
   if (!st.tag) return null;
+  const emoji = quirk === 'boss' && mood ? BOSS_MOOD_EMOJI[mood] : st.emoji;
   // A drunk's chip points the way he sways (a peeper's, the way he looks), so the lopsided zone reads at a glance.
   const tag = lean ? (lean === 'left' ? `◀ ${st.tag}` : `${st.tag} ▶`) : st.tag;
   const w = CHIP_W;
@@ -415,7 +419,7 @@ export function QuirkChip({ x, y, quirk, lean }: { x: number; y: number; quirk: 
       </text>
       <circle className="us-chip-disc" cx={0} cy={-h - 9} r={10.5} fill="#fff" stroke={st.color} />
       <text className="us-emoji" x={0} y={-h - 8} textAnchor="middle" dominantBaseline="central" fontSize={12.5}>
-        {st.emoji}
+        {emoji}
       </text>
     </g>
   );

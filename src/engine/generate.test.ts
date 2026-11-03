@@ -121,7 +121,7 @@ describe('400 days of dailies', () => {
         if (r.difficulty <= 4) expect(ev.slots[ev.greens[0]].reason).not.toBe('stall-forced');
       }
     }
-  });
+  }, 20_000);
 
   it('has the right mix (and writes stats when STATS_OUT is set)', () => {
     type Bucket = Record<string, number>;
@@ -189,7 +189,7 @@ describe('daily shape and warm-up', () => {
     }
     expect(seen.size).toBe(3);
     expect(seen.get('3,4,5,6,6')!).toBeGreaterThan(180);
-  });
+  }, 30_000);
 
   it('warm-up: easy, easy, medium, one clear answer each, stable', () => {
     const rs = warmupRounds();

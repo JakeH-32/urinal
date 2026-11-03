@@ -227,6 +227,10 @@ export function BathroomScene(props: BathroomSceneProps) {
 
   // FaceTime: the stretch his camera films (the side away from the phone, to the end of the row),
   // straight from the engine so the picture can never disagree with the grade.
+  // Splashers leave a wet floor that fades out the farther it gets from them.
+  const splasherAt = bathroom.slots.flatMap((sl, i) => (sl.kind === 'urinal' && sl.occupant?.quirk === 'splasher' ? [i] : []));
+  // Urinal occupants who are gassy (the draft starts at each one's head).
+  const gassyAt = bathroom.slots.flatMap((sl, i) => (sl.kind === 'urinal' && sl.occupant?.quirk === 'gassy' ? [i] : []));
   const cameraSpans = useMemo(() => {
     const out: { guy: number; lo: number; hi: number; recAt: 'lo' | 'hi' }[] = [];
     bathroom.slots.forEach((s, j) => {
@@ -269,16 +273,33 @@ export function BathroomScene(props: BathroomSceneProps) {
           <pattern id={sideTileId} width={24} height={24} patternUnits="userSpaceOnUse" patternTransform={`skewY(${skew})`}>
             <path d="M24,0 L0,0 L0,24" fill="none" className="us-tile-line us-tile-line-side" />
           </pattern>
+          {/* splash sheen: wet near the splasher, fading to nothing a couple of urinals out */}
+          <radialGradient id={`${tileId}-wet`}>
+            <stop offset="0%" stopColor="#5fb0e6" stopOpacity={0.6} />
+            <stop offset="45%" stopColor="#8cc9f0" stopOpacity={0.3} />
+            <stop offset="100%" stopColor="#9ed3f5" stopOpacity={0} />
+          </radialGradient>
         </defs>
 
         {/* room shell */}
         <rect className="us-floor" x={0} y={FLOOR_Y} width={W} height={SCENE_H - FLOOR_Y} />
         <FloorLines width={W} />
+        {splasherAt.map((i) => (
+          <g key={`wet-${i}`} aria-hidden="true">
+            <ellipse cx={layout.slots[i].cx} cy={FEET_Y + 2} rx={PITCH * 2.2} ry={16} fill={`url(#${tileId}-wet)`} />
+            <SplashDrops cx={layout.slots[i].cx} />
+          </g>
+        ))}
         <rect className="us-wall" x={0} y={0} width={W} height={FLOOR_Y} />
         <rect x={0} y={0} width={W} height={FLOOR_Y} fill={`url(#${tileId})`} />
         <line className="us-baseboard" x1={0} x2={W} y1={FLOOR_Y} y2={FLOOR_Y} />
         <Doorway layout={layout} />
         <SolidEnd layout={layout} tileId={sideTileId} />
+        {/* gassy rooms: a small vent over the door and a faint draft drifting toward it */}
+        {gassyAt.length > 0 && <GasVent layout={layout} />}
+        {gassyAt.map((i) => (
+          <Draft key={`draft-${i}`} layout={layout} fromX={headPoint(bathroom.slots[i].occupant as Guy, layout.slots[i].cx).x} animate={!reducedMotion} />
+        ))}
 
         {/* red zone bands (behind fixtures) */}
         {reveal?.bands.map((band) => {
@@ -337,7 +358,7 @@ export function BathroomScene(props: BathroomSceneProps) {
             return (
               <g key={`occ-${g.index}`} className="us-occupant">
                 <title>{`${guy.name}: ${guy.blurb}`}</title>
-                <QuirkChip x={g.cx} y={STALL_TOP_Y + 52} quirk={guy.quirk} />
+                <QuirkChip x={g.cx} y={STALL_TOP_Y + 52} quirk={guy.quirk} mood={guy.mood} />
               </g>
             );
           }
@@ -651,6 +672,7 @@ function Occupant({ guy, cx, index, turn, chipX, propSide, straddle }: OccupantP
         y={head.top - 5}
         quirk={guy.quirk}
         lean={guy.quirk === 'drunk' || guy.quirk === 'peeper' ? guy.lean : undefined}
+        mood={guy.mood}
       />
     </g>
   );
@@ -760,6 +782,75 @@ function CameraFrame({ layout, lo, hi, recAt }: { layout: SceneLayout; lo: numbe
           REC
         </text>
       </g>
+    </g>
+  );
+}
+
+const VENT_W = 26;
+const VENT_H = 12;
+const VENT_Y = 9;
+
+/** Where the vent sits: centered above the doorway, clear of the urinal pipes. */
+function ventX(layout: SceneLayout): number {
+  return layout.door.cx - VENT_W / 2;
+}
+
+/** A small return-air vent over the door end. Decor, drawn quiet. */
+function GasVent({ layout }: { layout: SceneLayout }) {
+  const x = ventX(layout);
+  return (
+    <g className="us-vent" aria-hidden="true">
+      <rect x={x} y={VENT_Y} width={VENT_W} height={VENT_H} rx={2} />
+      {[3, 6, 9].map((dy) => (
+        <line key={dy} x1={x + 4} x2={x + VENT_W - 4} y1={VENT_Y + dy} y2={VENT_Y + dy} />
+      ))}
+    </g>
+  );
+}
+
+/** The faint air current from the gassy guy to the vent: two thin wavy strokes, barely there. */
+function Draft({ layout, fromX, animate }: { layout: SceneLayout; fromX: number; animate: boolean }) {
+  const toX = ventX(layout) + VENT_W / 2;
+  const toY = VENT_Y + VENT_H + 2;
+  const wave = (y0: number, amp: number) => {
+    const n = 4;
+    let d = `M${fromX},${y0}`;
+    for (let k = 1; k <= n; k++) {
+      const t = k / n;
+      const x = fromX + (toX - fromX) * t;
+      const y = y0 + (toY - y0) * t * t;
+      const cx = fromX + (toX - fromX) * (t - 0.5 / n);
+      d += ` Q${cx},${y + (k % 2 ? amp : -amp)} ${x},${y}`;
+    }
+    return d;
+  };
+  return (
+    <g className={`us-draft${animate ? ' is-moving' : ''}`} aria-hidden="true">
+      <path d={wave(64, 5)} />
+      <path d={wave(80, 4)} />
+    </g>
+  );
+}
+
+/** Droplets on the floor around a splasher: bigger and darker near him, fewer and fainter farther out. */
+const SPLASH_DROPS: readonly (readonly [number, number, number])[] = [
+  // [distance out in pitches, y offset, size]
+  [0.55, -3, 4.2], [0.7, 4, 3.6], [0.9, -1, 3.4], [1.05, 5, 2.8], [1.25, -4, 2.6],
+  [1.45, 2, 2.1], [1.7, -2, 1.7], [1.95, 4, 1.3], [2.2, -1, 1],
+];
+
+function SplashDrops({ cx }: { cx: number }) {
+  return (
+    <g className="us-splash-drops">
+      {SPLASH_DROPS.flatMap(([d, dy, size], k) =>
+        ([-1, 1] as const).map((side) => {
+          const fade = Math.max(0, 1 - d / 2.4);
+          // Mirror sides a little differently so it doesn't look stamped.
+          const x = cx + side * (d * PITCH + (side < 0 ? 3 : 0));
+          const y = FEET_Y + 2 + (side < 0 ? -dy : dy);
+          return <ellipse key={`${k}${side}`} cx={x} cy={y} rx={size * 1.8} ry={size * 0.7} fill="#4a9fd8" opacity={0.15 + 0.5 * fade} />;
+        }),
+      )}
     </g>
   );
 }

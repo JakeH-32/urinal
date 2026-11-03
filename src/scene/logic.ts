@@ -44,9 +44,9 @@ export function slotLabel(slot: Slot, index: number): string {
   const base = slot.flag === 'low' ? `Low urinal ${n}` : `Urinal ${n}`;
   const extra = slot.flag === 'puddle' ? ', puddle' : '';
   if (slot.occupant) {
-    const { quirk, lean } = slot.occupant;
-    // The peeper's direction is the whole puzzle with him, so say it.
-    const look = quirk === 'peeper' && lean ? `, looking ${lean}` : '';
+    const { quirk, lean, mood } = slot.occupant;
+    // The peeper's direction and the boss's mood are the whole puzzle with them, so say them.
+    const look = quirk === 'peeper' && lean ? `, looking ${lean}` : quirk === 'boss' && mood ? `, ${mood}` : '';
     const q = quirk === 'normal' ? '' : ` (${QUIRK_STYLE[quirk].tag.toLowerCase()}${look})`;
     return `${base}${extra}, occupied${q}`;
   }

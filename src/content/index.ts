@@ -636,7 +636,7 @@ export const HOW_TO_PLAY: { heading: string; body: string }[] = [
 export const WHOS_WHO: { quirk: Exclude<Quirk, 'normal'>; line: string }[] = [
   { quirk: 'talker', line: 'Wants to catch up. Here. Now.' },
   { quirk: 'splasher', line: 'Confident. Not accurate.' },
-  { quirk: 'boss', line: 'Signs your paychecks. Notices everything.' },
+  { quirk: 'boss', line: 'Signs your paychecks. Check his mood before you pick.' },
   { quirk: 'inlaw', line: 'Gave his blessing. Still reviewing it.' },
   { quirk: 'pastor', line: 'Knows everyone’s business. Calls it pastoral care.' },
   { quirk: 'drunk', line: 'Swaying. Watch which way.' },

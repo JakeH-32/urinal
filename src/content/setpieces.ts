@@ -480,7 +480,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-dads-retirement',
     difficulty: 6,
     venue: 'Your dad’s retirement dinner',
-    premise: 'Your dad’s old business partner is telling the 1987 sales conference story again. Your dad has never used a stall in his life.',
+    premise: 'Your dad’s old business partner is telling the 1987 sales conference story again. Your dad is in here too, pretending he hasn’t heard it.',
     layout: 'S _ _ T _ _ N L',
     door: 'left',
     people: [

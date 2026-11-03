@@ -119,7 +119,7 @@ function Shell() {
       <header className="topbar">
         <div className="topbar-side topbar-left">
           <a className="topbar-btn" href="#/" aria-label="Menu">
-            <span aria-hidden="true">🚽</span>
+            <img className="topbar-mark" src={`${import.meta.env.BASE_URL}urinal-mark.svg`} alt="" width={20} height={27} />
           </a>
           <button
             type="button"

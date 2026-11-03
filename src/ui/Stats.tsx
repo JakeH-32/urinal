@@ -38,7 +38,7 @@ export function Stats() {
       <section className="card">
         <h2 className="h3">Clears per day</h2>
         {st.played === 0 ? (
-          <p className="muted">Finish a daily to see this.</p>
+          <p className="muted">Finish a daily to see this</p>
         ) : (
           <ol className="dist" aria-label="Distribution of clears per finished day">
             {st.distribution.map((n, g) => (

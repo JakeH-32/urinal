@@ -20,6 +20,8 @@
 //     2. violations (fewer is better), then severity
 //     2b. legal spots only: talkers you'd walk past, i.e. ones between the door and the spot (fewer is
 //        better). This beats room: sneaking into a spot by the door beats a roomier one past the talker.
+//     2c. legal spots only: guys directly beside you (a divider between doesn't count). Fewer is better,
+//        and it beats room: right beside a stranger is worse than two from the in-law.
 //     3. min spare room to any occupant: raw |i - j| - r, dividers IGNORED (bigger is better;
 //        +Infinity if the room is empty). Dividers only decide legality; they never add room.
 //     4. who's at that tightest room: fewer quirk guys is better, and a talker counts double
@@ -52,6 +54,7 @@ export interface Rng {
 
 export type Quirk = 'normal' | 'talker' | 'splasher' | 'boss' | 'drunk' | 'facetime' | 'gassy' | 'inlaw' | 'pastor' | 'peeper';
 export type Side = 'left' | 'right';
+export type BossMood = 'happy' | 'stressed' | 'angry';
 
 export interface Guy {
   quirk: Quirk;
@@ -63,6 +66,11 @@ export interface Guy {
    * peeper: the side he's looking (radius 2 that way, 1 the other).
    */
   lean?: Side;
+  /**
+   * Boss only: his mood, shown on his chip. happy = acts like a regular guy (1), stressed = 2,
+   * angry = 3. Unset reads as stressed.
+   */
+  mood?: BossMood;
   /** Display name + one-line description, filled from content pools. */
   name: string;
   blurb: string;
@@ -108,6 +116,7 @@ export interface Round {
  *   F< on FaceTime, phone in his left hand (camera films everything to his right)   F> the mirror
  *   G  gassy (his smell drifts toward the door; the parser points him at `door`)
  *   I  father-in-law   R  pastor   E< peeping tom looking left   E> looking right
+ *   B is a stressed boss; B+ happy, B! angry
  *   | divider between the neighbouring slots
  * e.g. "T | _ | L _ _ P _ S"
  */

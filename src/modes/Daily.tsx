@@ -13,6 +13,7 @@ import { LinkButton } from '../ui/Button';
 import { TileRow } from '../ui/Tiles';
 import { useReducedMotion } from '../ui/hooks';
 import { DailyResults } from './DailyResults';
+import { RoomReview } from './RoomReview';
 import { RoundPlayer } from './RoundPlayer';
 import { Warmup } from './Warmup';
 
@@ -45,6 +46,8 @@ export function Daily() {
 
   const [view, setView] = useState<'play' | 'results'>(() => (record?.finished ? 'results' : 'play'));
   const [index, setIndex] = useState(() => Math.min(results.length, ROUNDS_PER_DAY - 1));
+  // A played tile tapped mid-day: that room again, read-only.
+  const [reviewing, setReviewing] = useState<number | null>(null);
 
   // First visit ever: three easy rooms before the first daily.
   if (!save.warmupDone) return <Warmup number={number} onDone={() => update((s) => ({ ...s, warmupDone: true }))} />;
@@ -88,7 +91,7 @@ export function Daily() {
 
   const header = (
     <header className="round-head">
-      <TileRow results={results} activeIndex={index} flipIndex={index} numbered />
+      <TileRow results={results} activeIndex={index} flipIndex={index} numbered onSelect={setReviewing} />
       <p className="round-meta">
         <span className="round-count">
           Urinal #{number} · Round {index + 1} of {ROUNDS_PER_DAY}
@@ -98,7 +101,12 @@ export function Daily() {
     </header>
   );
 
+  const reviewRound = reviewing === null ? undefined : rounds.find((r) => r.id === results[reviewing]?.roundId);
   return (
+    <>
+    {reviewRound && reviewing !== null && (
+      <RoomReview round={reviewRound} result={results[reviewing]} title={`Urinal #${number} · Round ${reviewing + 1}`} onClose={() => setReviewing(null)} />
+    )}
     <RoundPlayer
       key={round.id}
       round={round}
@@ -109,5 +117,6 @@ export function Daily() {
       header={header}
       crowd={pickableOnly(dayCrowd?.rounds[index], round.bathroom)}
     />
+    </>
   );
 }

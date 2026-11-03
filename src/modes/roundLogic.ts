@@ -2,7 +2,7 @@
 import type { Bathroom, DailyRecord, Evaluation, Grade, Quirk, Reason, RoundResult, SaveData, Side } from '../types';
 import { FIXTURES, QUIRKS, VERDICTS } from '../content';
 import { hashString } from '../engine/rng';
-import { culpritOf, occupantIndices, roomTo } from '../engine/code';
+import { actsNormal, culpritOf, occupantIndices, roomTo } from '../engine/code';
 import { GRADES, GRADE_ORDER } from '../grades';
 import { ROUNDS_PER_DAY } from '../state/storage';
 
@@ -46,7 +46,7 @@ function closestNeighbor(b: Bathroom, pick: number): number | undefined {
   for (const j of occupantIndices(b)) {
     if (j === pick) continue;
     const room = roomTo(b, pick, j);
-    const quirky = b.slots[j].occupant?.quirk !== 'normal';
+    const quirky = !actsNormal(b.slots[j].occupant);
     if (room < bestRoom || (room === bestRoom && quirky)) {
       best = j;
       bestRoom = room;
