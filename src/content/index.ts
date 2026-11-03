@@ -628,7 +628,7 @@ export const HOW_TO_PLAY: { heading: string; body: string }[] = [
   },
   {
     heading: 'Grades',
-    body: 'Clear means you picked the spot any man would. Your score is how many came back Clear. Share your colors, not the answers.',
+    body: 'Clear means you picked the spot any man would. Your score is how many came back Clear. Send it to the guys and find out who actually knows the code.',
   },
 ];
 
