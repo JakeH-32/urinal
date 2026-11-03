@@ -386,6 +386,15 @@ export function BathroomScene(props: BathroomSceneProps) {
             </text>
           ))}
 
+        {/* reveal rings and green checks: behind the men, so legs and every speech bubble sit on top */}
+        {reveal?.grade && pickedSlot && <Ring layout={layout} index={pickedSlot.index} color={GRADES[reveal.grade].color} ink={GRADES[reveal.grade].ink} />}
+        {reveal?.missedGreens.map((i) => (
+          <g key={`green-${i}`}>
+            <Ring layout={layout} index={i} color={GRADES.clear.color} ink={GRADES.clear.ink} dashed />
+            <CheckMark x={layout.slots[i].cx} y={FEET_Y + 2} />
+          </g>
+        ))}
+
         {/* occupants */}
         {layout.slots.map((g) => {
           const slot = bathroom.slots[g.index];
@@ -512,16 +521,8 @@ export function BathroomScene(props: BathroomSceneProps) {
             </g>
           )}
 
-        {/* reveal rings and green checks (on top) */}
-        {reveal?.grade && pickedSlot && <Ring layout={layout} index={pickedSlot.index} color={GRADES[reveal.grade].color} ink={GRADES[reveal.grade].ink} />}
-        {reveal?.missedGreens.map((i) => (
-          <g key={`green-${i}`}>
-            <Ring layout={layout} index={i} color={GRADES.clear.color} ink={GRADES.clear.ink} dashed />
-            <CheckMark x={layout.slots[i].cx} y={FEET_Y + 2} />
-          </g>
-        ))}
 
-        {/* the pilot's long correction crosses your ring, so it goes over it */}
+        {/* the pilot's long correction */}
         {chatBubbles(layout, bathroom, reactorDir, reveal?.picked, true)}
 
         {/* crowd stats: what share of players picked each spot (after the reveal) */}
