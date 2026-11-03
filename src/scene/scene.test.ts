@@ -1,3 +1,5 @@
+import { evaluate } from '../engine/code';
+import { parseLayout } from '../engine/layout';
 import { describe, expect, it } from 'vitest';
 import type { Bathroom, Evaluation, Guy, Slot } from '../types';
 import { DOOR_W, MIN_W, PITCH, contentWidth, headTopY, layoutBathroom, solidEnd, walkPose } from './geometry';
@@ -189,5 +191,15 @@ describe('puddle straddle pose', () => {
     expect(legPose(0, true).footX).toBe(17.5);
     expect(legPose(2, false)).toEqual(full); // clamped
     expect(legPose(0.5, false).footX).toBeGreaterThan(normal.footX);
+  });
+});
+
+describe('peeper swivel', () => {
+  it('turns to you when you take the spot right behind his back, even when a divider made it legal', () => {
+    const b = parseLayout('_ _ | E> _ _ _', 'right');
+    const r = buildReveal(evaluate(b), 1, b);
+    expect(r.reactors).toEqual([{ index: 2, dir: -1 }]);
+    // On the side he's looking, a legal spot draws no reaction.
+    expect(buildReveal(evaluate(b), 5, b).reactors).toEqual([]);
   });
 });

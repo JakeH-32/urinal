@@ -18,6 +18,7 @@ export const QUIRK_BADGES: Record<Quirk, string | null> = {
   inlaw: '👴',
   pastor: '⛪',
   peeper: '👀',
+  pilot: '✈️',
 };
 
 /** Pickable = unoccupied and not broken. */
@@ -117,7 +118,7 @@ export interface Reveal {
   reactors: { index: number; dir: -1 | 1 }[];
 }
 
-export function buildReveal(evaluation: Evaluation, picked: number | undefined): Reveal {
+export function buildReveal(evaluation: Evaluation, picked: number | undefined, bathroom?: Bathroom): Reveal {
   const pickedA = picked === undefined ? undefined : evaluation.slots.find((s) => s.index === picked);
   const grade = pickedA?.grade;
   const missedGreens = grade === 'clear' ? [] : evaluation.greens.filter((g) => g !== picked);
@@ -127,6 +128,15 @@ export function buildReveal(evaluation: Evaluation, picked: number | undefined):
     for (const j of pickedA?.violatedBy ?? []) {
       bands.push(zoneOf(evaluation, j));
       reactors.push({ index: j, dir: picked < j ? -1 : 1 });
+    }
+  }
+  // Sneak in right behind a peeper's back and he swivels round to look, even when a divider made it legal.
+  if (bathroom && picked !== undefined) {
+    for (const j of [picked - 1, picked + 1]) {
+      const g = bathroom.slots[j]?.occupant;
+      if (g?.quirk !== 'peeper' || bathroom.slots[j].kind !== 'urinal' || reactors.some((r) => r.index === j)) continue;
+      const youOn = picked < j ? 'left' : 'right';
+      if (g.lean && g.lean !== youOn) reactors.push({ index: j, dir: picked < j ? -1 : 1 });
     }
   }
   return { picked, grade, missedGreens, bands, reactors };

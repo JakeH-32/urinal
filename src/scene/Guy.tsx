@@ -2,7 +2,7 @@
 import { useId, type CSSProperties } from 'react';
 import type { BossMood, Quirk, Side } from '../types';
 import { GUY_H, heightScale } from './geometry';
-import { OXFORD, QUIRK_STYLE, SHOE, shade, type ResolvedLook } from './looks';
+import { OXFORD, PILOT_GOLD, PILOT_NAVY, PILOT_SHIRT, QUIRK_STYLE, SHOE, shade, type ResolvedLook } from './looks';
 import { legPose } from './pose';
 
 interface GuyFigureProps {
@@ -239,6 +239,20 @@ export function GuyFigure({ look, hoodie, quirk = 'normal', turn = 0, talking, p
       {quirk === 'inlaw' && <path className="us-ink" fill={OXFORD} d="M-9,-141 L-8,-148.5 L8,-148.5 L9,-141 Q0,-138.5 -9,-141 Z" strokeWidth={1.8} />}
       {/* pastor: the white clerical band, right round the back of the neck */}
       {quirk === 'pastor' && <rect className="us-ink" x={-8.5} y={-149} width={17} height={6.5} rx={1.5} fill="#fff" strokeWidth={1.8} />}
+      {/* pilot: crisp shirt collar and navy epaulettes with four gold stripes (captain, actually) */}
+      {quirk === 'pilot' && (
+        <g>
+          <path className="us-ink" fill={PILOT_SHIRT} d="M-9,-142 L-8,-149 L8,-149 L9,-142 L0,-139.5 Z" strokeWidth={1.8} />
+          {[-1, 1].map((sx) => (
+            <g key={sx} transform={sx < 0 ? 'scale(-1,1)' : undefined}>
+              <path className="us-ink" fill={PILOT_NAVY} d="M9,-145.5 L22,-144.2 Q25.2,-143.6 24.6,-140.6 L24.2,-139 L9.4,-140.4 Z" strokeWidth={1.6} />
+              {[13.5, 16.5, 19.5, 22.2].map((x) => (
+                <path key={x} d={`M${x},-144.4 L${x + 0.2},-139.9`} stroke={PILOT_GOLD} strokeWidth={1.4} />
+              ))}
+            </g>
+          ))}
+        </g>
+      )}
       {/* head */}
       <g transform={peek ? `translate(${turn * 5},-1)` : turn ? `translate(${turn * 2},0)` : undefined}>
         {turn === 0 ? (
@@ -270,6 +284,7 @@ export function GuyFigure({ look, hoodie, quirk = 'normal', turn = 0, talking, p
             )}
           </g>
         )}
+        {quirk === 'pilot' && <PilotCap turn={turn} />}
       </g>
       {prop === 'phone' && (
         <g transform={`translate(${propSide * PHONE_X},${PHONE_Y}) rotate(${propSide * 8})`}>
@@ -278,6 +293,34 @@ export function GuyFigure({ look, hoodie, quirk = 'normal', turn = 0, talking, p
         </g>
       )}
       </g>
+    </g>
+  );
+}
+
+/** How far the pilot's cap rises above a bare head (unscaled), so his chip can sit clear of it. */
+export const PILOT_CAP_RISE = 9;
+
+/**
+ * The pilot's peaked cap: a navy crown flaring out over a band with a gold cord. From behind the
+ * peak is hidden; with the head in profile (`turn`) the glossy black visor juts out in front.
+ */
+function PilotCap({ turn }: { turn: -1 | 0 | 1 }) {
+  // In profile the crown tips forward a touch, as caps do.
+  const tip = turn ? `rotate(${turn * 5},0,-172)` : undefined;
+  return (
+    <g transform={tip}>
+      {turn !== 0 && (
+        <path
+          className="us-ink"
+          fill="#15151a"
+          d={`M${turn * 8},-168.5 L${turn * 17},-168.8 Q${turn * 23},-168.3 ${turn * 24.5},-164.6 Q${turn * 18},-165.6 ${turn * 9},-165.4 Z`}
+          strokeWidth={1.6}
+        />
+      )}
+      <path className="us-ink" fill={PILOT_NAVY} d="M-15.6,-172.5 L-19,-180.5 Q0,-188.5 19,-180.5 L15.6,-172.5 Z" strokeWidth={1.8} />
+      <path d="M-11,-182.4 Q0,-185.6 11,-182.4" fill="none" stroke="#fff" strokeWidth={1.3} strokeLinecap="round" opacity={0.28} />
+      <rect className="us-ink" x={-15.6} y={-173} width={31.2} height={6.2} rx={1} fill="#121826" strokeWidth={1.8} />
+      <path d="M-14.6,-170 H14.6" stroke={PILOT_GOLD} strokeWidth={1.3} />
     </g>
   );
 }
@@ -400,7 +443,7 @@ export const CHIP_W = 66;
 
 /** Quirk chip above a guy's head: emoji disc + coloured label. Bottom centre at (x, y). */
 /** The boss's mood is his emoji: the only tell for how much room he wants. */
-export const BOSS_MOOD_EMOJI: Record<BossMood, string> = { happy: '😊', stressed: '😰', angry: '😠' };
+export const BOSS_MOOD_EMOJI: Record<BossMood, string> = { happy: '😊', stressed: '😰', angry: '😡' };
 
 export function QuirkChip({ x, y, quirk, lean, mood }: { x: number; y: number; quirk: Quirk; lean?: Side; mood?: BossMood }) {
   const st = QUIRK_STYLE[quirk];
@@ -418,7 +461,7 @@ export function QuirkChip({ x, y, quirk, lean, mood }: { x: number; y: number; q
         {tag}
       </text>
       <circle className="us-chip-disc" cx={0} cy={-h - 9} r={10.5} fill="#fff" stroke={st.color} />
-      <text className="us-emoji" x={0} y={-h - 8} textAnchor="middle" dominantBaseline="central" fontSize={12.5}>
+      <text className="us-emoji" x={0} y={-h - 8} textAnchor="middle" dominantBaseline="central" fontSize={quirk === 'boss' && mood ? 19 : 12.5}>
         {emoji}
       </text>
     </g>

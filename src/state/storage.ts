@@ -18,6 +18,7 @@ const REASON_SET: Record<Reason, true> = {
   'too-close': true,
   'quirk-neighbor': true,
   'not-wall': true,
+  'quick-exit': true,
   'past-talker': true,
   'near-door': true,
   'door-side': true,
@@ -33,6 +34,7 @@ const REASON_SET: Record<Reason, true> = {
   inlaw: true,
   pastor: true,
   peeper: true,
+  pilot: true,
 };
 
 export const REASONS: readonly Reason[] = Object.keys(REASON_SET) as Reason[];

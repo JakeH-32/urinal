@@ -67,10 +67,19 @@ describe('explainPick', () => {
   });
 
   it('neighbors: names a normal guy only when the ✓ spot really has one (playtest: wedding)', () => {
-    expect(explain('_ | D> _ N | _ _ _ T', 'right', 0)).toBe('Same room, but the ✓ spot put you next to a normal guy, not the drunk.');
-    expect(explain('_ _ D< _ _ _ D> _ _ _', 'right', 4)).toBe(
-      'Same room, but you had a guy with a label on each side. The ✓ spot only had one that close.',
-    );
+    expect(explain('_ _ D< _ _ _ D> _ _ _', 'right', 4)).toBe('Legal, but the ✓ spot had more room.');
+  });
+
+  it('puddles: standing in one is worse than standing a bit close', () => {
+    expect(explain('N _ W _ N _ N _ S', 'right', 2)).toBe('Legal, but you’d be standing in it. Anything dry beats the puddle.');
+    expect(explain('W _ N', 'right', 1)).toBe('Every dry spot broke the urinal code. This one broke it the least.');
+  });
+
+  it('never sends you to a side with nowhere to stand (playtest: FaceTime by the door)', () => {
+    expect(explain('W _ | F>', 'right', 0)).toBe('His phone was in his right hand, so everything to his left is on camera.');
+    expect(explain('_ _ _ _ F>', 'right', 1)).toBe('His phone was in his right hand, so everything to his left is on camera.');
+    expect(explain('_ _ _ F> _ _', 'right', 1)).toBe('His phone was in his right hand, so everything to his left is on camera. Go to his right side.');
+    expect(explain('_ _ _ D>', 'left', 3 - 1)).not.toContain('Go to');
   });
 
   it('least-bad Clear explains itself', () => {

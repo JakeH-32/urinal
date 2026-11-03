@@ -38,8 +38,8 @@
 //     STRAW  = not clear, and legal (0 violations), or exactly as bad as a code-breaking best
 //              (same violation count, severity, room and neighbours; it only lost on the wall).
 //              Severity = 1 per normal guy, 2 per quirk guy.
-//     AMBER  = otherwise, exactly 1 violation and the violated guy is a normal guy.
-//     DOCTOR = otherwise: 2+ violations or a quirk guy's zone. ("See a doctor.")
+//     AMBER  = otherwise, exactly 1 violation, missed by a single urinal (clearance exactly 0).
+//     DOCTOR = otherwise: 2+ violations, or deeper inside one man's space. ("See a doctor.")
 //   Ranking step 2 is violations, then severity (crowding a normal guy beats crowding a boss).
 
 export interface Rng {
@@ -52,7 +52,7 @@ export interface Rng {
   fork(label: string): Rng;
 }
 
-export type Quirk = 'normal' | 'talker' | 'splasher' | 'boss' | 'drunk' | 'facetime' | 'gassy' | 'inlaw' | 'pastor' | 'peeper';
+export type Quirk = 'normal' | 'talker' | 'splasher' | 'boss' | 'drunk' | 'facetime' | 'gassy' | 'inlaw' | 'pastor' | 'peeper' | 'pilot';
 export type Side = 'left' | 'right';
 export type BossMood = 'happy' | 'stressed' | 'angry';
 
@@ -117,7 +117,7 @@ export interface Round {
  *   F< on FaceTime, phone in his left hand (camera films everything to his right)   F> the mirror
  *   G  gassy (his smell drifts toward the door; the parser points him at `door`)
  *   I  father-in-law   R  pastor   E< peeping tom looking left   E> looking right
- *   B is a stressed boss; B+ happy, B! angry
+ *   B is a stressed boss; B+ happy, B! angry   A pilot (a talker who only talks about being a pilot)
  *   | divider between the neighbouring slots
  * e.g. "T | _ | L _ _ P _ S"
  */
@@ -148,6 +148,7 @@ export type Reason =
   | 'too-close' // clean, but a roomier clean spot existed
   | 'quirk-neighbor' // same clearance, but your tightest neighbour was a quirk guy and the answer's wasn't
   | 'not-wall' // same clearance, but a wall spot existed
+  | 'quick-exit' // small room, equal otherwise: the spot by the door was the answer
   | 'past-talker' // walked past a talker when a spot this side of him was legal
   // legacy: the door used to break ties. Kept so old saves still load and show their verdicts.
   | 'near-door'
@@ -164,13 +165,14 @@ export type Reason =
   | 'gassy'
   | 'inlaw'
   | 'pastor'
-  | 'peeper';
+  | 'peeper'
+  | 'pilot';
 
 export interface SlotAnalysis {
   index: number;
   pickable: boolean;
   /** Present when pickable. */
-  tier?: 0 | 1 | 2 | 3;
+  tier?: 0 | 1 | 2 | 3 | 4;
   violations?: number;
   /** Min clearance across occupants; Infinity when the room is empty or for stalls. */
   clearance?: number;

@@ -112,18 +112,16 @@ describe('the user examples', () => {
     // Phone in his left hand: everything to his right is on camera, even the far wall spot.
     const b = parseLayout('_ _ _ _ F< _ _ _', 'left');
     expect(grades(b)).toEqual([
-      'C:perfect', 'S:too-close', 'S:too-close', 'D:facetime', '-', 'D:facetime', 'D:facetime', 'D:facetime',
+      'C:perfect', 'S:too-close', 'S:too-close', 'A:facetime', '-', 'D:facetime', 'D:facetime', 'D:facetime',
     ]);
   });
 
-  it('dividers make a spot legal but never roomier (user report, Urinal #1 round 4)', () => {
-    // Two real empties each side of slot 3 beats slot 4, which is one urinal from the splasher
-    // and only legal thanks to the dividers.
+  it('dividers never shrink a labeled guy’s space (user report, Urinal #1 round 4; playtest: father-in-law)', () => {
+    // Slot 4 is one empty urinal from the splasher. The dividers don't help: he wants two.
     const b = bath('T | _ | L | _ | _ | _ | P | _ | _ S', 'right');
     const ev = evaluate(b);
     expect(ev.greens).toEqual([3]);
-    expect(ev.slots[4].grade).toBe('straw');
-    expect(ev.slots[4].reason).toBe('too-close');
+    expect(ev.slots[4]).toMatchObject({ grade: 'amber', reason: 'splasher' });
   });
 });
 
@@ -140,26 +138,27 @@ describe('evaluate', () => {
     expect(grades(bath('_ N | _', 'right'))).toEqual(['A:adjacent', '-', 'C:perfect']);
   });
 
-  it('talker ignores dividers, splasher does not', () => {
-    expect(grades(bath('_ T | _ | _ | _', 'right'))).toEqual(['D:talker', '-', 'D:talker', 'D:talker', 'C:perfect']);
-    expect(grades(bath('_ P | _ | _ | _', 'right'))).toEqual(['D:splasher', '-', 'D:splasher', 'S:too-close', 'C:perfect']);
+  it('dividers only help next to a regular guy; every labeled guy ignores them', () => {
+    expect(grades(bath('_ T | _ | _ | _', 'right'))).toEqual(['D:talker', '-', 'D:talker', 'A:talker', 'C:perfect']);
+    expect(grades(bath('_ P | _ | _ | _', 'right'))).toEqual(['D:splasher', '-', 'D:splasher', 'A:splasher', 'C:perfect']);
+    expect(grades(bath('_ N | _ | _ | _', 'right'))).toEqual(['A:adjacent', '-', 'S:too-close', 'S:too-close', 'C:perfect']);
   });
 
   it('drunk leaning right: 2 that way, 1 the other', () => {
     const b = bath('_ _ _ D> _ _ _', 'right');
     expect(zoneCovers(b, 3)).toEqual([2, 4, 5]);
-    expect(grades(b)).toEqual(['C:perfect', 'S:too-close', 'D:drunk', '-', 'D:drunk', 'D:drunk', 'S:too-close']);
+    expect(grades(b)).toEqual(['C:perfect', 'S:too-close', 'A:drunk', '-', 'D:drunk', 'A:drunk', 'S:too-close']);
   });
 
   it('drunk leaning left: mirrored', () => {
     const b = bath('_ _ _ D< _ _ _', 'left');
     expect(zoneCovers(b, 3)).toEqual([1, 2, 4]);
-    expect(grades(b)).toEqual(['S:too-close', 'D:drunk', 'D:drunk', '-', 'D:drunk', 'S:too-close', 'C:perfect']);
+    expect(grades(b)).toEqual(['S:too-close', 'A:drunk', 'D:drunk', '-', 'A:drunk', 'S:too-close', 'C:perfect']);
   });
 
-  it('father-in-law and pastor: two empty urinals, dividers count', () => {
-    expect(grades(parseLayout('_ I _ _ _', 'right'))).toEqual(['D:inlaw', '-', 'D:inlaw', 'D:inlaw', 'C:perfect']);
-    expect(grades(parseLayout('_ R | _ | _ | _', 'right'))).toEqual(['D:pastor', '-', 'D:pastor', 'S:too-close', 'C:perfect']);
+  it('father-in-law and pastor: two empty urinals, dividers don’t help', () => {
+    expect(grades(parseLayout('_ I _ _ _', 'right'))).toEqual(['D:inlaw', '-', 'D:inlaw', 'A:inlaw', 'C:perfect']);
+    expect(grades(parseLayout('_ R | _ | _ | _', 'right'))).toEqual(['A:pastor', '-', 'D:pastor', 'A:pastor', 'C:perfect']);
   });
 
   it('pastor greets the door: 2 on his door side, 1 on the wall side', () => {
@@ -171,17 +170,17 @@ describe('evaluate', () => {
   it('peeper looking right: 2 that way, 1 behind his back', () => {
     const b = parseLayout('_ _ _ E> _ _ _', 'right');
     expect(zoneCovers(b, 3)).toEqual([2, 4, 5]);
-    expect(grades(b)).toEqual(['C:perfect', 'S:too-close', 'D:peeper', '-', 'D:peeper', 'D:peeper', 'S:too-close']);
+    expect(grades(b)).toEqual(['C:perfect', 'S:too-close', 'A:peeper', '-', 'D:peeper', 'A:peeper', 'S:too-close']);
   });
 
   it('peeper looking left: mirrored', () => {
     const b = parseLayout('_ _ _ E< _ _ _', 'left');
     expect(zoneCovers(b, 3)).toEqual([1, 2, 4]);
-    expect(grades(b)).toEqual(['S:too-close', 'D:peeper', 'D:peeper', '-', 'D:peeper', 'S:too-close', 'C:perfect']);
+    expect(grades(b)).toEqual(['S:too-close', 'A:peeper', 'D:peeper', '-', 'A:peeper', 'S:too-close', 'C:perfect']);
   });
 
   it('walking past a talker: a legal spot by the door beats a roomier one past him', () => {
-    expect(grades(parseLayout('_ _ _ _ T _ _ _', 'right'))).toEqual(['S:past-talker', 'S:past-talker', 'D:talker', 'D:talker', '-', 'D:talker', 'D:talker', 'C:perfect']);
+    expect(grades(parseLayout('_ _ _ _ T _ _ _', 'right'))).toEqual(['S:past-talker', 'S:past-talker', 'A:talker', 'D:talker', '-', 'D:talker', 'A:talker', 'C:perfect']);
     // Only between legal spots: once every spot breaks the code, passing him doesn't matter.
     expect(grades(parseLayout('_ T _ _ D< _', 'left'))[5]).toBe('C:only-option');
   });
@@ -202,7 +201,7 @@ describe('evaluate', () => {
   it('boss: radius 2', () => {
     const b = bath('_ _ _ _ B _ _ _ _', 'left');
     expect(zoneCovers(b, 4)).toEqual([2, 3, 5, 6]);
-    expect(grades(b)).toEqual(['S:not-wall', 'S:too-close', 'D:boss', 'D:boss', '-', 'D:boss', 'D:boss', 'S:too-close', 'C:perfect']);
+    expect(grades(b)).toEqual(['S:not-wall', 'S:too-close', 'A:boss', 'D:boss', '-', 'D:boss', 'A:boss', 'S:too-close', 'C:perfect']);
   });
 
   it('a urinal legal only thanks to a divider is still next to a guy: the stall is Clear too', () => {
@@ -212,15 +211,26 @@ describe('evaluate', () => {
     expect(grades(parseLayout('S _ _ _ N _ _ _', 'left'))[0]).toBe('S:stall-coward');
   });
 
-  it('legal spots: right beside a guy (through a divider) loses to a gap, even next to a quirk guy (playtest: awards night)', () => {
+  it('one empty urinal from the father-in-law is too close even with a divider; beside a stranger through one is fine', () => {
     const g = grades(parseLayout('_ N I | _ | _ | _ | N N I _', 'left'));
-    expect([g[4], g[5]]).toEqual(['C:perfect', 'S:too-close']);
+    expect([g[4], g[5]]).toEqual(['A:inlaw', 'C:perfect']);
+  });
+
+  it('legal spots: right beside a guy (through a divider) loses to a real gap', () => {
+    const g = grades(parseLayout('_ _ N | _ _ _ | N', 'left'));
+    expect(g[3]).toBe('S:too-close');
+    expect(g[4]).toBe('C:perfect');
+  });
+
+  it('small rooms: someone you know, get out by the door; strangers, walk round to the wall (playtest)', () => {
+    expect(evaluate(parseLayout('_ I | _', 'right')).greens).toEqual([2]);
+    expect(evaluate(parseLayout('_ N _', 'left')).greens).toEqual([2]);
   });
 
   it('stall-forced when every urinal violates', () => {
     const b = bath('S _ _ B _', 'left');
     const ev = evaluate(b);
-    expect(grades(b, ev)).toEqual(['C:stall-forced', 'D:boss', 'D:boss', '-', 'D:boss']);
+    expect(grades(b, ev)).toEqual(['C:stall-forced', 'A:boss', 'D:boss', '-', 'D:boss']);
     expect(ev.slots[0]).toMatchObject({ tier: 2, violations: 0, clearance: Infinity, violatedBy: [] });
   });
 
@@ -232,8 +242,10 @@ describe('evaluate', () => {
     expect(grades(bath('L _ _ N', 'right'))).toEqual(['S:low-urinal', 'C:perfect', 'A:adjacent', '-']);
   });
 
-  it('a low/puddle urinal is perfect when it is the best clean spot', () => {
-    expect(grades(bath('W _ N', 'right'))).toEqual(['C:perfect', 'A:adjacent', '-']);
+  it('a low urinal is fine when it is the best spot; a puddle is the last resort (playtest)', () => {
+    expect(grades(bath('L _ N', 'right'))).toEqual(['C:perfect', 'A:adjacent', '-']);
+    // Standing in a puddle is worse than standing a bit close to someone.
+    expect(grades(bath('W _ N', 'right'))).toEqual(['S:low-urinal', 'C:only-option', '-']);
   });
 
   it('broken urinals and occupied stalls are not pickable; a guy in a stall has no zone', () => {
@@ -258,15 +270,15 @@ describe('evaluate', () => {
 
   it('same room: next to a normal guy beats next to a quirk guy, even on his good side, even off the wall (playtest)', () => {
     // Drunk leaning right; the corner is on his good side. The spot by the normal guy wins.
-    const b = parseLayout('_ | D> _ N | _ _ _ T', 'right');
+    const b = parseLayout('_ _ _ D> _ _ N _ _ _ T', 'right');
     const ev = evaluate(b);
-    expect(ev.greens).toEqual([4]);
-    expect(ev.slots[0]).toMatchObject({ grade: 'straw', reason: 'quirk-neighbor' });
+    expect(ev.greens).toEqual([0]);
+    expect(ev.slots[1]).toMatchObject({ grade: 'straw', reason: 'too-close' });
   });
 
   it('a divider never makes the spot right next to the FaceTime guy legal (playtest)', () => {
     const b = parseLayout('_ _ | F< _ _ _ _', 'right');
-    expect(evaluate(b).slots[1]).toMatchObject({ grade: 'doctor', reason: 'facetime' });
+    expect(evaluate(b).slots[1]).toMatchObject({ grade: 'amber', reason: 'facetime' });
     expect(zoneCovers(b, 2)).toContain(1);
   });
 
@@ -278,7 +290,7 @@ describe('evaluate', () => {
 
   it('when every spot breaks the code, crowding a quirk guy is worse than a normal guy (playtest, daily #1 r5)', () => {
     const b = parseLayout('_ _ B N _ | N | N _', 'left');
-    expect(grades(b)).toEqual(['D:boss', 'D:boss', '-', '-', 'D:boss', '-', '-', 'C:only-option']);
+    expect(grades(b)).toEqual(['A:boss', 'D:boss', '-', '-', 'D:boss', '-', '-', 'C:only-option']);
   });
 
   it('stuck in a FaceTime frame: farther in the background is better (playtest, practice KWDX32)', () => {
@@ -310,9 +322,10 @@ describe('evaluate', () => {
     // one normal neighbour -> amber
     const one = evaluate(bath('_ _ _ _ N _', 'left'));
     expect(one.slots[3]).toMatchObject({ grade: 'amber', reason: 'adjacent', violatedBy: [4] });
-    // a boss's zone -> doctor, even at distance 2
+    // one urinal short of the boss's two -> amber; right beside him -> doctor
     const boss = evaluate(bath('_ _ _ _ _ _ B', 'right'));
-    expect(boss.slots[4]).toMatchObject({ grade: 'doctor', reason: 'boss', violatedBy: [6] });
+    expect(boss.slots[4]).toMatchObject({ grade: 'amber', reason: 'boss', violatedBy: [6] });
+    expect(boss.slots[5]).toMatchObject({ grade: 'doctor', reason: 'boss' });
     // between two normal guys -> doctor (2 violations)
     const two = evaluate(bath('_ _ _ N _ N', 'right'));
     expect(two.slots[4]).toMatchObject({ grade: 'doctor', reason: 'adjacent', violatedBy: [3, 5] });

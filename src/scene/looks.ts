@@ -25,6 +25,7 @@ export const QUIRK_STYLE: Record<Quirk, QuirkStyle> = {
   inlaw: { color: '#86603f', ink: '#ffffff', tag: 'IN-LAW', emoji: '👴' },
   pastor: { color: '#25262d', ink: '#ffffff', tag: 'PASTOR', emoji: '⛪' },
   peeper: { color: '#c72683', ink: '#ffffff', tag: 'PEEPER', emoji: '👀' },
+  pilot: { color: '#1b3a73', ink: '#ffffff', tag: 'PILOT', emoji: '✈️' },
 };
 
 /** Just the chip colours, for legends and UI. */
@@ -39,6 +40,7 @@ export const QUIRK_COLORS: Record<Quirk, string> = {
   inlaw: QUIRK_STYLE.inlaw.color,
   pastor: QUIRK_STYLE.pastor.color,
   peeper: QUIRK_STYLE.peeper.color,
+  pilot: QUIRK_STYLE.pilot.color,
 };
 
 export type HairStyle = 'crop' | 'buzz' | 'curly' | 'swoop' | 'long' | 'bun' | 'slick' | 'fringe';
@@ -91,6 +93,10 @@ export function shade(hex: string, amt: number): string {
 export const SUIT = '#2e3442';
 /** Father-in-law: sweater vest (his chip colour) over a pale blue oxford, khakis, grey horseshoe. */
 export const OXFORD = '#c9dcef';
+/** Pilot: white uniform shirt, navy trousers and cap, gold braid on the epaulettes and cap band. */
+export const PILOT_SHIRT = '#f6f6f2';
+export const PILOT_NAVY = '#1c2840';
+export const PILOT_GOLD = '#e0b43c';
 
 export function resolveLook(look: Guy['look'], quirk: Quirk = 'normal'): ResolvedLook {
   let shirt: string = SHIRTS[wrap(look.shirt, SHIRTS.length)];
@@ -116,6 +122,13 @@ export function resolveLook(look: Guy['look'], quirk: Quirk = 'normal'): Resolve
     pants = PANTS[2];
     // Short hair only: anything long would hide the collar band.
     if (hair && hair.style !== 'crop' && hair.style !== 'buzz' && hair.style !== 'swoop') hair = { style: 'crop', color: hair.color };
+  }
+  if (quirk === 'pilot') {
+    // White uniform shirt, navy trousers; short hair (or long at the back) so the cap sits flat.
+    shirt = PILOT_SHIRT;
+    sleeve = shade(PILOT_SHIRT, 0.09);
+    pants = PILOT_NAVY;
+    if (hair && hair.style !== 'crop' && hair.style !== 'buzz' && hair.style !== 'long') hair = { style: 'crop', color: hair.color };
   }
   return {
     shirt,

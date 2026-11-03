@@ -36,6 +36,7 @@ function room(slots: Slot[], door: Side, dividerAt: number[] = []): Bathroom {
 function radius(g: Guy, toward: Side): number {
   switch (g.quirk) {
     case 'talker':
+    case 'pilot':
     case 'splasher':
     case 'inlaw':
     case 'pastor':
@@ -67,7 +68,7 @@ export function fakeEvaluate(b: Bathroom): Evaluation {
         if (!o.occupant) return;
         const [lo, hi] = i < j ? [i, j] : [j, i];
         let d = hi - lo;
-        if (o.occupant.quirk !== 'talker') for (let k = lo; k < hi; k++) if (b.dividers[k]) d++;
+        if (o.occupant.quirk !== 'talker' && o.occupant.quirk !== 'pilot') for (let k = lo; k < hi; k++) if (b.dividers[k]) d++;
         const c = d - radius(o.occupant, i < j ? 'left' : 'right');
         clearance = Math.min(clearance, c);
         if (c <= 0) violatedBy.push(j);
@@ -200,7 +201,10 @@ const revealPeeperRoom = room([U(), U(), U(guy('peeper', { lean: 'right' })), U(
 // Pastor at 1 and in-law at 4 (both r=2): 2 and 3 sit in both zones; only 7 is clear.
 const revealPastorRoom = room([U(), U(guy('pastor')), U(), U(), U(guy('inlaw')), U(), U(), U()], 'right');
 
-const evalOf = (b: Bathroom, picks: Record<number, Grade>, greens: number[], violated: Record<number, number[]> = {}): Evaluation => ({
+// Pilot at 2 (r=2, door left): covers 0..4. You pick 3, right beside him.
+const revealPilotRoom = room([U(), U(), U(guy('pilot')), U(), U(), U(), U(guy())], 'left');
+
+const evalOf =(b: Bathroom, picks: Record<number, Grade>, greens: number[], violated: Record<number, number[]> = {}): Evaluation => ({
   slots: b.slots.map((s, index) => {
     const pickable = !s.occupant && s.flag !== 'broken';
     return pickable ? { index, pickable, grade: picks[index] ?? 'straw', violatedBy: violated[index] ?? [] } : { index, pickable };
@@ -247,6 +251,7 @@ const revealPastor = evalOf(revealPastorRoom, { 7: 'clear', 0: 'doctor', 2: 'doc
   5: [4],
   6: [4],
 });
+const revealPilot = evalOf(revealPilotRoom, { 4: 'clear', 0: 'doctor', 1: 'doctor', 3: 'doctor' }, [4], { 0: [2], 1: [2], 3: [2] });
 
 // ---- Page ------------------------------------------------------------------------------
 
@@ -315,6 +320,10 @@ export function SceneGallery() {
       <Section title="Interactive: peeper looking left, pastor, in-law">
         <Live bathroom={room([U(), U(), U(), U(guy('peeper', { lean: 'left' })), U(), U(), U(guy('pastor')), U(), U(guy('inlaw'))], 'left')} />
       </Section>
+      <Section title="Interactive: pilot (door right), then pilot next to a talker (door left)" note="Both chatty guys face the door; the pilot's reveal line is “Captain, actually.”">
+        <Live bathroom={room([U(guy()), U(), U(), U(guy('pilot')), U(), U(), U(guy('pilot', { height: 2, bald: true })), U()], 'right')} />
+        <Live bathroom={room([U(), U(), U(guy('talker')), U(), U(guy('pilot', { hair: 1 })), U(), U(), U(guy('pilot', { height: 0 })), U(guy('talker'))], 'left')} />
+      </Section>
       <Section title="Interactive, reduced motion" note="No walk, no sway: you appear instantly.">
         <Live bathroom={room([U(), U(guy('boss')), U(), U(), U(guy()), U()], 'right')} reducedMotion />
       </Section>
@@ -361,6 +370,9 @@ export function SceneGallery() {
       </Section>
       <Section title="Reveal: doctor pick between a talker and the boss">
         <BathroomScene bathroom={revealDoctorRoom} picked={3} evaluation={revealDoctor} />
+      </Section>
+      <Section title="Reveal: doctor pick right beside the pilot (door left)">
+        <BathroomScene bathroom={revealPilotRoom} picked={3} evaluation={revealPilot} reducedMotion />
       </Section>
       <Section title="Reveal: amber pick next to a normal guy and a splasher (door right)">
         <BathroomScene bathroom={revealAmberRoom} picked={1} evaluation={revealAmber} />

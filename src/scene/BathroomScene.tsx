@@ -16,7 +16,7 @@ import {
   walkPose,
   type SceneLayout,
 } from './geometry';
-import { CHIP_W, Droplets, FaceTimePhone, GasEngulf, GuyFigure, PHONE_X, PHONE_Y, PfftBurst, QuirkChip, StinkCloud, SideBubble, SplashPuddle, YouTag, guyTop } from './Guy';
+import { CHIP_W, Droplets, FaceTimePhone, GasEngulf, GuyFigure, PHONE_X, PHONE_Y, PILOT_CAP_RISE, PfftBurst, QuirkChip, StinkCloud, SideBubble, SplashPuddle, YouTag, guyTop } from './Guy';
 import { Divider, Doorway, Puddle, STALL_TOP_Y, SolidEnd, Stall, Urinal } from './Fixtures';
 import { GRADES } from '../grades';
 import { sideOf, zoneCovers } from '../engine/code';
@@ -91,9 +91,15 @@ const REACTION_TEXT: Record<Guy['quirk'], string | null> = {
   inlaw: 'Son.',
   pastor: 'Oh my.',
   peeper: 'Hi!',
+  pilot: null,
 };
 const FACETIME_REACTION = 'Who’s this?';
 const TALKER_LINE = 'Hey, buddy!';
+/** The pilot talks like the talker, but only ever about one thing. */
+const PILOT_LINE = 'I’m a pilot.';
+const PILOT_REACTION = 'Captain, actually.';
+/** Guys with an always-on speech bubble aimed at the door. */
+const isChatty = (q: Guy['quirk']) => q === 'talker' || q === 'pilot';
 
 /** Body lean in degrees (positive = clockwise = toward the right): the drunk sways, the peeper leans in to look. */
 function bodyTilt(guy: Guy): number {
@@ -106,7 +112,7 @@ function bodyTilt(guy: Guy): number {
  * (where you walk in); the FaceTime guy looks at his phone; the peeper looks where his zone runs long. */
 function headTurn(guy: Guy, door: Side, reactDir: -1 | 1 | undefined): -1 | 0 | 1 {
   if (reactDir) return reactDir;
-  if (guy.quirk === 'talker') return door === 'left' ? -1 : 1;
+  if (isChatty(guy.quirk)) return door === 'left' ? -1 : 1;
   if (guy.quirk === 'facetime' || guy.quirk === 'peeper') return guy.lean === 'left' ? -1 : 1;
   return 0;
 }
@@ -118,6 +124,38 @@ function propSideFor(b: Bathroom, i: number): -1 | 1 {
   const rightBusy = !!b.slots[i + 1]?.occupant;
   const leftBusy = !!b.slots[i - 1]?.occupant;
   return rightBusy && !leftBusy ? -1 : 1;
+}
+
+/**
+ * Always-on bubbles for chatty guys at urinals, aimed at the door ("Hey, buddy!", "I'm a pilot.");
+ * on the reveal they turn to you ("So…", "Captain, actually."). `late` picks the layer: the pilot's
+ * reaction is drawn after the reveal rings (it's long enough to cross yours), everything else before.
+ */
+function chatBubbles(
+  layout: ReturnType<typeof layoutBathroom>,
+  bathroom: Bathroom,
+  reactorDir: Map<number, -1 | 1>,
+  picked: number | undefined,
+  late: boolean,
+) {
+  return layout.slots.map((g) => {
+    const guy = bathroom.slots[g.index].occupant;
+    if (!guy || !isChatty(guy.quirk) || g.kind !== 'urinal') return null;
+    const pilot = guy.quirk === 'pilot';
+    const reactDir = reactorDir.get(g.index);
+    if ((!!reactDir && pilot) !== late) return null;
+    const turn = headTurn(guy, bathroom.door, reactDir) || 1;
+    const head = headPoint(guy, g.cx);
+    // A neighbour on the side he's facing: drop the bubble to shoulder height so it doesn't cover that guy's head.
+    // The pilot's long correction does the same when you're standing right next to him.
+    const crowdedSide = reactDir ? pilot && Math.abs((picked ?? g.index) - g.index) === 1 : !!bathroom.slots[g.index + turn]?.occupant;
+    const text = reactDir ? (pilot ? PILOT_REACTION : 'So…') : pilot ? PILOT_LINE : TALKER_LINE;
+    return (
+      <g key={`talk-${g.index}`} className={reactDir ? 'us-talk us-reaction' : 'us-talk'}>
+        <SideBubble x={head.x + turn * 19} y={head.y + (crowdedSide ? 30 : 6)} text={text} dir={turn} small={!reactDir} />
+      </g>
+    );
+  });
 }
 
 /** Scene-space centre of a standing guy's head (accounts for the drunk's and peeper's tilt). */
@@ -208,7 +246,7 @@ export function BathroomScene(props: BathroomSceneProps) {
 
   // ---- reveal -----------------------------------------------------------------------------
   const showReveal = !!evaluation && (picked === undefined || arrived);
-  const reveal = useMemo(() => (showReveal && evaluation ? buildReveal(evaluation, picked) : null), [showReveal, evaluation, picked]);
+  const reveal = useMemo(() => (showReveal && evaluation ? buildReveal(evaluation, picked, bathroom) : null), [showReveal, evaluation, picked, bathroom]);
   const reactorDir = new Map<number, -1 | 1>();
   reveal?.reactors.forEach((r) => reactorDir.set(r.index, r.dir));
 
@@ -404,7 +442,9 @@ export function BathroomScene(props: BathroomSceneProps) {
           const text = stall
             ? guy.quirk === 'talker'
               ? 'So…'
-              : guy.quirk === 'facetime'
+              : guy.quirk === 'pilot'
+                ? PILOT_REACTION
+                : guy.quirk === 'facetime'
                 ? FACETIME_REACTION
                 : guy.quirk === 'gassy'
                   ? null
@@ -461,27 +501,8 @@ export function BathroomScene(props: BathroomSceneProps) {
           );
         })}
 
-        {/* talkers never stop talking */}
-        {layout.slots.map((g) => {
-          const guy = bathroom.slots[g.index].occupant;
-          if (!guy || guy.quirk !== 'talker' || g.kind !== 'urinal') return null;
-          const reactDir = reactorDir.get(g.index);
-          const turn = headTurn(guy, bathroom.door, reactDir) || 1;
-          const head = headPoint(guy, g.cx);
-          // A neighbour on the side he's facing: drop the bubble to shoulder height so it doesn't cover that guy's head.
-          const crowdedSide = !reactDir && !!bathroom.slots[g.index + turn]?.occupant;
-          return (
-            <g key={`talk-${g.index}`} className={reactDir ? 'us-talk us-reaction' : 'us-talk'}>
-              <SideBubble
-                x={head.x + turn * 19}
-                y={head.y + (crowdedSide ? 30 : 6)}
-                text={reactDir ? 'So…' : TALKER_LINE}
-                dir={turn}
-                small={!reactDir}
-              />
-            </g>
-          );
-        })}
+        {/* talkers (and the pilot) never stop talking */}
+        {chatBubbles(layout, bathroom, reactorDir, reveal?.picked, false)}
 
         {/* gassy reaction: a big green cloud engulfs you */}
         {pickedSlot &&
@@ -499,6 +520,9 @@ export function BathroomScene(props: BathroomSceneProps) {
             <CheckMark x={layout.slots[i].cx} y={FEET_Y + 2} />
           </g>
         ))}
+
+        {/* the pilot's long correction crosses your ring, so it goes over it */}
+        {chatBubbles(layout, bathroom, reactorDir, reveal?.picked, true)}
 
         {/* crowd stats: what share of players picked each spot (after the reveal) */}
         {reveal && crowd && <CrowdLabels layout={layout} bathroom={bathroom} crowd={crowd} />}
@@ -655,7 +679,7 @@ function Occupant({ guy, cx, index, turn, chipX, propSide, straddle }: OccupantP
             look={look}
             quirk={guy.quirk}
             turn={turn}
-            talking={guy.quirk === 'talker' || guy.quirk === 'facetime'}
+            talking={isChatty(guy.quirk) || guy.quirk === 'facetime'}
             propSide={propSide}
             straddle={straddle ? 1 : 0}
           />
@@ -669,7 +693,7 @@ function Occupant({ guy, cx, index, turn, chipX, propSide, straddle }: OccupantP
       {/* chip stays upright even when the guy leans; the drunk's and peeper's point the long way */}
       <QuirkChip
         x={chipX ?? head.x}
-        y={head.top - 5}
+        y={head.top - 5 - (guy.quirk === 'pilot' ? PILOT_CAP_RISE * heightScale(guy.look.height) : 0)}
         quirk={guy.quirk}
         lean={guy.quirk === 'drunk' || guy.quirk === 'peeper' ? guy.lean : undefined}
         mood={guy.mood}
@@ -830,8 +854,8 @@ function Draft({ layout, fromX, animate }: { layout: SceneLayout; fromX: number;
       <path d={wave(80, 4)} />
     </g>
   );
-}
-
+}
+
 /** Droplets on the floor around a splasher: bigger and darker near him, fewer and fainter farther out. */
 const SPLASH_DROPS: readonly (readonly [number, number, number])[] = [
   // [distance out in pitches, y offset, size]

@@ -119,9 +119,9 @@ function addFlags(rng: Rng, b: Bathroom, count: number, kinds: readonly UrinalFl
 }
 
 const ALL_FLAGS: readonly UrinalFlag[] = ['low', 'puddle', 'broken'];
-const SOFT_QUIRKS: readonly Quirk[] = ['talker', 'splasher', 'facetime', 'inlaw', 'pastor'];
+const SOFT_QUIRKS: readonly Quirk[] = ['talker', 'splasher', 'facetime', 'inlaw', 'pastor', 'pilot'];
 const BIG_QUIRKS: readonly Quirk[] = ['boss', 'drunk', 'gassy', 'peeper'];
-const ANY_QUIRK: readonly Quirk[] = ['talker', 'splasher', 'boss', 'drunk', 'facetime', 'gassy', 'inlaw', 'pastor', 'peeper'];
+const ANY_QUIRK: readonly Quirk[] = ['talker', 'splasher', 'boss', 'drunk', 'facetime', 'gassy', 'inlaw', 'pastor', 'peeper', 'pilot'];
 
 /** Per-round intent decided once, before rejection sampling. */
 interface Plan {
@@ -275,7 +275,8 @@ function accepts(b: Bathroom, ev: Evaluation, d: Difficulty, plan: Plan, stage: 
   }
   const green = ev.slots[ev.greens[0]];
   // The answer is never right next to the FaceTime guy, whichever hand holds the phone.
-  if (b.slots[green.index - 1]?.occupant?.quirk === 'facetime' || b.slots[green.index + 1]?.occupant?.quirk === 'facetime') return false;
+  // (Small rooms are exempt: with two or three urinals, beside him on camera can be the least bad.)
+  if (!small && (b.slots[green.index - 1]?.occupant?.quirk === 'facetime' || b.slots[green.index + 1]?.occupant?.quirk === 'facetime')) return false;
   // From d3 on, a room with a single free spot is a free point: never allowed.
   if (d >= 3 && pickable < 2) return false;
   if (!small) {
@@ -285,7 +286,8 @@ function accepts(b: Bathroom, ev: Evaluation, d: Difficulty, plan: Plan, stage: 
   }
   if (stage >= 2) return true;
   // Every label has to change the answer (playtest: rooms were solvable without reading them).
-  if (d >= 3 && !labelsMatter(b, ev)) return false;
+  // Small rooms are exempt: in two or three urinals you do what you gotta do (the user likes them).
+  if (d >= 3 && !small && !labelsMatter(b, ev)) return false;
 
   if (d === 1 && !small) {
     // The clear spot must be the single roomiest spot, not a tiebreak.

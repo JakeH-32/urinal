@@ -63,6 +63,27 @@ export const QUIRKS: Record<Quirk, QuirkText> = {
       { name: 'Your mail carrier Gil', blurb: 'Knows about your packages. Has questions.' },
     ],
   },
+  pilot: {
+    label: 'Pilot',
+    emoji: '✈️',
+    rule: 'Leave two empty urinals between you. Dividers don’t stop him.',
+    people: [
+      { name: 'Captain Doug', blurb: 'Introduced himself by rank. It’s a men’s room.' },
+      { name: 'A regional airline first officer', blurb: 'Wings pinned to his polo. It’s Saturday.' },
+      { name: 'Your neighbor who flies for a regional carrier', blurb: 'Leaves the uniform hat on his dashboard, facing out.' },
+      { name: 'Captain Rich', blurb: 'His watch shows three time zones. He’ll walk you through all three.' },
+      { name: 'Your brother-in-law the pilot', blurb: 'Calls Thanksgiving dinner “wheels down at four.”' },
+      { name: 'Captain Stu', blurb: 'Gives the time in Zulu. Then converts it for you.' },
+      { name: 'A man in a pilot’s uniform', blurb: 'Off duty since Thursday. Still in the uniform.' },
+      { name: 'First Officer Grant', blurb: 'His keychain says REMOVE BEFORE FLIGHT. He’s waiting for you to ask.' },
+      { name: 'Your dad’s friend who flies crop dusters', blurb: 'Calls his pickup “ground transport.”' },
+      { name: 'Captain Brock', blurb: 'Wears his airport badge to the hardware store.' },
+      { name: 'A charter pilot named Wes', blurb: 'Answers “How are you?” with the winds at cruising altitude.' },
+      { name: 'The pilot on your condo board', blurb: 'Signs the meeting minutes “Capt.”' },
+      { name: 'A retired airline captain', blurb: 'Retired in 2015. Still won’t sit anywhere but the left seat.' },
+      { name: 'Your cousin who just got his pilot’s license', blurb: 'Has flown four hours solo. Has mentioned all four.' },
+    ],
+  },
   splasher: {
     label: 'Splasher',
     emoji: '💦',
@@ -403,6 +424,13 @@ export const VERDICTS: Record<Reason, string[]> = {
     'The long way in goes right past him.',
     'You walked into his range on purpose.',
   ],
+  'quick-exit': [
+    'The door was right there.',
+    'Three urinals and you took the scenic route.',
+    'You walked past him to get here. You’ll walk past him to leave.',
+    'Small room. Long walk.',
+    'In, out. You skipped the out part.',
+  ],
   'near-door': [
     'The far end was free.',
     'Right by the door. Everyone who comes in passes you.',
@@ -465,6 +493,18 @@ export const VERDICTS: Record<Reason, string[]> = {
     '{name} has moved on to a second topic. The first one isn’t over.',
     '{name} has invited you to something. It’s recurring.',
     'You were in range. {name} has your number now.',
+  ],
+  pilot: [
+    '{name} has mentioned he’s a pilot. Twice.',
+    '{name} has told you what he flies. You never asked what he does.',
+    '{name}: “Folks, this is your captain.” There are two of you in here.',
+    '{name} asked how your flight was. You drove.',
+    '{name} has given you his card. It has wings on it.',
+    '{name} has explained turbulence to you. You’re standing on tile.',
+    '{name} has compared the hand dryer to a jet engine. He’s heard both.',
+    '{name} has worked his layover into a story about soap.',
+    '{name} has shared his schedule. Denver Tuesday, Phoenix Thursday.',
+    '{name} now calls you “copilot.”',
   ],
   splasher: [
     'Code yellow. Check your shoes.',
@@ -599,10 +639,10 @@ export const TAGLINES: string[] = [
 /** Short fixture labels for the legend / tooltips. */
 export const FIXTURES = {
   low: 'Low urinal. Ranks below a normal one.',
-  puddle: 'Puddle. Ranks with the low urinal.',
+  puddle: 'Puddle. You’d be standing in it.',
   broken: 'Out of order.',
   stall: 'Stall. Only when every urinal breaks the urinal code.',
-  divider: 'Divider. Makes a close spot legal. Doesn’t count as room.',
+  divider: 'Divider. Helps next to a regular guy. Nobody else cares.',
 } as const;
 
 /**
@@ -635,6 +675,7 @@ export const HOW_TO_PLAY: { heading: string; body: string }[] = [
 /** How To Play's who's who: one line of character per label. Flavor only, never a placement rule. */
 export const WHOS_WHO: { quirk: Exclude<Quirk, 'normal'>; line: string }[] = [
   { quirk: 'talker', line: 'Wants to catch up. Here. Now.' },
+  { quirk: 'pilot', line: 'Flies for a living. You’ll hear about it.' },
   { quirk: 'splasher', line: 'Confident. Not accurate.' },
   { quirk: 'boss', line: 'Signs your paychecks. Check his mood before you pick.' },
   { quirk: 'inlaw', line: 'Gave his blessing. Still reviewing it.' },
