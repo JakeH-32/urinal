@@ -17,6 +17,9 @@ export const BASE_RADIUS: Record<Quirk, number> = {
   pastor: 2,
   peeper: 2,
   pilot: 2,
+  tourist: 1,
+  crypto: 2,
+  finance: 3,
 };
 
 /** Boss radius by mood: a happy boss is a regular guy, an angry one wants three. */
@@ -24,7 +27,22 @@ const BOSS_MOOD_RADIUS = { happy: 1, stressed: 2, angry: 3 } as const;
 
 /** The talker and the pilot: both start a conversation (the pilot's is about being a pilot). */
 export function isTalker(guy: Guy | undefined): boolean {
-  return guy?.quirk === 'talker' || guy?.quirk === 'pilot';
+  return guy?.quirk === 'talker' || guy?.quirk === 'pilot' || guy?.quirk === 'crypto';
+}
+
+/** Urinals nobody can use because a backpack tourist's gear is in them: his pack on one side, his poles on the other. */
+export function gearBlocked(b: Bathroom): Set<number> {
+  const out = new Set<number>();
+  b.slots.forEach((s, j) => {
+    if (s.kind !== 'urinal' || s.occupant?.quirk !== 'tourist') return;
+    for (const k of [j - 1, j + 1]) if (b.slots[k]?.kind === 'urinal' && !b.slots[k].occupant) out.add(k);
+  });
+  return out;
+}
+
+/** Pickable in this room: free, not out of order, and not full of a tourist's gear. */
+export function isOpen(b: Bathroom, i: number): boolean {
+  return !!b.slots[i] && isPickable(b.slots[i]) && !gearBlocked(b).has(i);
 }
 
 /** True for a plain guy, and for a happy boss, who acts exactly like one. */
@@ -51,6 +69,13 @@ export function zoneRadius(guy: Guy, toward: Side): number {
   return BASE_RADIUS[guy.quirk] ?? 1;
 }
 
+/** Men standing at urinals strictly between slots i and j. */
+export function menBetween(b: Bathroom, i: number, j: number): number {
+  let n = 0;
+  for (let k = Math.min(i, j) + 1; k < Math.max(i, j); k++) if (b.slots[k].kind === 'urinal' && b.slots[k].occupant) n++;
+  return n;
+}
+
 /** Number of dividers strictly between slots i and j. */
 export function dividersBetween(b: Bathroom, i: number, j: number): number {
   const lo = Math.min(i, j);
@@ -68,7 +93,11 @@ export function dividersBetween(b: Bathroom, i: number, j: number): number {
  */
 export function effectiveDistance(b: Bathroom, i: number, j: number): number {
   const raw = Math.abs(i - j);
-  return actsNormal(b.slots[j]?.occupant) ? raw + dividersBetween(b, i, j) : raw;
+  // The finance bro is on speakerphone: dividers block the sound, so they count with him too.
+  const g = b.slots[j]?.occupant;
+  // A man standing between you and the splasher takes the splash for you.
+  const shield = g?.quirk === 'splasher' ? menBetween(b, i, j) : 0;
+  return (actsNormal(g) || g?.quirk === 'finance' ? raw + dividersBetween(b, i, j) : raw) + shield;
 }
 
 /** Side of slot i relative to slot j. */
@@ -105,6 +134,15 @@ export const QUICK_ROOM = 4;
 /** A small room with a labeled guy in it (someone you know): get in and out by the door. */
 export function quickExit(b: Bathroom): boolean {
   return b.slots.length <= QUICK_ROOM && b.slots.some((s) => s.kind === 'urinal' && !!s.occupant && !actsNormal(s.occupant));
+}
+
+/**
+ * How deep slot i is inside the space of the guy at j: 1 = one urinal short, 2 = one closer, and so on.
+ * On a FaceTime camera (an infinite zone) it's at least as deep as any real zone, less the farther back you are.
+ */
+export function depthIn(b: Bathroom, i: number, j: number): number {
+  const c = clearanceTo(b, i, j);
+  return Number.isFinite(c) ? 1 - c : 1 - roomTo(b, i, j);
 }
 
 /** Ranking stand-in for an infinite zone; bigger than any room. */
@@ -154,12 +192,15 @@ export function zoneCovers(b: Bathroom, occupantIndex: number): number[] {
  * tie -> lower index. null when slot i violates nobody (or is a stall).
  */
 export function culpritOf(b: Bathroom, i: number): number | null {
-  if (b.slots[i]?.kind !== 'urinal') return null;
+  const stall = b.slots[i]?.kind === 'stall';
+  if (!b.slots[i]) return null;
   let best: number | null = null;
   let bestC = Infinity;
   let bestR = -Infinity;
   for (const j of occupantIndices(b)) {
     if (j === i) continue;
+    // In a stall only the crypto bro reaches you (he pitches through the door).
+    if (stall && b.slots[j].occupant?.quirk !== 'crypto') continue;
     const c = clearanceTo(b, i, j);
     if (c > 0) continue;
     const r = zoneRadius(b.slots[j].occupant as Guy, sideOf(i, j));
@@ -177,7 +218,10 @@ interface Cand {
   /** 0 clean, 1 low, 2 stall, 3 too close to someone, 4 a puddle (standing in it is the worst). */
   tier: 0 | 1 | 2 | 3 | 4;
   violations: number;
-  /** How bad the violations are: 1 per normal guy, 2 per quirk guy. */
+  /**
+   * How bad the violations are: for each man whose space you're in, how deep (1 = one urinal short,
+   * 2 = right beside a two-urinal guy...), doubled for a guy with a label. Two grazes beat one direct hit.
+   */
   severity: number;
   /** Talkers you walk past to get there (between the door and the spot). */
   pastTalkers: number;
@@ -194,8 +238,8 @@ interface Cand {
 /** Ranking comparator: negative when x ranks better than y, 0 on an exact tie. */
 function compareCand(b: Bathroom, x: Cand, y: Cand): number {
   if (x.tier !== y.tier) return x.tier - y.tier;
-  if (x.violations !== y.violations) return x.violations - y.violations;
   if (x.severity !== y.severity) return x.severity - y.severity;
+  if (x.violations !== y.violations) return x.violations - y.violations;
   // Between legal spots only: once you're in someone's space anyway, walking past the talker is moot.
   if (x.violations === 0 && x.pastTalkers !== y.pastTalkers) return x.pastTalkers - y.pastTalkers;
   // Legal spots: right beside a guy (legal only thanks to a divider) loses to any spot with an empty
@@ -234,7 +278,14 @@ export function talkersPassed(b: Bathroom, i: number): number {
 function analyzeSlot(b: Bathroom, i: number, occ: number[]): Cand {
   const slot = b.slots[i];
   const pastTalkers = talkersPassed(b, i);
-  if (slot.kind === 'stall') return { index: i, tier: 2, violations: 0, severity: 0, pastTalkers, beside: 0, gap: Infinity, clearance: Infinity, tightQuirks: 0, violatedBy: [] };
+  if (slot.kind === 'stall') {
+    // A stall has walls, except against the crypto bro: within his reach he pitches through the door.
+    const pitched = occ.filter((j) => b.slots[j].occupant?.quirk === 'crypto' && clearanceTo(b, i, j) <= 0);
+    if (pitched.length === 0) return { index: i, tier: 2, violations: 0, severity: 0, pastTalkers, beside: 0, gap: Infinity, clearance: Infinity, tightQuirks: 0, violatedBy: [] };
+    const clearance = Math.min(...pitched.map((j) => roomTo(b, i, j)));
+    const severity = pitched.reduce((t, j) => t + 2 * depthIn(b, i, j), 0);
+    return { index: i, tier: 3, violations: pitched.length, severity, pastTalkers, beside: 0, gap: Infinity, clearance, tightQuirks: 0, violatedBy: pitched };
+  }
   const beside = occ.filter((j) => Math.abs(i - j) === 1).length;
   const gap = occ.reduce((m, j) => (j === i ? m : Math.min(m, Math.abs(i - j) - 1)), Infinity);
   let clearance = Infinity;
@@ -253,7 +304,7 @@ function analyzeSlot(b: Bathroom, i: number, occ: number[]): Cand {
   }
   const tier = slot.flag === 'puddle' ? 4 : violatedBy.length > 0 ? 3 : slot.flag === 'low' ? 1 : 0;
   let severity = 0;
-  for (const j of violatedBy) severity += actsNormal(b.slots[j].occupant) ? 1 : 2;
+  for (const j of violatedBy) severity += (actsNormal(b.slots[j].occupant) ? 1 : 2) * depthIn(b, i, j);
   return { index: i, tier, violations: violatedBy.length, severity, pastTalkers, beside, gap, clearance, tightQuirks, violatedBy };
 }
 
@@ -280,7 +331,8 @@ function violationReason(b: Bathroom, i: number): Reason {
 export function evaluate(b: Bathroom): Evaluation {
   const occ = occupantIndices(b);
   const cands: Cand[] = [];
-  for (let i = 0; i < b.slots.length; i++) if (isPickable(b.slots[i])) cands.push(analyzeSlot(b, i, occ));
+  const blocked = gearBlocked(b);
+  for (let i = 0; i < b.slots.length; i++) if (isPickable(b.slots[i]) && !blocked.has(i)) cands.push(analyzeSlot(b, i, occ));
 
   let best: Cand | undefined;
   for (const c of cands) if (!best || compareCand(b, c, best) < 0) best = c;

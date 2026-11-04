@@ -2,7 +2,20 @@
 import { useId, type CSSProperties } from 'react';
 import type { BossMood, Quirk, Side } from '../types';
 import { GUY_H, heightScale } from './geometry';
-import { OXFORD, PILOT_GOLD, PILOT_NAVY, PILOT_SHIRT, QUIRK_STYLE, SHOE, shade, type ResolvedLook } from './looks';
+import {
+  BUTTON_DOWN,
+  CRYPTO_GOLD,
+  OXFORD,
+  PILOT_GOLD,
+  PILOT_NAVY,
+  PILOT_SHIRT,
+  QUIRK_STYLE,
+  SHOE,
+  TREK_BOOT,
+  TREK_HAT,
+  shade,
+  type ResolvedLook,
+} from './looks';
 import { legPose } from './pose';
 
 interface GuyFigureProps {
@@ -146,15 +159,27 @@ export function GuyFigure({ look, hoodie, quirk = 'normal', turn = 0, talking, p
   const wide = quirk === 'splasher';
   const suit = quirk === 'boss';
   const prop =
-    quirk === 'boss' ? 'coffee' : quirk === 'drunk' ? 'beer' : quirk === 'facetime' ? 'phone' : quirk === 'pastor' ? 'bible' : null;
+    quirk === 'boss'
+      ? 'coffee'
+      : quirk === 'drunk'
+        ? 'beer'
+        : quirk === 'facetime'
+          ? 'phone'
+          : quirk === 'pastor'
+            ? 'bible'
+            : quirk === 'finance'
+              ? 'speaker'
+              : null;
+  // The crypto bro wears a hoodie too (hood down), cut like yours.
+  const hooded = hoodie || quirk === 'crypto';
   const sleeve = look.sleeve ?? look.shirtShade;
   // The peeper cranes his neck toward whatever he's looking at.
   const peek = quirk === 'peeper' && turn !== 0;
-  const shoe = hoodie ? '#f4f4f4' : SHOE;
+  const shoe = hoodie ? '#f4f4f4' : quirk === 'tourist' ? TREK_BOOT : SHOE;
   const legs = legPose(straddle, wide);
   const akimbo = quirk === 'gassy';
   const footX = legs.footX;
-  const torso = hoodie
+  const torso = hooded
     ? 'M-20,-144 C-26,-144 -26,-137 -25,-131 L-21,-76 L21,-76 L25,-131 C26,-137 26,-144 20,-144 Z'
     : suit
       ? 'M-21,-144 C-27,-144 -27,-137 -26,-131 L-22,-70 L22,-70 L26,-131 C27,-137 27,-144 21,-144 Z'
@@ -162,7 +187,15 @@ export function GuyFigure({ look, hoodie, quirk = 'normal', turn = 0, talking, p
         ? 'M-19,-143 C-24,-143 -24,-137 -23,-131 L-21,-72 L-8,-74 L4,-71 L21,-74 L23,-131 C24,-137 24,-143 19,-143 Z'
         : TORSO;
   // The prop hand hangs down at the hip; mirrored via scale(-1,1) for the left hand.
-  const propArm = prop === 'phone' ? (
+  const propArm = prop === 'speaker' ? (
+    <g transform={propSide < 0 ? 'scale(-1,1)' : undefined}>
+      {/* arm bent out to the side, phone held flat-ish at waist height, on speaker */}
+      <path d="M19,-138 L31,-120 L37,-103" fill="none" stroke="var(--us-ink)" strokeWidth={11} strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M19,-138 L31,-120 L37,-103" fill="none" stroke={sleeve} strokeWidth={6.6} strokeLinecap="round" strokeLinejoin="round" />
+      <SpeakerPhone />
+      <circle className="us-ink" cx={37} cy={-100} r={4.2} fill={look.skin} />
+    </g>
+  ) : prop === 'phone' ? (
     <g transform={propSide < 0 ? 'scale(-1,1)' : undefined}>
       {/* arm raised out to the side, holding the phone at arm's length */}
       <path d="M19,-138 L33,-147 L39,-156" fill="none" stroke="var(--us-ink)" strokeWidth={11} strokeLinecap="round" strokeLinejoin="round" />
@@ -197,15 +230,30 @@ export function GuyFigure({ look, hoodie, quirk = 'normal', turn = 0, talking, p
   ) : null;
   return (
     <g transform={`scale(${s})`}>
-      {/* shoes */}
-      <ellipse className="us-ink" cx={-footX} cy={-4} rx={9} ry={5} fill={shoe} />
-      <ellipse className="us-ink" cx={footX} cy={-4} rx={9} ry={5} fill={shoe} />
+      {/* shoes (the tourist's are chunky hiking boots) */}
+      {quirk === 'tourist' ? (
+        [-1, 1].map((sx) => (
+          <g key={sx}>
+            <path className="us-ink" fill={shoe} d={`M${sx * footX - 10},-1 L${sx * footX - 9},-11 Q${sx * footX},-14 ${sx * footX + 9},-11 L${sx * footX + 10},-1 Z`} />
+            <path d={`M${sx * footX - 9.5},-3 H${sx * footX + 9.5}`} stroke="#2b1c10" strokeWidth={2.2} />
+          </g>
+        ))
+      ) : (
+        <>
+          <ellipse className="us-ink" cx={-footX} cy={-4} rx={9} ry={5} fill={shoe} />
+          <ellipse className="us-ink" cx={footX} cy={-4} rx={9} ry={5} fill={shoe} />
+        </>
+      )}
       {/* pants */}
       <path className="us-ink" fill={look.pants} d={legs.pants} />
+      {quirk === 'tourist' && <TrekPants footX={footX} color={look.pants} />}
       <g transform={legs.drop ? `translate(0,${legs.drop.toFixed(2)})` : undefined}>
       {/* torso */}
       <path className="us-ink" fill={look.shirt} d={torso} />
-      {hoodie && <path d="M-20,-86 L20,-86 L21,-76 L-21,-76 Z" fill={look.shirtShade} />}
+      {hooded && <path d="M-20,-86 L20,-86 L21,-76 L-21,-76 Z" fill={look.shirtShade} />}
+      {quirk === 'crypto' && <CoinBack />}
+      {quirk === 'tourist' && <ShellBack color={look.shirt} />}
+      {quirk === 'finance' && <FleeceBack color={look.shirt} />}
       {suit && <path d="M0,-70 L0,-96" stroke="#151922" strokeWidth={2} />}
       {quirk === 'inlaw' && <VestBack color={look.shirt} />}
       {/* arms (bent forward, so we mostly see the upper arms) */}
@@ -227,7 +275,22 @@ export function GuyFigure({ look, hoodie, quirk = 'normal', turn = 0, talking, p
       {propArm}
       {/* neck */}
       <rect className="us-ink" x={-6} y={-153} width={12} height={12} fill={look.skin} />
-      {hoodie && <path className="us-ink" fill={look.shirtShade} d="M-17,-146 Q0,-156 17,-146 Q14,-134 0,-132 Q-14,-134 -17,-146 Z" />}
+      {hooded && <path className="us-ink" fill={look.shirtShade} d="M-17,-146 Q0,-156 17,-146 Q14,-134 0,-132 Q-14,-134 -17,-146 Z" />}
+      {/* crypto: a gold chain round the back of the neck, over the hood */}
+      {quirk === 'crypto' && (
+        <path d="M-7.5,-150 Q-9,-142 0,-140.5 Q9,-142 7.5,-150" fill="none" stroke={CRYPTO_GOLD} strokeWidth={2.2} strokeLinecap="round" strokeDasharray="2.2 1.2" />
+      )}
+      {/* tourist: the hood rolled up into the jacket collar */}
+      {quirk === 'tourist' && (
+        <path className="us-ink" fill={shade(look.shirt, 0.22)} d="M-12,-141 Q-12,-151 0,-151 Q12,-151 12,-141 Q0,-137.5 -12,-141 Z" strokeWidth={1.8} />
+      )}
+      {/* finance: the button-down's collar over the vest's fleece stand-up collar */}
+      {quirk === 'finance' && (
+        <g>
+          <path className="us-ink" fill={shade(look.shirt, -0.12)} d="M-11,-140 L-10,-146 Q0,-148.5 10,-146 L11,-140 Q0,-137.5 -11,-140 Z" strokeWidth={1.8} />
+          <path className="us-ink" fill={BUTTON_DOWN} d="M-8.5,-145 L-7.5,-151 L7.5,-151 L8.5,-145 L0,-143 Z" strokeWidth={1.7} />
+        </g>
+      )}
       {suit && (
         <g>
           {/* white shirt collar above the jacket, red tie flipped over the shoulder */}
@@ -285,6 +348,7 @@ export function GuyFigure({ look, hoodie, quirk = 'normal', turn = 0, talking, p
           </g>
         )}
         {quirk === 'pilot' && <PilotCap turn={turn} />}
+        {quirk === 'tourist' && <BucketHat turn={turn} />}
       </g>
       {prop === 'phone' && (
         <g transform={`translate(${propSide * PHONE_X},${PHONE_Y}) rotate(${propSide * 8})`}>
@@ -293,6 +357,116 @@ export function GuyFigure({ look, hoodie, quirk = 'normal', turn = 0, talking, p
         </g>
       )}
       </g>
+    </g>
+  );
+}
+
+/** The finance bro's phone, held out flat-ish on speaker, with sound waves. Right hand (mirror for left). */
+function SpeakerPhone() {
+  return (
+    <g>
+      <g transform="translate(41,-106) rotate(-28)">
+        <rect className="us-ink" x={-5.5} y={-10} width={11} height={20} rx={2.5} fill="#1f2228" strokeWidth={1.8} />
+        <rect x={-3.8} y={-7.6} width={7.6} height={15} rx={1} fill="#7fd18b" />
+        {/* the call screen: a speaker glyph */}
+        <path d="M-2,-1.6 H-0.4 L1.6,-3.6 V3.6 L-0.4,1.6 H-2 Z" fill="#1f2228" />
+      </g>
+      <g className="us-sound" fill="none" stroke="var(--us-ink)" strokeWidth={1.6} strokeLinecap="round">
+        <path d="M51,-118 Q55,-112 53,-105" />
+        <path d="M56,-122 Q62,-112 58.5,-101" />
+      </g>
+    </g>
+  );
+}
+
+/** Crypto bro: a big gold coin on the back of his hoodie, with a bitcoin-style B. */
+function CoinBack() {
+  return (
+    <g>
+      <circle className="us-ink" cx={0} cy={-113} r={11.5} fill={CRYPTO_GOLD} strokeWidth={1.8} />
+      <circle cx={0} cy={-113} r={8.6} fill="none" stroke={shade(CRYPTO_GOLD, 0.25)} strokeWidth={1} />
+      <path d="M-1.6,-122 V-104 M1.8,-122 V-104" stroke="#2a1f00" strokeWidth={1.4} />
+      <text className="us-coin-b" x={0.4} y={-112.5} textAnchor="middle" dominantBaseline="central">
+        B
+      </text>
+    </g>
+  );
+}
+
+/** Tourist's technical shell from behind: a darker back yoke with a vent, a reflective tab, a drawcord hem. */
+function ShellBack({ color }: { color: string }) {
+  const clip = `us-shell-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  return (
+    <g>
+      <clipPath id={clip}>
+        <path d={TORSO} />
+      </clipPath>
+      <g clipPath={`url(#${clip})`}>
+        <path d="M-26,-146 H26 V-128 Q0,-122 -26,-128 Z" fill={shade(color, 0.2)} />
+        <path d="M-15,-126.5 Q0,-121.5 15,-126.5" fill="none" stroke={shade(color, 0.42)} strokeWidth={1.4} />
+        <rect x={-4} y={-133} width={8} height={3} rx={1} fill="#e8eef2" />
+        <rect x={-26} y={-85} width={52} height={7} fill={shade(color, 0.16)} />
+        <circle cx={-14} cy={-81.5} r={1.4} fill="#e8eef2" />
+      </g>
+    </g>
+  );
+}
+
+/** Finance bro's fleece vest from behind: a fleece speckle, a back yoke seam, a bound hem. */
+function FleeceBack({ color }: { color: string }) {
+  const clip = `us-fleece-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  const dots: [number, number][] = [];
+  for (let row = 0; row < 8; row++) for (let x = -21 + (row % 2) * 3.5; x < 22; x += 7) dots.push([x, -136 + row * 7]);
+  return (
+    <g>
+      <clipPath id={clip}>
+        <path d={TORSO} />
+      </clipPath>
+      <g clipPath={`url(#${clip})`}>
+        {dots.map(([x, y]) => (
+          <circle key={`${x},${y}`} cx={x} cy={y} r={0.9} fill={shade(color, -0.35)} />
+        ))}
+        <path d="M-24,-131 Q0,-126 24,-131" fill="none" stroke={shade(color, 0.35)} strokeWidth={1.3} />
+        <rect x={-24} y={-83} width={48} height={5} fill={shade(color, 0.25)} />
+      </g>
+    </g>
+  );
+}
+
+/** Convertible hiking pants: zip-off lines at the knees, a cargo pocket on one thigh. */
+function TrekPants({ footX, color }: { footX: number; color: string }) {
+  const zip = shade(color, 0.38);
+  const kx = Math.max(9, footX + 1);
+  return (
+    <g>
+      <path
+        d={`M${-kx - 6},-36 Q${-kx},-34.5 ${-kx + 6},-36 M${kx - 6},-36 Q${kx},-34.5 ${kx + 6},-36`}
+        fill="none"
+        stroke={zip}
+        strokeWidth={1.6}
+        strokeDasharray="1.6 1.2"
+      />
+      <rect className="us-ink" x={6} y={-70} width={10} height={13} rx={1.5} fill={shade(color, 0.08)} strokeWidth={1.4} />
+      <path d="M6,-66 H16" stroke={zip} strokeWidth={1} />
+    </g>
+  );
+}
+
+/** How far the tourist's bucket hat rises above a bare head (unscaled), so his chip can sit clear of it. */
+export const TOURIST_HAT_RISE = 8;
+
+/** The tourist's floppy tan bucket hat. In profile it tips forward a touch. */
+function BucketHat({ turn }: { turn: -1 | 0 | 1 }) {
+  return (
+    <g transform={turn ? `rotate(${turn * 4},0,-170)` : undefined}>
+      <path className="us-ink" fill={TREK_HAT} d="M-13,-168 Q-13.5,-184 0,-184 Q13.5,-184 13,-168 Z" strokeWidth={1.8} />
+      <path d="M-13,-171.5 H13" stroke={shade(TREK_HAT, 0.35)} strokeWidth={2.4} />
+      <path
+        className="us-ink"
+        fill={shade(TREK_HAT, 0.08)}
+        d="M-22,-164 Q-19,-170.5 -13,-169.5 L13,-169.5 Q19,-170.5 22,-164 Q0,-161 -22,-164 Z"
+        strokeWidth={1.8}
+      />
     </g>
   );
 }
@@ -468,11 +642,26 @@ export function QuirkChip({ x, y, quirk, lean, mood }: { x: number; y: number; q
   );
 }
 
+/** Longest text a bubble keeps on one line (chars). Longer text breaks in two, at the space nearest the middle. */
+export const BUBBLE_WRAP = 18;
+
+export function bubbleLines(text: string): string[] {
+  if (text.length <= BUBBLE_WRAP) return [text];
+  let best = -1;
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === ' ' && (best < 0 || Math.abs(i - text.length / 2) < Math.abs(best - text.length / 2))) best = i;
+  }
+  return best < 0 ? [text] : [text.slice(0, best), text.slice(best + 1)];
+}
+
 /** Horizontal speech bubble beside a head: tail tip at (x, y), bubble extends toward `dir`. */
 export function SideBubble({ x, y, text, dir, small }: { x: number; y: number; text: string; dir: -1 | 1; small?: boolean }) {
   const fs = small ? 10 : 13;
-  const w = Math.max(20, Math.round(text.length * fs * 0.6) + 10);
-  const h = small ? 16 : 19;
+  const lines = bubbleLines(text);
+  const longest = Math.max(...lines.map((l) => l.length));
+  const w = Math.max(20, Math.round(longest * fs * 0.6) + 10);
+  const lh = small ? 11 : 14;
+  const h = (small ? 16 : 19) + (lines.length - 1) * lh;
   const bx = dir > 0 ? x + 5 : x - 5 - w;
   const by = y - h + 3;
   const edge = dir > 0 ? bx : bx + w;
@@ -484,11 +673,17 @@ export function SideBubble({ x, y, text, dir, small }: { x: number; y: number; t
       <text
         className={small ? 'us-bubble-text us-bubble-text-sm' : 'us-bubble-text'}
         x={bx + w / 2}
-        y={by + h / 2 + 0.5}
+        y={by + h / 2 + 0.5 - ((lines.length - 1) * lh) / 2}
         textAnchor="middle"
         dominantBaseline="central"
       >
-        {text}
+        {lines.length === 1
+          ? text
+          : lines.map((l, k) => (
+              <tspan key={k} x={bx + w / 2} dy={k ? lh : 0}>
+                {l}
+              </tspan>
+            ))}
       </text>
     </g>
   );

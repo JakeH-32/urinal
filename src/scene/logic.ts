@@ -1,5 +1,6 @@
 // Pure scene logic (labels, keyboard focus order, reveal model). No React.
 import type { Bathroom, Evaluation, Grade, Quirk, Slot } from '../types';
+import { isOpen } from '../engine/code';
 import { QUIRK_STYLE } from './looks';
 
 /** Grades that broke the urinal code: show zone bands and reactions. */
@@ -19,17 +20,28 @@ export const QUIRK_BADGES: Record<Quirk, string | null> = {
   pastor: '⛪',
   peeper: '👀',
   pilot: '✈️',
+  tourist: '🎒',
+  crypto: '🪙',
+  finance: '📞',
 };
 
-/** Pickable = unoccupied and not broken. */
+/** The slot on its own: unoccupied and not broken. A tourist's gear can still block it; see `canPick`. */
 export function isPickable(slot: Slot): boolean {
   return !slot.occupant && slot.flag !== 'broken';
 }
 
+/**
+ * Can the player pick slot `i` in this room? Straight from the engine (`isOpen`), so a urinal full
+ * of a backpack tourist's gear is never tappable, focusable or highlighted.
+ */
+export function canPick(b: Bathroom, i: number): boolean {
+  return isOpen(b, i);
+}
+
 export function pickableIndices(b: Bathroom): number[] {
   const out: number[] = [];
-  b.slots.forEach((s, i) => {
-    if (isPickable(s)) out.push(i);
+  b.slots.forEach((_, i) => {
+    if (canPick(b, i)) out.push(i);
   });
   return out;
 }
@@ -70,17 +82,17 @@ export function describeBathroom(b: Bathroom): string {
  */
 export function nextPickable(b: Bathroom, from: number, dir: -1 | 1): number {
   for (let i = from + dir; i >= 0 && i < b.slots.length; i += dir) {
-    if (isPickable(b.slots[i])) return i;
+    if (canPick(b, i)) return i;
   }
   return from;
 }
 
 export function firstPickable(b: Bathroom): number {
-  return b.slots.findIndex(isPickable);
+  return b.slots.findIndex((_, i) => canPick(b, i));
 }
 
 export function lastPickable(b: Bathroom): number {
-  for (let i = b.slots.length - 1; i >= 0; i--) if (isPickable(b.slots[i])) return i;
+  for (let i = b.slots.length - 1; i >= 0; i--) if (canPick(b, i)) return i;
   return -1;
 }
 

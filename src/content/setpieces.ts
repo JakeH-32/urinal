@@ -524,7 +524,7 @@ export const SET_PIECES: SetPiece[] = [
     answer: 1,
   },
   {
-    // The spot beside the VP breaks one rule. The other spot breaks two.
+    // Right beside the VP is a direct hit. The other spot only grazes him and stands by Stu: two grazes beat one direct hit.
     id: 'sp-regional-vp',
     difficulty: 6,
     venue: 'Regional office, the small bathroom',
@@ -535,7 +535,7 @@ export const SET_PIECES: SetPiece[] = [
       { name: 'The regional VP', blurb: 'Flew in to “get a feel for the team.” Brought a list.' },
       { name: 'Stu from your team', blurb: 'Tells the VP everything. Calls it “visibility.”' },
     ],
-    answer: 2,
+    answer: 3,
   },
   {
     // No clean spot. The divider would cover a sober man, but the uncle sways two. Right behind his

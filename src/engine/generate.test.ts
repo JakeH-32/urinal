@@ -114,10 +114,10 @@ describe('400 days of dailies', () => {
         }
         if (r.difficulty === 3) {
           expect(quirks).toHaveLength(1);
-          expect(['talker', 'splasher', 'facetime', 'inlaw', 'pastor', 'pilot']).toContain(quirks[0]);
+          expect(['talker', 'splasher', 'facetime', 'inlaw', 'pastor', 'pilot', 'tourist', 'crypto']).toContain(quirks[0]);
         }
-        if (r.difficulty === 4) for (const q of quirks) expect(['talker', 'splasher', 'facetime', 'inlaw', 'pastor', 'pilot']).toContain(q);
-        if (r.difficulty === 5) expect(quirks.some((q) => q === 'boss' || q === 'drunk' || q === 'gassy' || q === 'peeper'), where).toBe(true);
+        if (r.difficulty === 4) for (const q of quirks) expect(['talker', 'splasher', 'facetime', 'inlaw', 'pastor', 'pilot', 'tourist', 'crypto']).toContain(q);
+        if (r.difficulty === 5) expect(quirks.some((q) => q === 'boss' || q === 'drunk' || q === 'gassy' || q === 'peeper' || q === 'finance'), where).toBe(true);
         if (r.difficulty <= 4) expect(ev.slots[ev.greens[0]].reason).not.toBe('stall-forced');
       }
     }

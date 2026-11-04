@@ -1,7 +1,7 @@
 // One plain sentence saying why a pick graded the way it did (shown under the verdict).
 // Dry on purpose: the verdict line carries the joke, this carries the rule.
 import type { Bathroom, Evaluation, Quirk, Side } from '../types';
-import { actsNormal, culpritOf, dividersBetween, isPickable, roomTo, sideOf } from './code';
+import { actsNormal, culpritOf, dividersBetween, isOpen, roomTo, sideOf } from './code';
 
 const other = (s: Side): Side => (s === 'left' ? 'right' : 'left');
 
@@ -16,6 +16,9 @@ const QUIRK_NOUN: Record<Exclude<Quirk, 'normal'>, string> = {
   pastor: 'the pastor',
   peeper: 'the peeping tom',
   pilot: 'the pilot',
+  tourist: 'the backpacker',
+  crypto: 'the crypto guy',
+  finance: 'the finance bro',
 };
 
 /**
@@ -23,7 +26,7 @@ const QUIRK_NOUN: Record<Exclude<Quirk, 'normal'>, string> = {
  * Advice like "go to his other side" only makes sense when that side has a spot (not just the door).
  */
 function roomOnSide(b: Bathroom, j: number, side: Side): boolean {
-  return b.slots.some((s, k) => isPickable(s) && Math.abs(k - j) >= 2 && sideOf(k, j) === side);
+  return b.slots.some((_, k) => isOpen(b, k) && Math.abs(k - j) >= 2 && sideOf(k, j) === side);
 }
 
 /** Who sits at slot i's tightest room: how many quirk guys and how many normal guys. */
@@ -130,6 +133,16 @@ export function explainPick(b: Bathroom, ev: Evaluation, pick: number): string |
       return dividersBetween(b, pick, j) > 0
         ? 'Pilots need two empty urinals. He told you about it over the divider.'
         : 'Pilots need two empty urinals between you. He mentioned that he’s a pilot.';
+    case 'tourist':
+      return 'You stood right next to him. Leave at least one empty urinal.';
+    case 'crypto':
+      return b.slots[pick].kind === 'stall'
+        ? 'He pitched you through the stall door. Within two urinals of him, the stall isn’t safe.'
+        : 'Crypto guys need two empty urinals between you.';
+    case 'finance':
+      return dividersBetween(b, pick, j) > 0
+        ? 'He’s on speakerphone. The divider helped, just not enough. Give him three empty urinals.'
+        : 'He’s on speakerphone. Give him three empty urinals, or put a divider between you.';
     case 'splasher':
       return 'Splashers need two empty urinals between you.';
     case 'boss':

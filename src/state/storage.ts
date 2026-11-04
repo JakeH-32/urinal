@@ -35,6 +35,9 @@ const REASON_SET: Record<Reason, true> = {
   pastor: true,
   peeper: true,
   pilot: true,
+  tourist: true,
+  crypto: true,
+  finance: true,
 };
 
 export const REASONS: readonly Reason[] = Object.keys(REASON_SET) as Reason[];

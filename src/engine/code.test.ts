@@ -6,7 +6,7 @@
 //   |  divider between the neighbouring slots
 import { describe, expect, it } from 'vitest';
 import type { Bathroom, Evaluation, Guy, Quirk, Side, Slot } from '../types';
-import { clearanceTo, culpritOf, effectiveDistance, evaluate, isWall, wallIndex, zoneCovers, zoneRadius } from './code';
+import { gearBlocked, clearanceTo, culpritOf, effectiveDistance, evaluate, isWall, wallIndex, zoneCovers, zoneRadius } from './code';
 import { parseLayout } from './layout';
 
 const LOOK: Guy['look'] = { shirt: 0, pants: 0, hair: 0, skin: 0, height: 0, bald: false };
@@ -227,6 +227,24 @@ describe('evaluate', () => {
     expect(evaluate(parseLayout('_ N _', 'left')).greens).toEqual([2]);
   });
 
+  it('backpack tourist: his gear makes both urinals beside him unpickable', () => {
+    const b = parseLayout('_ _ _ K _ _ _', 'left');
+    expect([...gearBlocked(b)].sort()).toEqual([2, 4]);
+    const g = grades(b);
+    expect([g[2], g[4]]).toEqual(['-', '-']);
+    expect(g[6]).toBe('C:perfect');
+  });
+
+  it('crypto bro: two empty urinals, and a stall within his reach is not safe', () => {
+    expect(evaluate(parseLayout('_ _ _ _ C _ S', 'left')).slots[6]).toMatchObject({ grade: 'amber', reason: 'crypto' });
+    expect(evaluate(parseLayout('C _ _ S', 'left')).slots[3].violations).toBe(0);
+  });
+
+  it('finance bro on speakerphone: three empty urinals, but dividers block the sound', () => {
+    expect(grades(parseLayout('M _ _ _ _', 'left'))[3]).toMatch(/^[AD]:finance/);
+    expect(grades(parseLayout('M | _ | _ | _ _', 'left'))[3]).not.toMatch(/finance/);
+  });
+
   it('stall-forced when every urinal violates', () => {
     const b = bath('S _ _ B _', 'left');
     const ev = evaluate(b);
@@ -294,9 +312,17 @@ describe('evaluate', () => {
   });
 
   it('stuck in a FaceTime frame: farther in the background is better (playtest, practice KWDX32)', () => {
-    const ev = evaluate(parseLayout('_ N P _ F< _ _ _', 'right'));
-    expect(ev.greens).toEqual([7]);
-    expect(ev.slots[5].grade).not.toBe('clear');
+    // Every spot is on camera: the one farthest back is the least bad.
+    const ev = evaluate(parseLayout('F< _ _ _', 'right'));
+    expect(ev.greens).toEqual([3]);
+    expect(ev.slots[1].grade).not.toBe('clear');
+    // Beside a regular guy (with the splasher shielded by him) beats being on camera at all.
+    expect(evaluate(parseLayout('_ N P _ F< _ _ _', 'right')).greens).toEqual([0]);
+  });
+
+  it('two grazes beat one direct hit, and a man between you shields you from the splasher (playtest)', () => {
+    expect(evaluate(parseLayout('_ P | N _', 'left')).greens).toEqual([3]);
+    expect(evaluate(parseLayout('B _ _ N', 'right')).greens).toEqual([2]);
   });
 
   it('only-option: closer than the answer is See a Doctor; equal but losing on the wall is Lemonade', () => {

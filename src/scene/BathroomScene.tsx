@@ -13,24 +13,44 @@ import {
   heightScale,
   layoutBathroom,
   spanOf,
+  urinalMetrics,
   walkPose,
   type SceneLayout,
 } from './geometry';
-import { CHIP_W, Droplets, FaceTimePhone, GasEngulf, GuyFigure, PHONE_X, PHONE_Y, PILOT_CAP_RISE, PfftBurst, QuirkChip, StinkCloud, SideBubble, SplashPuddle, YouTag, guyTop } from './Guy';
+import {
+  CHIP_W,
+  Droplets,
+  FaceTimePhone,
+  GasEngulf,
+  GuyFigure,
+  PHONE_X,
+  PHONE_Y,
+  PILOT_CAP_RISE,
+  PfftBurst,
+  QuirkChip,
+  StinkCloud,
+  SideBubble,
+  SplashPuddle,
+  TOURIST_HAT_RISE,
+  YouTag,
+  bubbleLines,
+  guyTop,
+} from './Guy';
 import { Divider, Doorway, Puddle, STALL_TOP_Y, SolidEnd, Stall, Urinal } from './Fixtures';
 import { GRADES } from '../grades';
-import { sideOf, zoneCovers } from '../engine/code';
+import { gearBlocked, sideOf, zoneCovers, zoneRadius } from '../engine/code';
+import { CRYPTO_LINES, FINANCE_LINES } from '../content';
 import {
   buildReveal,
+  canPick,
   describeBathroom,
   firstPickable,
-  isPickable,
   lastPickable,
   nextPickable,
   slotLabel,
   spreadChips,
 } from './logic';
-import { YOU_LOOK, resolveLook } from './looks';
+import { PACK_LID, PACK_RED, POLE_BLUE, YOU_LOOK, resolveLook, shade } from './looks';
 import { STRADDLE_DROP, STRADDLE_MS } from './pose';
 import './scene.css';
 
@@ -92,14 +112,46 @@ const REACTION_TEXT: Record<Guy['quirk'], string | null> = {
   pastor: 'Oh my.',
   peeper: 'Hi!',
   pilot: null,
+  tourist: 'Mind the pack.',
+  crypto: 'WAGMI.',
+  finance: 'Adding you to the invite.',
 };
 const FACETIME_REACTION = 'Who’s this?';
 const TALKER_LINE = 'Hey, buddy!';
 /** The pilot talks like the talker, but only ever about one thing. */
 const PILOT_LINE = 'I’m a pilot.';
 const PILOT_REACTION = 'Captain, actually.';
-/** Guys with an always-on speech bubble aimed at the door. */
-const isChatty = (q: Guy['quirk']) => q === 'talker' || q === 'pilot';
+/** Guys with an always-on speech bubble aimed at the door (the finance bro is on speakerphone). */
+const isChatty = (q: Guy['quirk']) => q === 'talker' || q === 'pilot' || q === 'crypto' || q === 'finance';
+
+/** Small stable string hash (FNV-1a), so a guy's line survives a reload. */
+function hashStr(str: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
+function pickLine(lines: readonly string[], key: string, fallback: string): string {
+  return lines.length ? lines[hashStr(key) % lines.length] : fallback;
+}
+
+/** A chatty guy's always-on line: fixed for the talker and pilot, one per room for the bros. */
+function chatLine(guy: Guy): string {
+  if (guy.quirk === 'pilot') return PILOT_LINE;
+  if (guy.quirk === 'crypto') return pickLine(CRYPTO_LINES, guy.name, 'It’s still early.');
+  if (guy.quirk === 'finance') return pickLine(FINANCE_LINES, guy.name, 'Let’s circle back.');
+  return TALKER_LINE;
+}
+
+/** What a chatty guy says once he turns to you. */
+function chatReaction(guy: Guy): string {
+  if (guy.quirk === 'pilot') return PILOT_REACTION;
+  if (guy.quirk === 'talker') return 'So…';
+  return REACTION_TEXT[guy.quirk] ?? '!';
+}
 
 /** Body lean in degrees (positive = clockwise = toward the right): the drunk sways, the peeper leans in to look. */
 function bodyTilt(guy: Guy): number {
@@ -121,15 +173,18 @@ function headTurn(guy: Guy, door: Side, reactDir: -1 | 1 | undefined): -1 | 0 | 
 function propSideFor(b: Bathroom, i: number): -1 | 1 {
   const guy = b.slots[i].occupant;
   if (guy?.quirk === 'drunk' || guy?.quirk === 'facetime') return guy.lean === 'left' ? -1 : 1;
+  // The finance bro holds his speakerphone out on the door side, the way he's talking.
+  if (guy?.quirk === 'finance') return b.door === 'left' ? -1 : 1;
   const rightBusy = !!b.slots[i + 1]?.occupant;
   const leftBusy = !!b.slots[i - 1]?.occupant;
   return rightBusy && !leftBusy ? -1 : 1;
 }
 
 /**
- * Always-on bubbles for chatty guys at urinals, aimed at the door ("Hey, buddy!", "I'm a pilot.");
- * on the reveal they turn to you ("So…", "Captain, actually."). `late` picks the layer: the pilot's
- * reaction is drawn after the reveal rings (it's long enough to cross yours), everything else before.
+ * Always-on bubbles for chatty guys at urinals, aimed at the door ("Hey, buddy!", "I'm a pilot.",
+ * a crypto pitch, a speakerphone line); on the reveal they turn to you ("So…", "Captain, actually.",
+ * "WAGMI."). `late` picks the layer: long reactions are drawn on top of everything else (they're
+ * long enough to cross you), short ones before. Lines over BUBBLE_WRAP chars break onto two lines.
  */
 function chatBubbles(
   layout: ReturnType<typeof layoutBathroom>,
@@ -141,18 +196,29 @@ function chatBubbles(
   return layout.slots.map((g) => {
     const guy = bathroom.slots[g.index].occupant;
     if (!guy || !isChatty(guy.quirk) || g.kind !== 'urinal') return null;
-    const pilot = guy.quirk === 'pilot';
     const reactDir = reactorDir.get(g.index);
-    if ((!!reactDir && pilot) !== late) return null;
+    const text = reactDir ? chatReaction(guy) : chatLine(guy);
+    const long = text.length > 3;
+    if ((!!reactDir && long) !== late) return null;
     const turn = headTurn(guy, bathroom.door, reactDir) || 1;
     const head = headPoint(guy, g.cx);
     // A neighbour on the side he's facing: drop the bubble to shoulder height so it doesn't cover that guy's head.
-    // The pilot's long correction does the same when you're standing right next to him.
-    const crowdedSide = reactDir ? pilot && Math.abs((picked ?? g.index) - g.index) === 1 : !!bathroom.slots[g.index + turn]?.occupant;
-    const text = reactDir ? (pilot ? PILOT_REACTION : 'So…') : pilot ? PILOT_LINE : TALKER_LINE;
+    // A long reaction does the same when you're standing right next to him.
+    const crowdedSide = reactDir ? long && Math.abs((picked ?? g.index) - g.index) === 1 : !!bathroom.slots[g.index + turn]?.occupant;
+    // A two-line bubble grows upward: sit it a little lower so it stays under his chip (or, dropped,
+    // under the neighbour's chin).
+    const twoLine = bubbleLines(text).length > 1;
+    let y = head.y + (crowdedSide ? 30 : twoLine ? (reactDir ? 16 : 12) : reactDir ? 4 : 6);
+    if (crowdedSide) {
+      if (twoLine) y += reactDir ? 14 : 11;
+      // Neighbours stand at different heights: stay below his head and his own head-height bubble too.
+      const nb = bathroom.slots[g.index + turn]?.occupant;
+      const ng = layout.slots[g.index + turn];
+      if (!reactDir && nb && ng) y = Math.max(y, headPoint(nb, ng.cx).y + 30 + (twoLine ? 11 : 0));
+    }
     return (
       <g key={`talk-${g.index}`} className={reactDir ? 'us-talk us-reaction' : 'us-talk'}>
-        <SideBubble x={head.x + turn * 19} y={head.y + (crowdedSide ? 30 : 6)} text={text} dir={turn} small={!reactDir} />
+        <SideBubble x={head.x + turn * 19} y={y} text={text} dir={turn} small={!reactDir} />
       </g>
     );
   });
@@ -203,11 +269,12 @@ export function BathroomScene(props: BathroomSceneProps) {
   // ---- picking / keyboard -------------------------------------------------------------
   const locked = !!disabled || picked !== undefined || !onPick;
   const [focusIdx, setFocusIdx] = useState(() => firstPickable(bathroom));
-  const roving = focusIdx >= 0 && bathroom.slots[focusIdx] && isPickable(bathroom.slots[focusIdx]) ? focusIdx : firstPickable(bathroom);
+  // Gear-blocked urinals (a tourist's pack and poles) are never pickable, focusable or highlighted.
+  const roving = focusIdx >= 0 && canPick(bathroom, focusIdx) ? focusIdx : firstPickable(bathroom);
   const btnRefs = useRef(new Map<number, SVGGElement>());
 
   const pick = (i: number) => {
-    if (locked || !isPickable(bathroom.slots[i])) return;
+    if (locked || !canPick(bathroom, i)) return;
     onPick?.(i);
   };
   const moveFocus = (i: number) => {
@@ -278,6 +345,18 @@ export function BathroomScene(props: BathroomSceneProps) {
       // REC sits at the far end of the frame, away from his head and chip.
       if (filmed.length) out.push({ guy: j, lo: Math.min(...filmed), hi: Math.max(...filmed), recAt: g.lean === 'left' ? 'hi' : 'lo' });
     });
+    return out;
+  }, [bathroom]);
+
+  // Each gear-blocked urinal gets the item from the tourist beside it: the pack on his left (screen
+  // left: we see him from behind), the poles on his right. Between two tourists, the pack wins.
+  const gear = useMemo(() => {
+    const out: { index: number; kind: 'pack' | 'poles' }[] = [];
+    for (const i of gearBlocked(bathroom)) {
+      if (bathroom.slots[i].flag === 'broken') continue; // keep the OUT OF ORDER sign readable
+      const packOwner = bathroom.slots[i + 1]?.occupant?.quirk === 'tourist' && bathroom.slots[i + 1].kind === 'urinal';
+      out.push({ index: i, kind: packOwner ? 'pack' : 'poles' });
+    }
     return out;
   }, [bathroom]);
 
@@ -361,6 +440,15 @@ export function BathroomScene(props: BathroomSceneProps) {
         {layout.dividers.map((d) => (
           <Divider key={`div-${d.index}`} x={d.x} />
         ))}
+        {/* backpack tourists: his pack hangs on the urinal to his left, his poles stand in the one to his right */}
+        {gear.map(({ index, kind }) => {
+          const g = layout.slots[index];
+          return kind === 'pack' ? (
+            <Backpack key={`gear-${index}`} cx={g.cx} low={g.flag === 'low'} />
+          ) : (
+            <TrekPoles key={`gear-${index}`} cx={g.cx} low={g.flag === 'low'} />
+          );
+        })}
         {/* FaceTime: a viewfinder over everything his camera can see (in front of urinals, behind men) */}
         {cameraSpans.map((c) => (
           <CameraFrame key={`cam-${c.guy}`} layout={layout} lo={c.lo} hi={c.hi} recAt={c.recAt} />
@@ -447,13 +535,12 @@ export function BathroomScene(props: BathroomSceneProps) {
           const guy = bathroom.slots[index].occupant;
           if (!guy) return null;
           const stall = g.kind === 'stall';
+          if (!stall && isChatty(guy.quirk)) return null; // chatBubbles turns his bubble to you
           const head = stall ? { x: g.cx, y: STALL_TOP_Y + 14 } : headPoint(guy, g.cx);
           const text = stall
-            ? guy.quirk === 'talker'
-              ? 'So…'
-              : guy.quirk === 'pilot'
-                ? PILOT_REACTION
-                : guy.quirk === 'facetime'
+            ? isChatty(guy.quirk)
+              ? chatReaction(guy)
+              : guy.quirk === 'facetime'
                 ? FACETIME_REACTION
                 : guy.quirk === 'gassy'
                   ? null
@@ -510,8 +597,37 @@ export function BathroomScene(props: BathroomSceneProps) {
           );
         })}
 
-        {/* talkers (and the pilot) never stop talking */}
+        {/* talkers (the pilot, the crypto bro, the finance bro on speaker) never stop talking */}
         {chatBubbles(layout, bathroom, reactorDir, reveal?.picked, false)}
+
+        {/* after the pick, puffs drift from each gassy guy toward you: all the way if you're in his reach,
+            fading out at the edge of it if you're not */}
+        {reveal &&
+          pickedSlot &&
+          !reducedMotion &&
+          gassyAt.map((i) => {
+            const guy = bathroom.slots[i].occupant as Guy;
+            const g = layout.slots[i];
+            const dir: -1 | 1 = pickedSlot.cx > g.cx ? 1 : -1;
+            const s = heightScale(guy.look.height);
+            const startX = g.cx + dir * 22 * s;
+            const startY = FEET_Y - 96 * s;
+            const reach = zoneRadius(guy, dir > 0 ? 'right' : 'left') * PITCH;
+            const dist = Math.max(0, Math.min(Math.abs(pickedSlot.cx - startX), reach));
+            return (
+              <g key={`drift-${i}`} className="us-gas-drift" aria-hidden="true">
+                {[0, 1, 2, 3].map((k) => (
+                  <circle
+                    key={k}
+                    cx={startX}
+                    cy={startY + (k % 2 ? 6 : -4)}
+                    r={5 - k * 0.6}
+                    style={{ ['--dx' as string]: `${dir * dist}px`, animationDelay: `${k * 220}ms` }}
+                  />
+                ))}
+              </g>
+            );
+          })}
 
         {/* gassy reaction: a big green cloud engulfs you */}
         {pickedSlot &&
@@ -522,7 +638,7 @@ export function BathroomScene(props: BathroomSceneProps) {
           )}
 
 
-        {/* the pilot's long correction */}
+        {/* long reactions (the pilot's correction, the finance bro's invite) on top */}
         {chatBubbles(layout, bathroom, reactorDir, reveal?.picked, true)}
 
         {/* crowd stats: what share of players picked each spot (after the reveal) */}
@@ -532,7 +648,7 @@ export function BathroomScene(props: BathroomSceneProps) {
         {!locked &&
           layout.slots.map((g) => {
             const slot = bathroom.slots[g.index];
-            if (!isPickable(slot)) return null;
+            if (!canPick(bathroom, g.index)) return null;
             return (
               <g
                 key={`btn-${g.index}`}
@@ -610,7 +726,7 @@ function CrowdLabels({ layout, bathroom, crowd }: { layout: SceneLayout; bathroo
   const cy = FLOOR_Y + 6;
   const maxW = PITCH - 14; // clear of the ring's outline
   const items = layout.slots
-    .filter((g) => isPickable(bathroom.slots[g.index]))
+    .filter((g) => canPick(bathroom, g.index))
     .map((g) => {
       const raw = crowd[g.index];
       const p = typeof raw === 'number' && Number.isFinite(raw) ? Math.max(0, Math.min(100, raw)) : 0;
@@ -694,7 +810,7 @@ function Occupant({ guy, cx, index, turn, chipX, propSide, straddle }: OccupantP
       {/* chip stays upright even when the guy leans; the drunk's and peeper's point the long way */}
       <QuirkChip
         x={chipX ?? head.x}
-        y={head.top - 5 - (guy.quirk === 'pilot' ? PILOT_CAP_RISE * heightScale(guy.look.height) : 0)}
+        y={head.top - 5 - (guy.quirk === 'pilot' ? PILOT_CAP_RISE : guy.quirk === 'tourist' ? TOURIST_HAT_RISE : 0) * heightScale(guy.look.height)}
         quirk={guy.quirk}
         lean={guy.quirk === 'drunk' || guy.quirk === 'peeper' ? guy.lean : undefined}
         mood={guy.mood}
@@ -876,6 +992,98 @@ function SplashDrops({ cx }: { cx: number }) {
           return <ellipse key={`${k}${side}`} cx={x} cy={y} rx={size * 1.8} ry={size * 0.7} fill="#4a9fd8" opacity={0.15 + 0.5 * fade} />;
         }),
       )}
+    </g>
+  );
+}
+
+/**
+ * A backpack tourist's pack, hung off the flush valve by its haul loop so it covers the bowl: a
+ * big red-orange trekking pack with a dark lid, front pocket, compression straps, a water bottle
+ * in the side pocket and a sleeping mat strapped underneath. Nobody is using this urinal.
+ */
+function Backpack({ cx, low }: { cx: number; low?: boolean }) {
+  const m = urinalMetrics(!!low);
+  const top = m.top - 6;
+  return (
+    <g className="us-gear us-pack" aria-hidden="true">
+      {/* haul loop over the valve */}
+      <path d={`M${cx - 6},${top + 2} Q${cx},${m.valveY - 4} ${cx + 6},${top + 2}`} fill="none" stroke="var(--us-ink)" strokeWidth={3.4} />
+      <path d={`M${cx - 6},${top + 2} Q${cx},${m.valveY - 4} ${cx + 6},${top + 2}`} fill="none" stroke="#565c66" strokeWidth={1.6} />
+      <g transform={`translate(${cx},${top})`}>
+        {/* water bottle in the side pocket */}
+        <rect className="us-ink" x={20} y={36} width={9} height={22} rx={3} fill="#4aa3df" strokeWidth={1.6} />
+        <rect className="us-ink" x={21.5} y={32} width={6} height={5} rx={1} fill="#2a2f36" strokeWidth={1.4} />
+        {/* body */}
+        <path className="us-ink" fill={PACK_RED} d="M-21,10 Q-24,10 -24,16 L-25,84 Q-25,92 -17,92 L17,92 Q25,92 25,84 L24,16 Q24,10 21,10 Z" />
+        <path d="M-17,18 L-18,84" stroke={shade(PACK_RED, 0.18)} strokeWidth={2} />
+        {/* front pocket with a zip */}
+        <path className="us-ink" fill={shade(PACK_RED, 0.12)} d="M-15,44 L15,44 Q17,44 17,47 L16,80 Q16,84 12,84 L-12,84 Q-16,84 -16,80 L-17,47 Q-17,44 -15,44 Z" strokeWidth={1.6} />
+        <path d="M-13,50 H13" stroke="#2a2f36" strokeWidth={1.2} />
+        <rect x={9} y={48} width={3} height={5} rx={1} fill="#c9d2db" />
+        {/* compression straps and buckles */}
+        {[30, 66].map((y) => (
+          <g key={y}>
+            <path d={`M-25,${y} H25`} stroke="#22262c" strokeWidth={3} />
+            <rect x={-22} y={y - 3} width={6} height={6} rx={1} fill="#15171b" />
+            <rect x={16} y={y - 3} width={6} height={6} rx={1} fill="#15171b" />
+          </g>
+        ))}
+        {/* lid */}
+        <path className="us-ink" fill={PACK_LID} d="M-22,14 Q-24,0 -12,-1 L12,-1 Q24,0 22,14 Q0,18 -22,14 Z" strokeWidth={1.8} />
+        <path d="M-12,7 Q0,9.5 12,7" fill="none" stroke="#7d848f" strokeWidth={1.1} />
+        {/* sleeping mat strapped under the pack */}
+        <rect className="us-ink" x={-27} y={90} width={54} height={13} rx={6.5} fill="#5c9a3b" strokeWidth={1.8} />
+        <path d="M-12,90 V103 M12,90 V103" stroke="#22262c" strokeWidth={2.4} />
+        <ellipse cx={-27} cy={96.5} rx={2.4} ry={5.4} fill="#467a2c" />
+        {/* luggage tag: it's his */}
+        <g transform="translate(-23,22) rotate(12)">
+          <path d="M0,0 L-3,6" stroke="#22262c" strokeWidth={1} />
+          <rect className="us-ink" x={-9} y={5} width={10} height={13} rx={1.5} fill="#fbf6e4" strokeWidth={1.2} />
+        </g>
+      </g>
+    </g>
+  );
+}
+
+/**
+ * The tourist's trekking poles, propped in the urinal: tips and snow baskets down in the bowl, the
+ * shafts crossed against the wall, foam grips and wrist straps up by the flush pipe.
+ */
+function TrekPoles({ cx, low }: { cx: number; low?: boolean }) {
+  const m = urinalMetrics(!!low);
+  const k = m.scale;
+  const tipY = m.top + 60 * k;
+  const poles = [
+    { x0: cx - 5, x1: cx + 17, y1: m.top - 50 * k - 8 },
+    { x0: cx + 5, x1: cx - 16, y1: m.top - 44 * k - 8 },
+  ];
+  return (
+    <g className="us-gear us-poles" aria-hidden="true">
+      {poles.map(({ x0, x1, y1 }, i) => {
+        const dx = x1 - x0;
+        const dy = y1 - tipY;
+        const at = (t: number) => [x0 + dx * t, tipY + dy * t] as const;
+        const [bx, by] = at(0.1);
+        const [sx, sy] = at(0.55);
+        const [gx, gy] = at(0.8);
+        const ang = (Math.atan2(dy, dx) * 180) / Math.PI;
+        return (
+          <g key={i}>
+            {/* lower section silver, upper section blue (telescoping) */}
+            <path d={`M${x0},${tipY} L${x1},${y1}`} stroke="var(--us-ink)" strokeWidth={5.4} strokeLinecap="round" />
+            <path d={`M${x0},${tipY} L${sx},${sy}`} stroke="#c3ccd5" strokeWidth={2.8} strokeLinecap="round" />
+            <path d={`M${sx},${sy} L${x1},${y1}`} stroke={POLE_BLUE} strokeWidth={3.2} strokeLinecap="round" />
+            <circle cx={sx} cy={sy} r={2.6} fill="#22262c" />
+            {/* snow basket near the tip */}
+            <ellipse className="us-ink" cx={bx} cy={by} rx={7} ry={2.4} fill="#2a2f36" strokeWidth={1.2} transform={`rotate(${ang + 90},${bx},${by})`} />
+            {/* foam grip and wrist strap */}
+            <g transform={`translate(${gx},${gy}) rotate(${ang})`}>
+              <rect className="us-ink" x={0} y={-3.6} width={20} height={7.2} rx={3} fill="#1d2025" strokeWidth={1.4} />
+              <path d={`M18,0 C${i ? -2 : 26},${i ? 12 : -12} ${i ? 30 : -6},${i ? 14 : -14} 22,2`} fill="none" stroke={i ? '#e0542b' : '#237a35'} strokeWidth={2} />
+            </g>
+          </g>
+        );
+      })}
     </g>
   );
 }

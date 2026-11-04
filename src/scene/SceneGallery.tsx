@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from 'react';
 import type { Bathroom, Evaluation, Grade, Guy, Quirk, Side, Slot, SlotAnalysis } from '../types';
 import { BathroomScene } from './BathroomScene';
+import { isOpen } from '../engine/code';
 
 let lookSeed = 3;
 function guy(quirk: Quirk = 'normal', opts: Partial<Guy['look']> & { lean?: Side } = {}): Guy {
@@ -37,11 +38,13 @@ function radius(g: Guy, toward: Side): number {
   switch (g.quirk) {
     case 'talker':
     case 'pilot':
+    case 'crypto':
     case 'splasher':
     case 'inlaw':
     case 'pastor':
       return 2;
     case 'boss':
+    case 'finance':
       return 3;
     case 'drunk':
       return toward === g.lean ? 3 : 1;
@@ -59,7 +62,7 @@ function radius(g: Guy, toward: Side): number {
 export function fakeEvaluate(b: Bathroom): Evaluation {
   const n = b.slots.length;
   const rows: (SlotAnalysis & { key: number[] })[] = b.slots.map((slot, i) => {
-    const pickable = !slot.occupant && slot.flag !== 'broken';
+    const pickable = isOpen(b, i); // a tourist's gear blocks the urinals beside him
     if (!pickable) return { index: i, pickable, key: [] };
     const violatedBy: number[] = [];
     let clearance = Infinity;
@@ -68,7 +71,7 @@ export function fakeEvaluate(b: Bathroom): Evaluation {
         if (!o.occupant) return;
         const [lo, hi] = i < j ? [i, j] : [j, i];
         let d = hi - lo;
-        if (o.occupant.quirk !== 'talker' && o.occupant.quirk !== 'pilot') for (let k = lo; k < hi; k++) if (b.dividers[k]) d++;
+        if (o.occupant.quirk !== 'talker' && o.occupant.quirk !== 'pilot' && o.occupant.quirk !== 'crypto') for (let k = lo; k < hi; k++) if (b.dividers[k]) d++;
         const c = d - radius(o.occupant, i < j ? 'left' : 'right');
         clearance = Math.min(clearance, c);
         if (c <= 0) violatedBy.push(j);
@@ -181,6 +184,38 @@ const newCrowded = room(
   ],
   'right',
 );
+// The newest guys: a tourist mid-row (pack on his left, poles on his right), a tourist against the
+// wall (only one neighbour to block), the crypto bro and the finance bro on speaker, door left.
+const bros = room(
+  [
+    U(guy('tourist')),
+    U(),
+    U(),
+    U(guy('crypto')),
+    U(),
+    U(),
+    U(guy('tourist', { height: 2, bald: true })),
+    U(),
+    U(guy('finance')),
+    U(),
+  ],
+  'left',
+);
+// Shoulder to shoulder: bros next to each other and to a talker, door right (bubbles drop to shoulder height).
+const brosCrowded = room(
+  [
+    U(),
+    U(guy('tourist', { hair: 2 })),
+    U(),
+    U(guy('finance', { hair: 1, height: 2 })),
+    U(guy('crypto', { hair: 3 })),
+    U(guy('talker')),
+    U(),
+    U(guy('crypto', { height: 0 })),
+    U(guy('finance', { bald: true })),
+  ],
+  'right',
+);
 const looksRow = room(
   Array.from({ length: 10 }, (_, i) => U(guy('normal', { hair: i % 6, shirt: i % 8, pants: i % 5, skin: i % 5, height: i % 3, bald: i === 9 }))),
   'left',
@@ -251,6 +286,21 @@ const revealPastor = evalOf(revealPastorRoom, { 7: 'clear', 0: 'doctor', 2: 'doc
   5: [4],
   6: [4],
 });
+// Finance bro at 2 (r=3, door left) covers 0..5; you pick 1 right beside him.
+const revealFinanceRoom = room([U(), U(), U(guy('finance')), U(), U(), U(), U(), U()], 'left');
+const revealFinance = evalOf(revealFinanceRoom, { 6: 'clear', 0: 'doctor', 1: 'doctor', 3: 'doctor', 4: 'doctor', 5: 'doctor' }, [6], {
+  0: [2],
+  1: [2],
+  3: [2],
+  4: [2],
+  5: [2],
+});
+// Crypto bro at 4 (r=2, door right) covers 2..6; you pick 6 two away. Tourist at 1 blocks 0 and 2.
+const revealCryptoRoom = room([U(), U(guy('tourist')), U(), U(), U(guy('crypto')), U(), U(), U()], 'right');
+const revealCrypto: Evaluation = (() => {
+  const e = evalOf(revealCryptoRoom, { 7: 'clear', 3: 'doctor', 5: 'doctor', 6: 'doctor' }, [7], { 3: [4], 5: [4], 6: [4] });
+  return { ...e, slots: e.slots.map((sl) => (sl.index === 0 || sl.index === 2 ? { index: sl.index, pickable: false } : sl)) };
+})();
 const revealPilot = evalOf(revealPilotRoom, { 4: 'clear', 0: 'doctor', 1: 'doctor', 3: 'doctor' }, [4], { 0: [2], 1: [2], 3: [2] });
 
 // ---- Page ------------------------------------------------------------------------------
@@ -324,6 +374,15 @@ export function SceneGallery() {
         <Live bathroom={room([U(guy()), U(), U(), U(guy('pilot')), U(), U(), U(guy('pilot', { height: 2, bald: true })), U()], 'right')} />
         <Live bathroom={room([U(), U(), U(guy('talker')), U(), U(guy('pilot', { hair: 1 })), U(), U(), U(guy('pilot', { height: 0 })), U(guy('talker'))], 'left')} />
       </Section>
+      <Section
+        title="Interactive: tourist mid-row and at the wall, crypto bro, finance bro (door left)"
+        note="The urinals beside the tourist hold his pack (his left) and poles (his right): not tappable, not focusable, no hover. Bros pick one line per room from the content pools."
+      >
+        <Live bathroom={bros} />
+      </Section>
+      <Section title="Bros shoulder to shoulder (door right): tourist, finance, crypto, talker, crypto, finance" note="Bubbles facing an occupied neighbour drop to shoulder height.">
+        <BathroomScene bathroom={brosCrowded} slotNumbers />
+      </Section>
       <Section title="Interactive, reduced motion" note="No walk, no sway: you appear instantly.">
         <Live bathroom={room([U(), U(guy('boss')), U(), U(), U(guy()), U()], 'right')} reducedMotion />
       </Section>
@@ -373,6 +432,12 @@ export function SceneGallery() {
       </Section>
       <Section title="Reveal: doctor pick right beside the pilot (door left)">
         <BathroomScene bathroom={revealPilotRoom} picked={3} evaluation={revealPilot} reducedMotion />
+      </Section>
+      <Section title="Reveal: doctor pick right beside the finance bro (he adds you to the invite)">
+        <BathroomScene bathroom={revealFinanceRoom} picked={1} evaluation={revealFinance} reducedMotion />
+      </Section>
+      <Section title="Reveal: crypto bro two away (WAGMI.), tourist's gear in 1 and 3 (door right)">
+        <BathroomScene bathroom={revealCryptoRoom} picked={6} evaluation={revealCrypto} reducedMotion slotNumbers />
       </Section>
       <Section title="Reveal: amber pick next to a normal guy and a splasher (door right)">
         <BathroomScene bathroom={revealAmberRoom} picked={1} evaluation={revealAmber} />

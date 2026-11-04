@@ -303,3 +303,37 @@
     animation: none;
   }
 }
+
+/* Gas drifting toward you after the pick (only drawn when motion is allowed). */
+.us-gas-drift circle {
+  fill: #a8c256;
+  stroke: #6f8418;
+  stroke-width: 1.2;
+  opacity: 0;
+  transform-box: fill-box;
+  animation: us-gas-drift 1.8s ease-out 2 both;
+}
+@keyframes us-gas-drift {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.6);
+  }
+  20% {
+    opacity: 0.75;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), -14px) scale(1.4);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .us-gas-drift {
+    display: none;
+  }
+}
+
+/* crypto bro: the bitcoin-style B on his coin */
+.urinal-scene .us-coin-b {
+  font: 900 13px/1 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  fill: #2a1f00;
+}

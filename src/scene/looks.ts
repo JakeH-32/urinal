@@ -26,6 +26,9 @@ export const QUIRK_STYLE: Record<Quirk, QuirkStyle> = {
   pastor: { color: '#25262d', ink: '#ffffff', tag: 'PASTOR', emoji: '⛪' },
   peeper: { color: '#c72683', ink: '#ffffff', tag: 'PEEPER', emoji: '👀' },
   pilot: { color: '#1b3a73', ink: '#ffffff', tag: 'PILOT', emoji: '✈️' },
+  tourist: { color: '#237a35', ink: '#ffffff', tag: 'HIKER', emoji: '🎒' },
+  crypto: { color: '#e5b80b', ink: '#2a1f00', tag: 'CRYPTO', emoji: '🪙' },
+  finance: { color: '#8ec5ee', ink: '#0f2a44', tag: 'FINANCE', emoji: '📞' },
 };
 
 /** Just the chip colours, for legends and UI. */
@@ -41,6 +44,9 @@ export const QUIRK_COLORS: Record<Quirk, string> = {
   pastor: QUIRK_STYLE.pastor.color,
   peeper: QUIRK_STYLE.peeper.color,
   pilot: QUIRK_STYLE.pilot.color,
+  tourist: QUIRK_STYLE.tourist.color,
+  crypto: QUIRK_STYLE.crypto.color,
+  finance: QUIRK_STYLE.finance.color,
 };
 
 export type HairStyle = 'crop' | 'buzz' | 'curly' | 'swoop' | 'long' | 'bun' | 'slick' | 'fringe';
@@ -97,6 +103,20 @@ export const OXFORD = '#c9dcef';
 export const PILOT_SHIRT = '#f6f6f2';
 export const PILOT_NAVY = '#1c2840';
 export const PILOT_GOLD = '#e0b43c';
+/** Backpack tourist: trail-green shell (his chip colour), zip-off khaki pants, tan bucket hat, brown boots. */
+export const TREK_PANTS = '#9a917a';
+export const TREK_HAT = '#cdbb8c';
+export const TREK_BOOT = '#5a3b22';
+/** His gear, parked in the urinals beside him: a red-orange pack and blue trekking poles. */
+export const PACK_RED = '#d4532a';
+export const PACK_LID = '#3a3f47';
+export const POLE_BLUE = '#3b6fb6';
+/** Crypto bro: charcoal hoodie (hood down), a gold coin on the back, a gold chain. */
+export const CRYPTO_HOODIE = '#3a3d45';
+export const CRYPTO_GOLD = QUIRK_STYLE.crypto.color;
+/** Finance bro: navy fleece vest over a light-blue button-down (his chip colour), grey chinos. */
+export const FLEECE_VEST = '#2c3a52';
+export const BUTTON_DOWN = '#a9d0f0';
 
 export function resolveLook(look: Guy['look'], quirk: Quirk = 'normal'): ResolvedLook {
   let shirt: string = SHIRTS[wrap(look.shirt, SHIRTS.length)];
@@ -129,6 +149,23 @@ export function resolveLook(look: Guy['look'], quirk: Quirk = 'normal'): Resolve
     sleeve = shade(PILOT_SHIRT, 0.09);
     pants = PILOT_NAVY;
     if (hair && hair.style !== 'crop' && hair.style !== 'buzz' && hair.style !== 'long') hair = { style: 'crop', color: hair.color };
+  }
+  if (quirk === 'tourist') {
+    // Hair stays short under the bucket hat.
+    shirt = QUIRK_STYLE.tourist.color;
+    pants = TREK_PANTS;
+    if (hair && hair.style !== 'crop' && hair.style !== 'buzz' && hair.style !== 'curly') hair = { style: 'crop', color: hair.color };
+  }
+  if (quirk === 'crypto') {
+    shirt = CRYPTO_HOODIE;
+    pants = PANTS[2];
+  }
+  if (quirk === 'finance') {
+    // The vest is the torso; the button-down shows on the arms. Short, styled hair.
+    shirt = FLEECE_VEST;
+    sleeve = BUTTON_DOWN;
+    pants = PANTS[3];
+    if (hair && hair.style !== 'crop' && hair.style !== 'swoop' && hair.style !== 'buzz') hair = { style: 'swoop', color: hair.color };
   }
   return {
     shirt,

@@ -20,6 +20,9 @@ function slotFor(tok: string): Slot {
     case 'N': return { kind: 'urinal', occupant: guy('normal') };
     case 'T': return { kind: 'urinal', occupant: guy('talker') };
     case 'A': return { kind: 'urinal', occupant: guy('pilot') };
+    case 'K': return { kind: 'urinal', occupant: guy('tourist') };
+    case 'C': return { kind: 'urinal', occupant: guy('crypto') };
+    case 'M': return { kind: 'urinal', occupant: guy('finance') };
     case 'P': return { kind: 'urinal', occupant: guy('splasher') };
     case 'B': return { kind: 'urinal', occupant: { ...guy('boss'), mood: 'stressed' } };
     case 'B+': return { kind: 'urinal', occupant: { ...guy('boss'), mood: 'happy' } };

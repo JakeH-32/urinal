@@ -9,7 +9,7 @@
 // Backend: supabase/schema.sql (tables `picks` + `finishes`, insert-only for anon; `day_stats` RPC).
 import type { Bathroom, Grade, RoundResult } from '../types';
 import { GRADE_ORDER } from '../grades';
-import { isPickable } from '../engine/code';
+import { isOpen } from '../engine/code';
 import { URINAL_EPOCH } from '../engine/daily';
 import { dailyRounds } from '../engine/generate';
 import { shiftDateKey } from '../state/dailyStreak';
@@ -91,7 +91,7 @@ export function withPick(crowd: RoundCrowd, pick: number): RoundCrowd {
 export function pickableOnly(crowd: RoundCrowd | null | undefined, b: Bathroom | undefined): RoundCrowd | null {
   if (!crowd) return null;
   if (!b) return crowd;
-  const bySlot = crowd.bySlot.map((n, i) => (b.slots[i] && isPickable(b.slots[i]) ? n : 0));
+  const bySlot = crowd.bySlot.map((n, i) => (isOpen(b, i) ? n : 0));
   const total = bySlot.reduce((a, n) => a + n, 0);
   return total > 0 ? { total, bySlot } : null;
 }

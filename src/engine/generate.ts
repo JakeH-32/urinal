@@ -6,7 +6,7 @@
 import { QUIRKS, VENUES } from '../content';
 import { SET_PIECES } from '../content/setpieces';
 import type { Bathroom, Difficulty, Evaluation, Guy, Quirk, Rng, Round, SetPiece, Side, Slot, UrinalFlag } from '../types';
-import { evaluate, isPickable } from './code';
+import { evaluate, isOpen } from './code';
 import { dailyNumber } from './daily';
 import { parseLayout } from './layout';
 import { SEED_MASK, createRng, encodePracticeCode, hashString, seedFrom } from './rng';
@@ -25,7 +25,7 @@ export function naivePicks(b: Bathroom): number[] {
   let bestD = -1;
   let out: number[] = [];
   b.slots.forEach((s, i) => {
-    if (s.kind !== 'urinal' || !isPickable(s)) return;
+    if (s.kind !== 'urinal' || !isOpen(b, i)) return;
     let d = Infinity;
     for (const j of occ) d = Math.min(d, Math.abs(i - j));
     if (d > bestD) {
@@ -119,9 +119,9 @@ function addFlags(rng: Rng, b: Bathroom, count: number, kinds: readonly UrinalFl
 }
 
 const ALL_FLAGS: readonly UrinalFlag[] = ['low', 'puddle', 'broken'];
-const SOFT_QUIRKS: readonly Quirk[] = ['talker', 'splasher', 'facetime', 'inlaw', 'pastor', 'pilot'];
-const BIG_QUIRKS: readonly Quirk[] = ['boss', 'drunk', 'gassy', 'peeper'];
-const ANY_QUIRK: readonly Quirk[] = ['talker', 'splasher', 'boss', 'drunk', 'facetime', 'gassy', 'inlaw', 'pastor', 'peeper', 'pilot'];
+const SOFT_QUIRKS: readonly Quirk[] = ['talker', 'splasher', 'facetime', 'inlaw', 'pastor', 'pilot', 'tourist', 'crypto'];
+const BIG_QUIRKS: readonly Quirk[] = ['boss', 'drunk', 'gassy', 'peeper', 'finance'];
+const ANY_QUIRK: readonly Quirk[] = ['talker', 'splasher', 'boss', 'drunk', 'facetime', 'gassy', 'inlaw', 'pastor', 'peeper', 'pilot', 'tourist', 'crypto', 'finance'];
 
 /** Per-round intent decided once, before rejection sampling. */
 interface Plan {
@@ -284,6 +284,8 @@ function accepts(b: Bathroom, ev: Evaluation, d: Difficulty, plan: Plan, stage: 
     if (d >= 2 && d <= 5 && straw < 1) return false;
     if ((d === 4 || d === 5) && !isTrap(b, ev)) return false;
   }
+  // Easy rooms never hinge on the stall (a hard rule: the fallback stages keep it too).
+  if (d >= 2 && d <= 4 && green.reason === 'stall-forced') return false;
   if (stage >= 2) return true;
   // Every label has to change the answer (playtest: rooms were solvable without reading them).
   // Small rooms are exempt: in two or three urinals you do what you gotta do (the user likes them).

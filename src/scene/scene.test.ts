@@ -3,7 +3,7 @@ import { parseLayout } from '../engine/layout';
 import { describe, expect, it } from 'vitest';
 import type { Bathroom, Evaluation, Guy, Slot } from '../types';
 import { DOOR_W, MIN_W, PITCH, contentWidth, headTopY, layoutBathroom, solidEnd, walkPose } from './geometry';
-import { buildReveal, firstPickable, isPickable, lastPickable, nextPickable, slotLabel, zoneOf } from './logic';
+import { buildReveal, canPick, firstPickable, isPickable, lastPickable, nextPickable, slotLabel, zoneOf } from './logic';
 import { PANTS, QUIRK_STYLE, SHIRTS, resolveLook } from './looks';
 
 const g: Guy = { quirk: 'normal', name: 'G', blurb: '', look: { shirt: 0, pants: 0, hair: 0, skin: 0, height: 1, bald: false } };
@@ -201,5 +201,17 @@ describe('peeper swivel', () => {
     expect(r.reactors).toEqual([{ index: 2, dir: -1 }]);
     // On the side he's looking, a legal spot draws no reaction.
     expect(buildReveal(evaluate(b), 5, b).reactors).toEqual([]);
+  });
+});
+
+describe('backpack tourist gear', () => {
+  const t: Guy = { ...g, quirk: 'tourist' };
+  const b = room([U(), U(), U(t), U(), U(), U(g)]);
+  it('blocks the free urinals beside him for picking, focus and arrows', () => {
+    expect(b.slots.map((_, i) => canPick(b, i))).toEqual([true, false, false, false, true, false]);
+    expect(firstPickable(b)).toBe(0);
+    expect(lastPickable(b)).toBe(4);
+    expect(nextPickable(b, 0, 1)).toBe(4);
+    expect(nextPickable(b, 4, -1)).toBe(0);
   });
 });

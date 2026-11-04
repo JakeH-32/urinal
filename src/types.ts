@@ -52,7 +52,7 @@ export interface Rng {
   fork(label: string): Rng;
 }
 
-export type Quirk = 'normal' | 'talker' | 'splasher' | 'boss' | 'drunk' | 'facetime' | 'gassy' | 'inlaw' | 'pastor' | 'peeper' | 'pilot';
+export type Quirk = 'normal' | 'talker' | 'splasher' | 'boss' | 'drunk' | 'facetime' | 'gassy' | 'inlaw' | 'pastor' | 'peeper' | 'pilot' | 'tourist' | 'crypto' | 'finance';
 export type Side = 'left' | 'right';
 export type BossMood = 'happy' | 'stressed' | 'angry';
 
@@ -118,6 +118,7 @@ export interface Round {
  *   G  gassy (his smell drifts toward the door; the parser points him at `door`)
  *   I  father-in-law   R  pastor   E< peeping tom looking left   E> looking right
  *   B is a stressed boss; B+ happy, B! angry   A pilot (a talker who only talks about being a pilot)
+ *   K backpack tourist (both urinals beside him are blocked by his gear)   C crypto bro   M finance bro
  *   | divider between the neighbouring slots
  * e.g. "T | _ | L _ _ P _ S"
  */
@@ -166,7 +167,10 @@ export type Reason =
   | 'inlaw'
   | 'pastor'
   | 'peeper'
-  | 'pilot';
+  | 'pilot'
+  | 'tourist'
+  | 'crypto'
+  | 'finance';
 
 export interface SlotAnalysis {
   index: number;
