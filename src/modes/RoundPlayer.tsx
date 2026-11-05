@@ -64,8 +64,22 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
       const f = frame.getBoundingClientRect();
       const s = scene.getBoundingClientRect();
       const size = PUCK_SIZE;
-      // Sitting on the frame's top edge, at the far corner (away from the centered title), legs over the wall.
-      setPerch({ right: Math.round(f.right - s.right + 6), top: Math.round(s.top - f.top - size * 0.62) });
+      // Sitting on the frame's top edge, legs over the wall. Never over the text above: try the right corner,
+      // then the left corner, then sunk into the frame (only his top above the edge).
+      const texts = [...(frame.parentElement?.querySelectorAll('.round-venue, .round-premise, .round-count') ?? [])].map((t) => t.getBoundingClientRect());
+      const right = (x: number) => Math.round(f.right - x);
+      const candidates = [
+        { r: right(s.right - 6), t: s.top - f.top - size * 0.62 },
+        { r: right(s.left + 6 + size), t: s.top - f.top - size * 0.62 },
+        { r: right(s.right - 6), t: s.top - f.top - size * 0.3 },
+      ];
+      const clear = (c: { r: number; t: number }) => {
+        const left = f.right - c.r - size;
+        const top = f.top + c.t;
+        return texts.every((r) => r.right < left || r.left > left + size || r.bottom - 2 < top + size * 0.1 || r.top > top + size);
+      };
+      const pick = candidates.find(clear) ?? candidates[candidates.length - 1];
+      setPerch({ right: pick.r, top: Math.round(pick.t) });
     };
     place();
     const ro = new ResizeObserver(place);

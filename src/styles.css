@@ -1582,3 +1582,12 @@ button {
     padding-inline: 10px;
   }
 }
+
+/* Even line breaks: no line ends with one or two stranded words. */
+.round-venue,
+.round-premise,
+.verdict-line,
+.verdict-why,
+.crowd-line {
+  text-wrap: balance;
+}

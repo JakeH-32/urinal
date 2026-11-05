@@ -58,7 +58,8 @@ export function explainPick(b: Bathroom, ev: Evaluation, pick: number): string |
   const dryOnly = ev.slots.some((s) => s.pickable && s.violations === 0 && b.slots[s.index].flag === 'puddle');
 
   if (a.grade === 'clear') {
-    if (a.reason === 'only-option') return `Every ${dryOnly ? 'dry ' : ''}spot broke the code, and this one broke it least.`;
+    // The verdict already says it was the least bad; this just says why there was no good spot.
+    if (a.reason === 'only-option') return `Every ${dryOnly ? 'dry ' : ''}spot broke the code.`;
     if (a.reason === 'stall-forced') return `Every ${dryOnly ? 'dry ' : ''}urinal broke the code, so the stall was right.`;
     return null;
   }

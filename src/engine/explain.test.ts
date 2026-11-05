@@ -72,7 +72,7 @@ describe('explainPick', () => {
 
   it('puddles: standing in one is worse than standing a bit close', () => {
     expect(explain('N _ W _ N _ N _ S', 'right', 2)).toBe('Legal, but anything dry beats standing in the puddle.');
-    expect(explain('W _ N', 'right', 1)).toBe('Every dry spot broke the code, and this one broke it least.');
+    expect(explain('W _ N', 'right', 1)).toBe('Every dry spot broke the code.');
   });
 
   it('never sends you to a side with nowhere to stand (playtest: FaceTime by the door)', () => {
@@ -83,6 +83,6 @@ describe('explainPick', () => {
   });
 
   it('least-bad Clear explains itself', () => {
-    expect(explain('N _', 'left', 1)).toBe('Every spot broke the code, and this one broke it least.');
+    expect(explain('N _', 'left', 1)).toBe('Every spot broke the code.');
   });
 });
