@@ -61,7 +61,8 @@ function StoryShare({ record, clears }: { record: DailyRecord; clears: number })
       const file = new File([blob], `urinal-${record.number}.png`, { type: 'image/png' });
       if (navigator.canShare?.({ files: [file] })) {
         if (copied) toast('urinal.app copied. Add a Link sticker and paste.', { tone: 'success' });
-        await navigator.share({ files: [file], title: `Urinal #${record.number}` });
+        // The link rides along: Instagram ignores it, Messages and other chats show it under the picture.
+        await navigator.share({ files: [file], title: `Urinal #${record.number}`, text: 'https://urinal.app' });
       } else {
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
