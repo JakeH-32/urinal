@@ -1,8 +1,9 @@
 // Pure helpers for the play loop, results and stats. No React, so they're unit-tested.
 import type { Bathroom, DailyRecord, Evaluation, Grade, Quirk, Reason, RoundResult, SaveData, Side } from '../types';
-import { FIXTURES, QUIRKS, VERDICTS } from '../content';
+import { FIXTURES, QUIRKS, VERDICT_CASES, VERDICTS } from '../content';
+import type { VerdictCase } from '../content';
 import { hashString } from '../engine/rng';
-import { actsNormal, culpritOf, occupantIndices, roomTo } from '../engine/code';
+import { actsNormal, culpritOf, dividersBetween, occupantIndices, roomTo, sideOf, zoneRadius } from '../engine/code';
 import { GRADES, GRADE_ORDER } from '../grades';
 import { ROUNDS_PER_DAY } from '../state/storage';
 
@@ -55,12 +56,78 @@ function closestNeighbor(b: Bathroom, pick: number): number | undefined {
   return best;
 }
 
+/** The ✓ spot to compare against: a urinal over a stall when the divider rule made both Clear. */
+function answerOf(evaluation: Evaluation): number | undefined {
+  let best: number | undefined;
+  for (const g of evaluation.greens) if (best === undefined || (evaluation.slots[g]?.tier ?? 9) < (evaluation.slots[best]?.tier ?? 9)) best = g;
+  return best;
+}
+
+/** True when every guy at slot i's tightest room acts like a regular guy. */
+function plainNeighbors(b: Bathroom, i: number): boolean {
+  let room = Infinity;
+  let plain = true;
+  for (const j of occupantIndices(b)) {
+    if (j === i) continue;
+    const r = roomTo(b, i, j);
+    if (r < room) {
+      room = r;
+      plain = true;
+    }
+    if (r === room && !actsNormal(b.slots[j].occupant)) plain = false;
+  }
+  return room !== Infinity && plain;
+}
+
+/** Which VERDICT_CASES hold for a pick (see VerdictCase in src/content). */
+export function verdictCases(bathroom: Bathroom, evaluation: Evaluation | undefined, pick: number): VerdictCase[] {
+  const slot = bathroom.slots[pick];
+  if (!slot) return [];
+  const out: VerdictCase[] = [];
+  const occ = occupantIndices(bathroom);
+  if (slot.kind === 'stall') out.push('stall');
+  else if (occ.some((j) => Math.abs(j - pick) === 1)) out.push('beside');
+  if (slot.flag === 'low' || slot.flag === 'puddle') out.push(slot.flag);
+  let j: number | null = null;
+  try {
+    j = culpritOf(bathroom, pick);
+  } catch {
+    j = null;
+  }
+  const guy = j === null ? undefined : bathroom.slots[j]?.occupant;
+  if (j !== null && guy) {
+    if (dividersBetween(bathroom, pick, j) > 0) out.push('divider');
+    // Lopsided guys: his space reaches farther on one side than the other.
+    if (guy.quirk === 'drunk' || guy.quirk === 'gassy' || guy.quirk === 'peeper' || guy.quirk === 'pastor' || guy.quirk === 'facetime') {
+      out.push(zoneRadius(guy, sideOf(pick, j)) > 1 ? 'long-side' : 'short-side');
+    }
+  }
+  const best = evaluation ? answerOf(evaluation) : undefined;
+  if (best !== undefined && plainNeighbors(bathroom, best)) out.push('plain-alt');
+  return out;
+}
+
+/** Every line that can show for this pick: the reason's pool plus the lines of each case that holds. */
+export function verdictPool(bathroom: Bathroom, evaluation: Evaluation | undefined, pick: number, reason: Reason): string[] {
+  const cases = VERDICT_CASES[reason];
+  const base = VERDICTS[reason] ?? [];
+  if (!cases) return base;
+  return [...base, ...verdictCases(bathroom, evaluation, pick).flatMap((c) => cases[c] ?? [])];
+}
+
+/** The verdict a player sees for a result in a room: the right pool, the right name, the round's line. */
+export function verdictFor(roundId: string, bathroom: Bathroom, evaluation: Evaluation | undefined, result: Pick<RoundResult, 'pick' | 'reason'>): string {
+  const pool = verdictPool(bathroom, evaluation, result.pick, result.reason);
+  return verdictLine(roundId, result.reason, violatorName(bathroom, evaluation, result.pick), pool);
+}
+
 /**
  * The verdict line for a result. Chosen by hashString(roundId) so a reload shows the same line.
- * `{name}` becomes the violated occupant's name.
+ * `{name}` becomes the violated occupant's name. `pool` defaults to the reason's base lines; pass
+ * verdictPool's (or call verdictFor) to include the lines that depend on the room.
  */
-export function verdictLine(roundId: string, reason: Reason, name?: string): string {
-  const lines = VERDICTS[reason] ?? [];
+export function verdictLine(roundId: string, reason: Reason, name?: string, pool?: readonly string[]): string {
+  const lines = pool ?? VERDICTS[reason] ?? [];
   if (lines.length === 0) return '';
   // Daily ids end in -r<round>: offset by the round so one day never repeats a line.
   const m = /^(.*)-r(\d+)$/.exec(roundId);

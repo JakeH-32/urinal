@@ -16,7 +16,7 @@ describe('explainPick', () => {
 
   it('drunk: picking his lean side tells you to go to the other side', () => {
     // Leaning right; you stood two to his right.
-    expect(explain('_ _ D> _ _ _ _', 'left', 4)).toBe('He was leaning right. Go to his left side, or leave two empty urinals.');
+    expect(explain('_ _ D> _ _ _ _', 'left', 4)).toBe('He was leaning right, toward you.');
   });
 
   it('drunk: right next to him on his other side', () => {
@@ -25,40 +25,40 @@ describe('explainPick', () => {
 
   it('facetime: in frame vs. next to the phone', () => {
     expect(explain('_ _ _ F< _ _ _', 'right', 6)).toBe(
-      'His phone was in his left hand, so everything to his right is on camera. Go to his left side.',
+      'His phone is in his left hand, so his right side is on camera.',
     );
-    expect(explain('_ _ _ F< _ _ _', 'right', 2)).toBe('You were right next to his phone. Leave one empty urinal.');
-    expect(explain('_ _ _ | F< _ _ _', 'right', 2)).toBe('His camera sees right over the divider. Leave one empty urinal next to him.');
+    expect(explain('_ _ _ F< _ _ _', 'right', 2)).toBe('Leave one empty urinal beside his phone.');
+    expect(explain('_ _ _ | F< _ _ _', 'right', 2)).toBe('His camera sees over dividers, so leave one empty urinal.');
   });
 
   it('gassy: downwind (door side) vs. right next to him upwind', () => {
     expect(explain('_ _ _ _ G _ _ _', 'left', 2)).toBe(
-      'His smell drifts toward the door, and you were downwind. Stand on his far side, or three urinals away.',
+      'His smell drifts toward the door, and you were downwind.',
     );
     expect(explain('_ _ _ _ G _ _ _', 'left', 5)).toBe('Even upwind of him, leave one empty urinal.');
   });
 
   it('boss, talker through a divider, two men at once', () => {
-    expect(explain('_ _ _ B _ _ _ _ _ _', 'left', 5)).toBe('The boss is stressed. Stressed bosses need two empty urinals.');
-    expect(explain('_ _ _ B! _ _ _ _ _ _', 'left', 6)).toBe('The boss is angry. Angry bosses need three empty urinals.');
-    expect(explain('_ _ _ B+ _ _ _ _ _ _', 'left', 4)).toBe('You stood right next to him. Leave at least one empty urinal.');
-    expect(explain('T | _ _ _ _ _', 'left', 1)).toBe('Talkers need two empty urinals. He leans right around dividers.');
-    expect(explain('_ N _ N _ _ _', 'left', 2)).toBe('You were inside two men’s space at once. Leave room on both sides.');
+    expect(explain('_ _ _ B _ _ _ _ _ _', 'left', 5)).toBe('A stressed boss needs two empty urinals.');
+    expect(explain('_ _ _ B! _ _ _ _ _ _', 'left', 6)).toBe('An angry boss needs three empty urinals.');
+    expect(explain('_ _ _ B+ _ _ _ _ _ _', 'left', 4)).toBe('Leave at least one empty urinal between you.');
+    expect(explain('T | _ _ _ _ _', 'left', 1)).toBe('Talkers need two empty urinals, and he leans around dividers.');
+    expect(explain('_ N _ N _ _ _', 'left', 2)).toBe('You were inside two men’s space at once.');
   });
 
   it('walking past the talker, and a talker as your closest neighbor', () => {
-    expect(explain('_ _ _ _ T _ _ _', 'right', 0)).toBe('Legal, but you walked right past the talker. The ✓ spot never got near him.');
+    expect(explain('_ _ _ _ T _ _ _', 'right', 0)).toBe('Legal, but you walked past the talker, and the ✓ spot didn’t.');
     expect(explain('_ _ T _ _ _ _ _ _ B', 'right', 5)).toBe('Same room, but the ✓ spot kept the talker farther away.');
   });
 
   it('father-in-law, pastor, peeper', () => {
     expect(explain('_ _ I _ _ _ _', 'left', 4)).toBe('Fathers-in-law need two empty urinals between you.');
     expect(explain('_ _ R _ _ _ _', 'left', 0)).toBe(
-      'He greets everyone who comes through the door, and you were on his door side. Go to his far side, or two urinals away.',
+      'He greets everyone at the door, and you were on his door side.',
     );
     expect(explain('_ _ R _ _ _ _', 'left', 3)).toBe('Even on his far side, leave one empty urinal.');
-    expect(explain('_ _ E> _ _ _ _', 'left', 4)).toBe('He was looking right. Go to his left side, or leave two empty urinals.');
-    expect(explain('_ _ E> _ _ _ _', 'left', 1)).toBe('He was looking the other way. Still leave one empty urinal.');
+    expect(explain('_ _ E> _ _ _ _', 'left', 4)).toBe('He was looking your way.');
+    expect(explain('_ _ E> _ _ _ _', 'left', 1)).toBe('Even with him looking away, leave one empty urinal.');
   });
 
   it('Lemonade explains which tiebreak you lost', () => {
@@ -71,18 +71,18 @@ describe('explainPick', () => {
   });
 
   it('puddles: standing in one is worse than standing a bit close', () => {
-    expect(explain('N _ W _ N _ N _ S', 'right', 2)).toBe('Legal, but you’d be standing in it. Anything dry beats the puddle.');
-    expect(explain('W _ N', 'right', 1)).toBe('Every dry spot broke the urinal code. This one broke it the least.');
+    expect(explain('N _ W _ N _ N _ S', 'right', 2)).toBe('Legal, but anything dry beats standing in the puddle.');
+    expect(explain('W _ N', 'right', 1)).toBe('Every dry spot broke the code, and this one broke it least.');
   });
 
   it('never sends you to a side with nowhere to stand (playtest: FaceTime by the door)', () => {
-    expect(explain('W _ | F>', 'right', 0)).toBe('His phone was in his right hand, so everything to his left is on camera.');
-    expect(explain('_ _ _ _ F>', 'right', 1)).toBe('His phone was in his right hand, so everything to his left is on camera.');
-    expect(explain('_ _ _ F> _ _', 'right', 1)).toBe('His phone was in his right hand, so everything to his left is on camera. Go to his right side.');
+    expect(explain('W _ | F>', 'right', 0)).toBe('His phone is in his right hand, so his left side is on camera.');
+    expect(explain('_ _ _ _ F>', 'right', 1)).toBe('His phone is in his right hand, so his left side is on camera.');
+    expect(explain('_ _ _ F> _ _', 'right', 1)).toBe('His phone is in his right hand, so his left side is on camera.');
     expect(explain('_ _ _ D>', 'left', 3 - 1)).not.toContain('Go to');
   });
 
   it('least-bad Clear explains itself', () => {
-    expect(explain('N _', 'left', 1)).toBe('Every spot broke the urinal code. This one broke it the least.');
+    expect(explain('N _', 'left', 1)).toBe('Every spot broke the code, and this one broke it least.');
   });
 });

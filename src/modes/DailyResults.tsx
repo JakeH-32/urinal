@@ -19,7 +19,7 @@ import { drawCardImage, drawStoryImage } from '../ui/storyImage';
 import { Button } from '../ui/Button';
 import { useToast } from '../ui/Toast';
 import { PerchPuck, puckForClears } from '../ui/Puck';
-import { clearsIn, gradeCounts, verdictLine, violatorName } from './roundLogic';
+import { clearsIn, gradeCounts, verdictFor, verdictLine } from './roundLogic';
 
 export function NextCountdown({ label = 'Hold it. Next Urinal in' }: { label?: string }) {
   const now = useNow(1000);
@@ -135,11 +135,10 @@ export function DailyResults({ record, todayKey, rounds, crowd }: DailyResultsPr
       } catch {
         ev = undefined;
       }
-      const name = round ? violatorName(round.bathroom, ev, res.pick) : undefined;
       return {
         res,
         venue: round?.venue ?? `Round ${i + 1}`,
-        line: verdictLine(res.roundId, res.reason, name),
+        line: round ? verdictFor(res.roundId, round.bathroom, ev, res) : verdictLine(res.roundId, res.reason),
       };
     });
   }, [record, rounds]);

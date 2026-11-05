@@ -6,12 +6,12 @@ import { explainPick } from '../engine/explain';
 import { GRADES } from '../grades';
 import { BathroomScene } from '../scene';
 import { Button } from '../ui/Button';
-import { verdictLine, violatorName } from './roundLogic';
+import { verdictFor } from './roundLogic';
 
 export function RoomReview({ round, result, title, onClose }: { round: Round; result: RoundResult; title: string; onClose(): void }) {
   const evaluation = useMemo(() => evaluate(round.bathroom), [round]);
   const closeRef = useRef<HTMLButtonElement>(null);
-  const line = verdictLine(round.id, result.reason, violatorName(round.bathroom, evaluation, result.pick));
+  const line = verdictFor(round.id, round.bathroom, evaluation, result);
   const why = explainPick(round.bathroom, evaluation, result.pick);
 
   useEffect(() => {

@@ -10,7 +10,7 @@ import { GradeUrinal } from '../ui/GradeUrinal';
 import { crowdPercents, type RoundCrowd } from '../net/community';
 import { RoundCrowdLine } from '../ui/Crowd';
 import { PerchPuck, puckForGrade } from '../ui/Puck';
-import { resultFromEvaluation, verdictLine, violatorName } from './roundLogic';
+import { resultFromEvaluation, verdictFor } from './roundLogic';
 
 export interface RoundPlayerProps {
   round: Round;
@@ -64,8 +64,8 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
       const f = frame.getBoundingClientRect();
       const s = scene.getBoundingClientRect();
       const size = PUCK_SIZE;
-      // Sunk into the frame: only his top pokes above the edge, his legs hang over the tiled wall (never the text above).
-      setPerch({ right: Math.round(f.right - s.right + Math.max(8, s.width * 0.05)), top: Math.round(s.top - f.top - size * 0.3) });
+      // Sitting on the frame's top edge, at the far corner (away from the centered title), legs over the wall.
+      setPerch({ right: Math.round(f.right - s.right + 6), top: Math.round(s.top - f.top - size * 0.62) });
     };
     place();
     const ro = new ResizeObserver(place);
@@ -127,8 +127,7 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
     next?.scrollIntoView?.({ block: 'nearest', behavior: reducedMotion ? 'auto' : 'smooth' });
   }, [result, reducedMotion]);
 
-  const named = result ? violatorName(round.bathroom, evaluation, result.pick) : undefined;
-  const line = result ? verdictLine(round.id, result.reason, named) : '';
+  const line = result ? verdictFor(round.id, round.bathroom, evaluation, result) : '';
   const retry = !!onRetry && !!result && result.grade !== 'clear';
   // A retry keeps the answer hidden: no ✓ on the scene, and no why note that points at it.
   const shownEvaluation = result ? (retry ? { ...evaluation, greens: [] } : evaluation) : undefined;

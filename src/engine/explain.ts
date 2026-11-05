@@ -1,7 +1,7 @@
 // One plain sentence saying why a pick graded the way it did (shown under the verdict).
 // Dry on purpose: the verdict line carries the joke, this carries the rule.
 import type { Bathroom, Evaluation, Quirk, Side } from '../types';
-import { actsNormal, culpritOf, dividersBetween, isOpen, roomTo, sideOf } from './code';
+import { actsNormal, culpritOf, dividersBetween, isTalker, occupantIndices, roomTo, sideOf } from './code';
 
 const other = (s: Side): Side => (s === 'left' ? 'right' : 'left');
 
@@ -21,174 +21,138 @@ const QUIRK_NOUN: Record<Exclude<Quirk, 'normal'>, string> = {
   finance: 'the finance bro',
 };
 
-/**
- * True when there's somewhere to stand on that side of the guy at j, at least one empty urinal out.
- * Advice like "go to his other side" only makes sense when that side has a spot (not just the door).
- */
-function roomOnSide(b: Bathroom, j: number, side: Side): boolean {
-  return b.slots.some((_, k) => isOpen(b, k) && Math.abs(k - j) >= 2 && sideOf(k, j) === side);
-}
-
-/** Who sits at slot i's tightest room: how many quirk guys and how many normal guys. */
-function tightNeighbors(b: Bathroom, i: number): { quirks: number; normals: number } {
-  let room = Infinity;
-  let quirks = 0;
-  let normals = 0;
-  b.slots.forEach((s, j) => {
-    const q = s.occupant?.quirk;
-    if (!q || j === i) return;
-    const r = roomTo(b, i, j);
-    if (r < room) {
-      room = r;
-      quirks = 0;
-      normals = 0;
-    }
-    if (r === room) {
-      if (actsNormal(s.occupant)) normals++;
-      else quirks++;
-    }
-  });
-  return { quirks, normals };
-}
-
-/** The quirk guy closest (by room) to slot i, if any. */
-function tightQuirk(b: Bathroom, i: number): Exclude<Quirk, 'normal'> | undefined {
-  let best: Exclude<Quirk, 'normal'> | undefined;
+/** The label guy closest (by room) to slot i, if any (men in stalls have walls: they don't count). */
+function tightQuirkIndex(b: Bathroom, i: number): number | undefined {
+  let best: number | undefined;
   let bestRoom = Infinity;
-  b.slots.forEach((s, j) => {
-    const q = s.occupant?.quirk;
-    if (!q || q === 'normal' || actsNormal(s.occupant) || j === i) return;
+  for (const j of occupantIndices(b)) {
+    if (j === i || actsNormal(b.slots[j].occupant)) continue;
     const room = roomTo(b, i, j);
     if (room < bestRoom) {
       bestRoom = room;
-      best = q;
+      best = j;
     }
-  });
+  }
   return best;
 }
 
-/** Why `pick` got its grade, or null when there's nothing to teach (a textbook Clear). */
+/** Guys standing directly beside slot i (a divider between doesn't change that). */
+function besideCount(b: Bathroom, i: number): number {
+  return occupantIndices(b).filter((j) => Math.abs(j - i) === 1).length;
+}
+
+const COUNT_WORD = ['no', 'one', 'two', 'three', 'four', 'five'];
+
+/** The ✓ spot to compare against: a urinal over a stall when the divider rule made both Clear. */
+function answerOf(ev: Evaluation): number | undefined {
+  let best: number | undefined;
+  for (const g of ev.greens) if (best === undefined || (ev.slots[g]?.tier ?? 9) < (ev.slots[best]?.tier ?? 9)) best = g;
+  return best;
+}
+
+/** Why `pick` got its grade, or null when there's nothing to teach (a textbook Clear). One sentence, 70 characters at most. */
 export function explainPick(b: Bathroom, ev: Evaluation, pick: number): string | null {
   const a = ev.slots[pick];
   if (!a?.pickable || !a.grade || !a.reason) return null;
+  // A legal puddle doesn't count as an option worth taking: standing in it is worse than any of this.
+  const dryOnly = ev.slots.some((s) => s.pickable && s.violations === 0 && b.slots[s.index].flag === 'puddle');
 
   if (a.grade === 'clear') {
-    if (a.reason === 'only-option') {
-      // A legal puddle doesn't count: standing in it is worse than any of this.
-      const dryOnly = ev.slots.some((s) => s.pickable && s.violations === 0 && b.slots[s.index].flag === 'puddle');
-      return `Every ${dryOnly ? 'dry ' : ''}spot broke the urinal code. This one broke it the least.`;
-    }
-    if (a.reason === 'stall-forced') return 'Every urinal broke the urinal code, so the stall was right.';
+    if (a.reason === 'only-option') return `Every ${dryOnly ? 'dry ' : ''}spot broke the code, and this one broke it least.`;
+    if (a.reason === 'stall-forced') return `Every ${dryOnly ? 'dry ' : ''}urinal broke the code, so the stall was right.`;
     return null;
   }
 
+  const best = answerOf(ev);
   if (a.grade === 'straw') {
     switch (a.reason) {
       case 'too-close':
-        return 'Legal, but the ✓ spot had more room.';
+        return best !== undefined && besideCount(b, pick) > besideCount(b, best)
+          ? 'Legal, but the ✓ spot had fewer men right beside it.'
+          : 'Legal, but the ✓ spot had more room.';
       case 'quirk-neighbor': {
-        const who = tightQuirk(b, pick);
-        const noun = who ? QUIRK_NOUN[who] : 'a guy with a label';
-        const mine = tightNeighbors(b, pick);
-        const best = ev.greens.length ? tightNeighbors(b, ev.greens[0]) : undefined;
-        if (best && best.quirks === 0 && best.normals > 0) return `Same room, but the ✓ spot put you next to a normal guy, not ${noun}.`;
-        if (who === 'talker' && ev.greens.length && tightQuirk(b, ev.greens[0]) !== 'talker') return 'Same room, but the ✓ spot kept the talker farther away.';
-        if (best && mine.quirks >= 2 && best.quirks === 1) return 'Same room, but you had a guy with a label on each side. The ✓ spot only had one that close.';
+        // The label guy closest to you, and whether the ✓ spot kept him farther off.
+        const jq = tightQuirkIndex(b, pick);
+        const who = jq === undefined ? undefined : (b.slots[jq].occupant?.quirk as Exclude<Quirk, 'normal'>);
+        if (jq !== undefined && who && best !== undefined && roomTo(b, best, jq) > roomTo(b, pick, jq)) {
+          return `Same room, but the ✓ spot kept ${QUIRK_NOUN[who]} farther away.`;
+        }
         return 'Same room, but the ✓ spot had fewer guys with labels that close.';
       }
       case 'not-wall':
         return 'Same room, but the ✓ spot was against the wall.';
       case 'quick-exit':
-        return 'Same room, but in a room this small with someone you know in it, you get in and out. The ✓ spot was by the door.';
-      case 'past-talker':
-        return 'Legal, but you walked right past the talker. The ✓ spot never got near him.';
+        return 'Same room, but in a small room with a labeled guy, stay by the door.';
+      case 'past-talker': {
+        // A talker you pass that the ✓ spot doesn't.
+        const j = occupantIndices(b).find((k) => isTalker(b.slots[k].occupant) && passes(b, pick, k) && (best === undefined || !passes(b, best, k)));
+        const q = j === undefined ? undefined : b.slots[j].occupant?.quirk;
+        const noun = q && q !== 'normal' ? QUIRK_NOUN[q] : 'the talker';
+        return `Legal, but you walked past ${noun}, and the ✓ spot didn’t.`;
+      }
       case 'low-urinal':
-        return b.slots[pick].flag === 'puddle'
-          ? 'Legal, but you’d be standing in it. Anything dry beats the puddle.'
-          : 'Legal, but any clean normal urinal beats the low one.';
+        return b.slots[pick].flag === 'puddle' ? 'Legal, but anything dry beats standing in the puddle.' : 'Legal, but any clean normal urinal beats the low one.';
       case 'stall-coward':
-        return 'A legal urinal was free. The stall is only for when every urinal breaks the code.';
+        return 'A legal urinal was free, and the stall is a last resort.';
       default:
         return null;
     }
   }
 
   // Apple Juice / See a Doctor: name the rule that was broken.
-  if ((a.violatedBy?.length ?? 0) >= 2) return 'You were inside two men’s space at once. Leave room on both sides.';
+  const n = a.violatedBy?.length ?? 0;
+  if (n >= 2) return `You were inside ${COUNT_WORD[n] ?? n} men’s space at once.`;
   const j = culpritOf(b, pick);
   const guy = j === null ? undefined : b.slots[j].occupant;
-  if (j === null || !guy) return 'You stood right next to him. Leave at least one empty urinal.';
+  const plain = 'Leave at least one empty urinal between you.';
+  if (j === null || !guy || actsNormal(guy)) return plain;
   const side = sideOf(pick, j); // which side of him you were on
-
-  if (actsNormal(guy)) return 'You stood right next to him. Leave at least one empty urinal.';
+  const divider = dividersBetween(b, pick, j) > 0;
 
   switch (guy.quirk) {
     case 'normal':
-      return 'You stood right next to him. Leave at least one empty urinal.';
-    case 'talker':
-      return dividersBetween(b, pick, j) > 0
-        ? 'Talkers need two empty urinals. He leans right around dividers.'
-        : 'Talkers need two empty urinals between you.';
-    case 'pilot':
-      return dividersBetween(b, pick, j) > 0
-        ? 'Pilots need two empty urinals. He told you about it over the divider.'
-        : 'Pilots need two empty urinals between you. He mentioned that he’s a pilot.';
     case 'tourist':
-      return 'You stood right next to him. Leave at least one empty urinal.';
+      return plain;
+    case 'talker':
+      return divider ? 'Talkers need two empty urinals, and he leans around dividers.' : 'Talkers need two empty urinals between you.';
+    case 'pilot':
+      return divider ? 'Pilots need two empty urinals, and he talks over dividers.' : 'Pilots need two empty urinals between you.';
     case 'crypto':
-      return b.slots[pick].kind === 'stall'
-        ? 'He pitched you through the stall door. Within two urinals of him, the stall isn’t safe.'
-        : 'Crypto guys need two empty urinals between you.';
+      return b.slots[pick].kind === 'stall' ? 'Within two urinals of him, he pitches you through the stall door.' : 'Crypto guys need two empty urinals between you.';
     case 'finance':
-      return dividersBetween(b, pick, j) > 0
-        ? 'He’s on speakerphone. The divider helped, just not enough. Give him three empty urinals.'
-        : 'He’s on speakerphone. Give him three empty urinals, or put a divider between you.';
+      return divider ? 'He’s on speakerphone, and a divider only counts as one urinal.' : 'He’s on speakerphone, so give him three empty urinals.';
     case 'splasher':
       return 'Splashers need two empty urinals between you.';
     case 'boss':
-      return guy.mood === 'angry' ? 'The boss is angry. Angry bosses need three empty urinals.' : 'The boss is stressed. Stressed bosses need two empty urinals.';
+      return guy.mood === 'angry' ? 'An angry boss needs three empty urinals.' : 'A stressed boss needs two empty urinals.';
     case 'inlaw':
       return 'Fathers-in-law need two empty urinals between you.';
     case 'pastor':
       if (!guy.lean) return 'Pastors need two empty urinals between you.';
       if (side !== guy.lean) return 'Even on his far side, leave one empty urinal.';
-      return roomOnSide(b, j, other(guy.lean))
-        ? 'He greets everyone who comes through the door, and you were on his door side. Go to his far side, or two urinals away.'
-        : 'He greets everyone who comes through the door, and you were on his door side. Leave two empty urinals.';
-    case 'peeper': {
-      const look = guy.lean;
-      if (!look) return 'Peeping toms need two empty urinals between you.';
-      if (side !== look) return 'He was looking the other way. Still leave one empty urinal.';
-      return roomOnSide(b, j, other(look))
-        ? `He was looking ${look}. Go to his ${other(look)} side, or leave two empty urinals.`
-        : `He was looking ${look}, right at you. Leave two empty urinals.`;
-    }
-    case 'drunk': {
-      const lean = guy.lean;
-      if (!lean) return 'Drunks need two empty urinals between you.';
-      if (side !== lean) return 'Even on the side he isn’t leaning, leave one empty urinal.';
-      return roomOnSide(b, j, other(lean))
-        ? `He was leaning ${lean}. Go to his ${other(lean)} side, or leave two empty urinals.`
-        : `He was leaning ${lean}, toward you. Leave two empty urinals.`;
-    }
-    case 'gassy': {
-      const drift = guy.lean;
-      if (!drift) return 'Gassy guys need three empty urinals between you.';
-      if (side !== drift) return 'Even upwind of him, leave one empty urinal.';
-      return roomOnSide(b, j, other(drift))
-        ? 'His smell drifts toward the door, and you were downwind. Stand on his far side, or three urinals away.'
-        : 'His smell drifts toward the door, and you were downwind. Leave three empty urinals.';
-    }
+      return 'He greets everyone at the door, and you were on his door side.';
+    case 'peeper':
+      if (!guy.lean) return 'Peeping toms need two empty urinals between you.';
+      if (side !== guy.lean) return 'Even with him looking away, leave one empty urinal.';
+      return 'He was looking your way.';
+    case 'drunk':
+      if (!guy.lean) return 'Drunks need two empty urinals between you.';
+      if (side !== guy.lean) return 'Even on the side he isn’t leaning, leave one empty urinal.';
+      return `He was leaning ${guy.lean}, toward you.`;
+    case 'gassy':
+      if (!guy.lean) return 'Gassy guys need three empty urinals between you.';
+      if (side !== guy.lean) return 'Even upwind of him, leave one empty urinal.';
+      return 'His smell drifts toward the door, and you were downwind.';
     case 'facetime': {
       const phone = guy.lean;
       if (!phone) return 'Stay out of his camera.';
-      if (side === phone) {
-        return dividersBetween(b, pick, j) > 0
-          ? 'His camera sees right over the divider. Leave one empty urinal next to him.'
-          : 'You were right next to his phone. Leave one empty urinal.';
-      }
-      const onCamera = `His phone was in his ${phone} hand, so everything to his ${other(phone)} is on camera.`;
-      return roomOnSide(b, j, phone) ? `${onCamera} Go to his ${phone} side.` : onCamera;
+      if (side === phone) return divider ? 'His camera sees over dividers, so leave one empty urinal.' : 'Leave one empty urinal beside his phone.';
+      return `His phone is in his ${phone} hand, so his ${other(phone)} side is on camera.`;
     }
   }
+}
+
+/** True when the walk from the door to slot i goes past the guy at j. */
+function passes(b: Bathroom, i: number, j: number): boolean {
+  return b.door === 'left' ? j < i : j > i;
 }
