@@ -87,10 +87,18 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
       setPerch({ right: pick.r, top: Math.round(pick.t) });
     };
     place();
+    // Re-check whenever the frame or the text above it changes size, and once the fonts arrive (the
+    // fallback font is wider, so a title can look like it blocks a corner until the real one loads).
     const ro = new ResizeObserver(place);
     ro.observe(frame);
     ro.observe(scene);
-    return () => ro.disconnect();
+    frame.parentElement?.querySelectorAll('.round-venue, .round-premise, .round-count').forEach((t) => ro.observe(t));
+    let live = true;
+    document.fonts?.ready.then(() => live && place()).catch(() => undefined);
+    return () => {
+      live = false;
+      ro.disconnect();
+    };
   }, [round]);
   const shownAt = useRef(0);
 
