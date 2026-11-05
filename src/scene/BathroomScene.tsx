@@ -70,7 +70,7 @@ export interface BathroomSceneProps {
   className?: string;
   /** Accessible name override (default: a generated one-line description of the room). */
   ariaLabel?: string;
-  /** Show small slot numbers (1-based) on the floor under each slot. Default false. */
+  /** Show small slot numbers (1-based) on the floor under each slot. Default true (small and faint, so "went with #9" is easy to find). */
   slotNumbers?: boolean;
   /**
    * Crowd stats: percent of players (0..100) who picked each slot, indexed like `bathroom.slots`
@@ -234,7 +234,7 @@ function headPoint(guy: Guy, cx: number): { x: number; y: number; top: number } 
 }
 
 export function BathroomScene(props: BathroomSceneProps) {
-  const { bathroom, onPick, disabled, picked, evaluation, reducedMotion, onWalkDone, className, ariaLabel, slotNumbers, crowd } = props;
+  const { bathroom, onPick, disabled, picked, evaluation, reducedMotion, onWalkDone, className, ariaLabel, slotNumbers = true, crowd } = props;
   const maxScale = props.maxScale ?? MAX_PX_PER_UNIT;
   const layout = useMemo(() => layoutBathroom(bathroom), [bathroom]);
   const rawId = useId();

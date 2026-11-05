@@ -90,8 +90,9 @@
 .urinal-scene .us-divider-face { fill: var(--us-divider-edge); opacity: 0.55; }
 .urinal-scene .us-divider-shadow { fill: rgba(38, 48, 59, 0.18); }
 .urinal-scene .us-slot-num {
-  font: 700 11px/1 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font: 600 10px/1 system-ui, -apple-system, 'Segoe UI', sans-serif;
   fill: #7d8c99;
+  opacity: 0.6;
 }
 
 /* people */
