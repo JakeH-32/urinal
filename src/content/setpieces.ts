@@ -17,7 +17,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-open-house',
     difficulty: 2,
     venue: 'Open house, Sunday 1 to 4',
-    premise: 'Both rival bidders are in here. The realtor keeps opening the door to show people the bathroom.',
+    premise: 'Both rival bidders are in here.',
     layout: '_ _ N _ N _ _',
     door: 'right',
     people: [
@@ -31,7 +31,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-ten-year-reunion',
     difficulty: 2,
     venue: 'Your 10-year reunion',
-    premise: 'The class president took the corner. His old campaign manager is two down, still guarding him.',
+    premise: 'The class president took the corner.',
     layout: '_ _ _ N _ N',
     door: 'left',
     people: [
@@ -45,7 +45,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-ballpark-raffle',
     difficulty: 2,
     venue: 'Ballpark, seventh-inning stretch',
-    premise: 'The corner urinal has worn a garbage bag since opening day. The guy selling 50/50 tickets is two down from it.',
+    premise: 'The corner urinal has worn a garbage bag since April.',
     layout: 'X _ N _ _ _ _ _ N',
     door: 'right',
     people: [
@@ -59,7 +59,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-suede-loafers',
     difficulty: 2,
     venue: 'Outlet mall, the shoe wing',
-    premise: 'You bought suede loafers an hour ago and wore them out of the store.',
+    premise: 'You wore the new suede loafers out of the store.',
     layout: 'W _ _ _ N',
     door: 'right',
     people: [{ name: 'A mall walker', blurb: 'On lap nine. Logs every lap on his watch.' }],
@@ -70,7 +70,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-truck-stop',
     difficulty: 2,
     venue: 'Truck stop, holiday weekend',
-    premise: 'Two truckers got here first. They spaced themselves for their convenience, not yours.',
+    premise: 'Two truckers spaced themselves for their convenience.',
     layout: 'N _ _ N _ L',
     door: 'left',
     people: [
@@ -84,7 +84,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-ferry-three',
     difficulty: 2,
     venue: 'Ferry, the 4:10 crossing',
-    premise: 'Three urinals, a man in the middle one, and forty minutes of open water.',
+    premise: 'Three urinals and forty minutes of open water.',
     layout: '_ N _',
     door: 'left',
     people: [{ name: 'A man in a fishing vest', blurb: 'Twenty pockets. He’s checking all of them.' }],
@@ -95,7 +95,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-kickoff-stall',
     difficulty: 2,
     venue: 'Sports bar, the pregame show',
-    premise: 'Three guys at the urinals and an open stall. You are a grown man at a sports bar.',
+    premise: 'Three guys, an open stall, and you, a grown man.',
     layout: 'N _ _ _ N _ N S',
     door: 'left',
     people: [
@@ -110,7 +110,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-tax-seminar',
     difficulty: 2,
     venue: 'Tax seminar, lunch break',
-    premise: 'Four accountants have spaced themselves out with professional precision. You’re the remainder.',
+    premise: 'Four accountants, evenly spaced. You’re the remainder.',
     layout: 'L _ N _ N _ N _ N',
     door: 'left',
     people: [
@@ -126,7 +126,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-symphony',
     difficulty: 2,
     venue: 'The symphony, intermission',
-    premise: 'Five men in every other urinal, and the second bell is ringing.',
+    premise: 'Every other urinal is taken. Second bell.',
     layout: 'N _ N _ N _ N _ N _',
     door: 'right',
     people: [
@@ -143,7 +143,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-deck-quote',
     difficulty: 2,
     venue: 'Lumber yard, 6 a.m.',
-    premise: 'The contractor who quoted your deck is in here. His quote assumed you’re the kind of guy who settles.',
+    premise: 'The contractor who quoted your deck is in here.',
     layout: 'L _ _ N _ _ _',
     door: 'right',
     people: [{ name: 'The contractor who quoted your deck', blurb: 'Twenty-two thousand dollars. For a deck.' }],
@@ -154,7 +154,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-dealership-manager',
     difficulty: 2,
     venue: 'Car dealership, waiting on financing',
-    premise: 'Your salesman said he had to go talk to his manager. They’re both in here.',
+    premise: 'Your salesman and his manager. Both in here.',
     layout: 'N _ _ _ _ _ N _ _',
     door: 'left',
     people: [
@@ -168,7 +168,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-dentist-scramble',
     difficulty: 2,
     venue: 'Charity golf scramble',
-    premise: 'Three dentists from the same practice are in here. Nobody has cleaned this room since the shotgun start.',
+    premise: 'Three dentists. Nobody has cleaned this room.',
     layout: 'N _ W _ N _ N _ S',
     door: 'right',
     people: [
@@ -183,7 +183,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-delayed-flight',
     difficulty: 2,
     venue: 'Airport, delayed to 9:40',
-    premise: 'Your flight has been delayed three times. Everyone on it is on their third coffee.',
+    premise: 'Third delay. Third coffee.',
     layout: 'W _ _ N _ _ _ _ _ N',
     door: 'left',
     people: [
@@ -197,7 +197,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-out-of-order',
     difficulty: 2,
     venue: 'Office, third-floor men’s room',
-    premise: 'Facilities bagged two urinals as out of order. Nobody believes it was an accident.',
+    premise: 'Two urinals bagged “out of order.” Sure.',
     layout: '_ N X _ X N _ N',
     door: 'right',
     people: [
@@ -212,7 +212,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-bus-depot',
     difficulty: 2,
     venue: 'Bus depot, 11:55 p.m.',
-    premise: 'Four urinals, a stranger at each end, and your bus doesn’t leave until 6 a.m.',
+    premise: 'Your bus leaves at 6 a.m.',
     layout: 'N _ _ | N',
     door: 'right',
     people: [
@@ -232,7 +232,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-final-interview',
     difficulty: 4,
     venue: 'Job interview, final round',
-    premise: 'The man who’d be your boss is in here between interviews, with someone from HR. So is the other finalist, and he won’t stop talking.',
+    premise: 'Your would-be boss is in here. So is the other finalist.',
     layout: '_ _ B N _ _ W _ _ T',
     door: 'right',
     people: [
@@ -247,7 +247,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-draft-commissioner',
     difficulty: 4,
     venue: 'Fantasy league draft party',
-    premise: 'The league commissioner is explaining the keeper rule to the room. There’s a divider. He’s taller than the divider.',
+    premise: 'The commissioner is taller than the divider.',
     layout: '_ _ | T _ _ _ _ N',
     door: 'right',
     people: [
@@ -262,7 +262,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-rehearsal-list',
     difficulty: 4,
     venue: 'Rehearsal dinner, second bottle',
-    premise: 'The groom’s brother has been listing left since the salad course. Nobody has mentioned it to him.',
+    premise: 'The groom’s brother has been listing since the salad.',
     layout: '_ N _ _ W _ _ D<',
     door: 'left',
     people: [
@@ -277,7 +277,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-boot-camp',
     difficulty: 4,
     venue: 'Gym, after the 6 a.m. boot camp',
-    premise: 'Your trainer is in here. He has never done anything at less than full intensity.',
+    premise: 'Your trainer does nothing at half intensity.',
     layout: 'N _ _ L _ _ P _',
     door: 'left',
     people: [
@@ -292,7 +292,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-managing-partner',
     difficulty: 4,
     venue: 'Law firm, partners’ retreat',
-    premise: 'The managing partner votes on you Thursday. He likes his space, he’s in a mood, and he bills for both.',
+    premise: 'He votes on you Thursday. He’s in a mood.',
     layout: '_ _ _ B! _ _ _ _ _ N',
     door: 'right',
     people: [
@@ -307,7 +307,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-eggnog',
     difficulty: 4,
     venue: 'Holiday party, after the gift exchange',
-    premise: 'Ken from Accounts Receivable is three eggnogs deep and leaning hard toward the corner.',
+    premise: 'Ken is three eggnogs deep.',
     layout: '_ _ N _ _ D> _ _ L',
     door: 'left',
     people: [
@@ -321,7 +321,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-timeshare',
     difficulty: 4,
     venue: 'Your wife’s family reunion',
-    premise: 'Your wife’s Uncle Walt has a timeshare he’d love for you to own. To him, the dividers are a suggestion.',
+    premise: 'Uncle Walt has a timeshare for you.',
     layout: 'L _ _ T | _ | _ N',
     door: 'right',
     people: [
@@ -336,7 +336,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-review-break',
     difficulty: 4,
     venue: 'Your annual review, 10-minute break',
-    premise: 'Your review is in ten minutes, and the man giving it just walked in ahead of you.',
+    premise: 'Your review is in ten minutes. He just walked in.',
     layout: 'B _ _ W _ _ N _',
     door: 'left',
     people: [
@@ -351,7 +351,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-charity-5k',
     difficulty: 4,
     venue: 'Charity 5K, the finish line',
-    premise: 'The race organizer is thanking sponsors to anyone in range, and the guy who sprinted the finish is still bouncing. The man he passed is in the corner.',
+    premise: 'The race organizer is thanking sponsors. Loudly.',
     layout: 'T | _ _ _ _ P _ _ _ | N',
     door: 'left',
     people: [
@@ -366,7 +366,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-newsletter',
     difficulty: 4,
     venue: 'Neighborhood cookout',
-    premise: 'The neighborhood newsletter editor is gathering material. The only other guy in here hasn’t spoken to you since the leaf blower incident.',
+    premise: 'The newsletter editor is gathering material.',
     layout: '_ N _ _ T | _',
     door: 'left',
     people: [
@@ -381,7 +381,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-party-bus',
     difficulty: 4,
     venue: 'Bachelor party, the brewery bus',
-    premise: 'The groom is three IPAs in and leaning on things that aren’t there.',
+    premise: 'The groom is three IPAs in.',
     layout: 'N _ _ D> _ _ _ | N _',
     door: 'left',
     people: [
@@ -397,7 +397,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-power-ballad',
     difficulty: 4,
     venue: 'Karaoke bar, last call',
-    premise: 'Six urinals. The man who closed karaoke with a power ballad is second from the wall, swaying toward the door.',
+    premise: 'He closed karaoke with a power ballad. Still swaying.',
     layout: '_ D> _ _ L W',
     door: 'right',
     people: [{ name: 'The power ballad guy', blurb: 'Held the last note for forty seconds. Bowed to the bartender.' }],
@@ -409,7 +409,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-orientation',
     difficulty: 4,
     venue: 'Orientation, day one',
-    premise: 'Your new CEO is by the door. The onboarding guy is halfway to the corner, still onboarding.',
+    premise: 'Your new CEO is by the door.',
     layout: '_ _ _ T N _ _ _ _ B',
     door: 'right',
     people: [
@@ -424,7 +424,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-weigh-in',
     difficulty: 4,
     venue: 'Bass tournament, the weigh-in',
-    premise: 'A man in chest waders has the corner. He stands like he’s still on the boat.',
+    premise: 'A man in chest waders has the corner.',
     layout: 'P _ _ _ _ _ _ N _ _',
     door: 'right',
     people: [
@@ -438,7 +438,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-homecoming',
     difficulty: 4,
     venue: 'Homecoming, the tailgate',
-    premise: 'Your college roommate is leaning toward the door, and your old teammate still stands like he’s boxing out.',
+    premise: 'Your old roommate and your old teammate. Both in here.',
     layout: '_ P _ _ L _ D> _ _',
     door: 'right',
     people: [
@@ -457,7 +457,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-wedding-cocktail',
     difficulty: 6,
     venue: 'Your wedding, cocktail hour',
-    premise: 'Your new father-in-law is in here. So is your best man, three champagnes ahead of his speech.',
+    premise: 'Your new father-in-law. Your best man, three champagnes in.',
     layout: '_ I _ _ _ D> _ _ S',
     door: 'left',
     people: [
@@ -471,7 +471,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-privacy-fins',
     difficulty: 6,
     venue: 'The new headquarters, opening day',
-    premise: 'Every urinal at the new HQ has a divider. The architect is explaining them, and the facilities director stands a full step back from his.',
+    premise: 'The architect is explaining the dividers.',
     layout: '_ | _ | T | _ | _ | _ | P S',
     door: 'right',
     people: [
@@ -485,7 +485,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-dads-retirement',
     difficulty: 6,
     venue: 'Your dad’s retirement dinner',
-    premise: 'Your dad’s old business partner is telling the 1987 sales conference story again. Your dad is in here too, pretending he hasn’t heard it.',
+    premise: 'The 1987 sales conference story, again.',
     layout: 'S _ _ T _ _ N L',
     door: 'left',
     people: [
@@ -499,7 +499,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-awards-banquet',
     difficulty: 6,
     venue: 'Awards banquet, after dessert',
-    premise: 'Craig from Marketing has had the open bar and found the CEO. He’s leaning in.',
+    premise: 'Craig from Marketing found the open bar and the CEO.',
     layout: 'N _ W _ D> _ _ _ _ B',
     door: 'left',
     people: [
@@ -514,7 +514,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-reading-of-the-will',
     difficulty: 6,
     venue: 'The reading of the will',
-    premise: 'Your wife’s grandfather’s will gets read in an hour. Your father-in-law is in here. So is her cousin, who also thinks he’s getting the boat.',
+    premise: 'The will gets read in an hour. Everyone wants the boat.',
     layout: '_ N _ _ I _ _',
     door: 'left',
     people: [
@@ -528,7 +528,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-regional-vp',
     difficulty: 6,
     venue: 'Regional office, the small bathroom',
-    premise: 'The regional VP flew in for the day. He has one end of a four-urinal bathroom, and Stu, who tells him everything, has the other.',
+    premise: 'The VP flew in for the day. Stu tells him everything.',
     layout: 'B _ _ N',
     door: 'right',
     people: [
@@ -543,7 +543,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-wedding-dj',
     difficulty: 6,
     venue: 'Your brother’s wedding, the after-party',
-    premise: 'The DJ is pitching his podcast to anyone in range. Your uncle is tilting toward the DJ like he’s interested.',
+    premise: 'The DJ is pitching his podcast.',
     layout: 'T _ _ _ | D< _',
     door: 'left',
     people: [
@@ -558,7 +558,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-holdout',
     difficulty: 6,
     venue: 'Jury duty, day three of deliberations',
-    premise: 'Eleven of you agree. The holdout is in here, walking everyone through the timeline again.',
+    premise: 'Eleven of you agree. He’s in here.',
     layout: 'N _ N _ _ _ T _ N _',
     door: 'left',
     people: [
@@ -574,7 +574,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-gala-auction',
     difficulty: 6,
     venue: 'Charity gala, after the live auction',
-    premise: 'Your boss chairs this gala, and he’s in here. So is the man who won the auction, still celebrating like it was a touchdown.',
+    premise: 'Your boss chairs the gala. The auction winner is still celebrating.',
     layout: '_ _ B _ _ _ _ P _ L',
     door: 'left',
     people: [
@@ -588,7 +588,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-25-year-reunion',
     difficulty: 6,
     venue: 'Your 25-year reunion',
-    premise: 'The old quarterback is recapping the state semifinal, play by play. The class clown is leaning toward the corner, mostly by accident.',
+    premise: 'The old quarterback is doing the play-by-play.',
     layout: 'T _ _ _ _ D> _ _',
     door: 'left',
     people: [
@@ -603,7 +603,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-panel-moderator',
     difficulty: 6,
     venue: 'Industry conference, before your panel',
-    premise: 'The moderator wants to rehearse your answers, and your boss, who founded this conference, is two down from him. Attendees keep coming through that door.',
+    premise: 'Your boss founded this conference. He’s in here.',
     layout: '_ _ T _ B _ _ _ | N _',
     door: 'right',
     people: [
@@ -618,7 +618,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-sisters-wedding',
     difficulty: 6,
     venue: 'Your sister’s wedding, the receiving line',
-    premise: 'Your sister’s new father-in-law has the corner. Her new brother-in-law is by the door, still dancing.',
+    premise: 'Her new in-laws are all in here.',
     layout: 'I _ _ _ N | _ _ _ P',
     door: 'right',
     people: [
@@ -634,7 +634,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-groomsmen-feud',
     difficulty: 6,
     venue: 'A wedding, an hour before the ceremony',
-    premise: 'Two groomsmen have been leaning away from each other since the argument about the bachelor party.',
+    premise: 'Two groomsmen, leaning away from each other.',
     layout: '_ _ D< _ _ _ D> _ _',
     door: 'right',
     people: [
@@ -649,7 +649,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-member-guest',
     difficulty: 6,
     venue: 'Member-guest tournament, the clubhouse',
-    premise: 'You’re your boss’s guest at his club, and he’s in here, in a great mood. So is the man who just birdied 18, still in his follow-through.',
+    premise: 'You’re your boss’s guest. He’s in a great mood.',
     layout: '_ B+ _ _ W _ _ P | _ _',
     door: 'right',
     people: [
@@ -664,7 +664,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-small-claims',
     difficulty: 6,
     venue: 'Small claims court, recess',
-    premise: 'The man you’re suing is in the corner, eager to settle this out loud. The man who just won his case is near the door, still celebrating.',
+    premise: 'The man you’re suing wants to settle. Out loud.',
     layout: 'T | _ _ L _ _ P | _ _',
     door: 'right',
     people: [
@@ -678,7 +678,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-lane-twelve',
     difficulty: 4,
     venue: 'Bowling alley, league night',
-    premise: 'Three urinals. Your old league captain has the far one and has already started talking. The one by the door has been leaking since the last frame.',
+    premise: 'Three urinals. One talker. One leak.',
     layout: 'T _ W',
     door: 'right',
     people: [{ name: 'Your old league captain Vic', blurb: 'Bowled a 279 in 2011. Will get to it.' }],
@@ -689,7 +689,7 @@ export const SET_PIECES: SetPiece[] = [
     id: 'sp-gate-change',
     difficulty: 6,
     venue: 'Airport, the bathroom past the last gate',
-    premise: 'Two urinals. One is a puddle. The other is next to a man giving his grandmother a tour of the terminal.',
+    premise: 'Two urinals. One puddle. One FaceTime.',
     layout: 'W _ | F>',
     door: 'right',
     people: [{ name: 'Sanjay from row 22', blurb: 'His nani wanted to see the gate. Then the moving walkway. Then this.' }],
