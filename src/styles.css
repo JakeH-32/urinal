@@ -1610,3 +1610,20 @@ button {
 .crowd-line {
   text-wrap: balance;
 }
+
+/* Phones: the cup centered under the room, the verdict centered under it. */
+@media (max-width: 639px) {
+  .verdict {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'art'
+      'text'
+      'act';
+    justify-items: center;
+    text-align: center;
+    gap: 6px;
+  }
+  .verdict-text {
+    align-items: center;
+  }
+}
