@@ -8,7 +8,6 @@ import { decodePracticeCode, encodePracticeCode, randomSeed } from '../engine/rn
 import { navigate, routeUrl } from '../router';
 import { useSave } from '../state/SaveContext';
 import { recordPractice, withPracticeCurrent } from '../state/storage';
-import { Button } from '../ui/Button';
 import { ShareButton } from '../ui/ShareButton';
 import { useToast } from '../ui/Toast';
 import { useReducedMotion } from '../ui/hooks';
@@ -29,6 +28,8 @@ export function Practice({ code }: { code?: string }) {
   const [history, setHistory] = useState<Grade[]>(() => saved?.history ?? []);
   // Replays of the same room (for testing other picks). Only the first try counts.
   const [replay, setReplay] = useState(0);
+  // Replay only makes sense once this room has been graded.
+  const [graded, setGraded] = useState(false);
 
   // Save the room as soon as it's dealt.
   useEffect(() => {
@@ -44,6 +45,7 @@ export function Practice({ code }: { code?: string }) {
   const roomCode = useMemo(() => encodePracticeCode(seed), [seed]);
 
   const onGraded = (r: RoundResult) => {
+    setGraded(true);
     if (replay > 0) return;
     const newRun = nextRun(run, r.grade);
     const newHistory = [...history, r.grade].slice(-12);
@@ -60,6 +62,11 @@ export function Practice({ code }: { code?: string }) {
       navigate({ name: 'practice' }, { replace: true });
     } else setSeed(next);
     setReplay(0);
+    setGraded(false);
+  };
+  const onReplay = () => {
+    setReplay((n) => n + 1);
+    setGraded(false);
   };
 
   const header = (
@@ -73,6 +80,20 @@ export function Practice({ code }: { code?: string }) {
         </span>
         <span className="practice-history" aria-label="Recent results">
           {history.map((g) => GRADES[g].emoji).join('')}
+        </span>
+        <span className="practice-tools">
+          {graded && (
+            <button type="button" className="icon-btn" onClick={onReplay} aria-label="Replay room" title="Replay room">
+              ↻
+            </button>
+          )}
+          <ShareButton
+            text={`Urinal room ${roomCode}. Find the right one.`}
+            url={routeUrl({ name: 'practice', code: roomCode })}
+            label="↗"
+            className="icon-btn"
+            ariaLabel="Share room"
+          />
         </span>
       </div>
       <p className="round-meta">
@@ -93,18 +114,6 @@ export function Practice({ code }: { code?: string }) {
       onNext={onNext}
       nextLabel="Next bathroom"
       header={header}
-      extra={
-        <>
-          <Button variant="ghost" onClick={() => setReplay((n) => n + 1)}>
-            Replay room
-          </Button>
-          <ShareButton
-            text={`Urinal room ${roomCode}. Find the right one.`}
-            url={routeUrl({ name: 'practice', code: roomCode })}
-            label="Share room"
-          />
-        </>
-      }
     />
   );
 }

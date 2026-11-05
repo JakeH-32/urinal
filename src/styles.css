@@ -180,6 +180,32 @@ button {
   transform: translateY(2px);
   box-shadow: none;
 }
+/* Small square icon buttons (Endless: replay room, share room), same look as the top bar's. */
+.btn.icon-btn,
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 9px;
+  border: 2px solid var(--ink);
+  background: var(--card);
+  color: var(--ink);
+  font: 600 1rem/1 var(--font-body);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+.icon-btn:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+.practice-tools {
+  display: inline-flex;
+  gap: 6px;
+  margin-left: 4px;
+}
 
 .page {
   width: 100%;
@@ -610,7 +636,7 @@ button {
   }
   /* Reserve the verdict's full height up front so the scene never shrinks when it appears. */
   .round-foot {
-    min-height: 150px;
+    min-height: 104px;
     display: grid;
     align-content: center;
   }
@@ -636,6 +662,7 @@ button {
 .practice-stats {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: center;
   gap: 4px 16px;
   font-size: 0.95rem;
@@ -1566,20 +1593,12 @@ button {
   animation: none !important;
 }
 
-/* Wide screens: Next on top, the extras (Replay room, Share room) as one short row under it. */
+/* Wide screens: one calm row under the room, cup + verdict + a compact Next on the right. */
 @media (min-width: 640px) {
-  .verdict-actions {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    max-width: 260px;
-  }
-  .verdict-actions > .btn:first-child {
-    flex: 1 1 100%;
-  }
-  .verdict-actions > .btn:not(:first-child) {
-    flex: 1 1 0;
-    padding-inline: 10px;
+  .verdict-actions > .btn {
+    font-size: 1rem;
+    padding: 10px 18px;
+    min-height: 0;
   }
 }
 

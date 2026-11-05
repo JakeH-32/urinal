@@ -14,6 +14,9 @@ export interface ShareButtonProps {
   image?: () => Promise<File>;
   /** The text sent with the picture (the picture already says the rest). Defaults to `text`. */
   imageText?: string;
+  /** Extra class (e.g. `icon-btn`) and an accessible name, for icon-only buttons. */
+  className?: string;
+  ariaLabel?: string;
 }
 
 async function copyText(text: string): Promise<boolean> {
@@ -42,7 +45,7 @@ async function copyText(text: string): Promise<boolean> {
 }
 
 /** navigator.share when available, else clipboard + "Copied!" toast. */
-export function ShareButton({ text, url, title = 'Urinal', label = 'Share', variant = 'default', block, image, imageText }: ShareButtonProps) {
+export function ShareButton({ text, url, title = 'Urinal', label = 'Share', variant = 'default', block, image, imageText, className, ariaLabel }: ShareButtonProps) {
   const toast = useToast();
   const full = url ? `${text}\n${url}` : text;
 
@@ -78,7 +81,7 @@ export function ShareButton({ text, url, title = 'Urinal', label = 'Share', vari
   };
 
   return (
-    <Button variant={variant} block={block} onClick={() => void onShare()}>
+    <Button variant={variant} block={block} className={className} aria-label={ariaLabel} title={ariaLabel} onClick={() => void onShare()}>
       {label}
     </Button>
   );
