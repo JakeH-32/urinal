@@ -33,7 +33,7 @@ export interface RoundPlayerProps {
 }
 
 /** Puck's size on the scene frame. */
-const PUCK_SIZE = 56;
+const PUCK_SIZE = 50;
 
 /** Next ignores taps this soon after it appears, so a fast double tap can't skip the verdict. */
 const NEXT_GUARD_MS = 400;
@@ -64,7 +64,8 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
       const f = frame.getBoundingClientRect();
       const s = scene.getBoundingClientRect();
       const size = PUCK_SIZE;
-      setPerch({ right: Math.round(f.right - s.right + Math.max(8, s.width * 0.05)), top: Math.round(s.top - f.top - size * 0.64) });
+      // Sunk into the frame: only his top pokes above the edge, his legs hang over the tiled wall (never the text above).
+      setPerch({ right: Math.round(f.right - s.right + Math.max(8, s.width * 0.05)), top: Math.round(s.top - f.top - size * 0.3) });
     };
     place();
     const ro = new ResizeObserver(place);

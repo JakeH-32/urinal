@@ -1492,10 +1492,6 @@ button {
   top: 8px;
   right: 8px;
 }
-/* Rounds: room above the bathroom for him to sit in, so he never covers the title. */
-.round .scene-frame {
-  padding-top: 34px;
-}
 /* Rounds: keep the title and setup line clear of him on both sides, so they stay centered. */
 .round .round-venue,
 .round .round-premise {
