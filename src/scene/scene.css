@@ -236,6 +236,36 @@
 .urinal-scene.us-reduced .us-plate,
 .urinal-scene.us-reduced .us-band { animation: none; }
 .urinal-scene.us-reduced .us-hl { transition: none; }
+
+/* a Clear: the dodged zones breathe in and out once, and a few glints rise off the ring */
+.urinal-scene .us-dodged {
+  fill: var(--us-band);
+  fill-opacity: 0.22;
+  stroke: var(--us-band-edge);
+  stroke-width: 1.4;
+  stroke-dasharray: 5 4;
+  opacity: 0;
+  animation: us-dodged 1600ms ease-in-out 150ms both;
+}
+@keyframes us-dodged {
+  0% { opacity: 0; }
+  30%, 55% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.urinal-scene .us-sparkle path {
+  fill: #ffffff;
+  stroke: var(--us-frame);
+  stroke-width: 1.2;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: us-glint 900ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+@keyframes us-glint {
+  0% { opacity: 0; translate: 0 6px; scale: 0.4; }
+  35% { opacity: 1; scale: 1; }
+  100% { opacity: 0; translate: 0 -14px; scale: 0.7; }
+}
 @media (prefers-reduced-motion: reduce) {
   .urinal-scene .us-cam-dot,
   .urinal-scene .us-puff,
@@ -247,6 +277,8 @@
   .urinal-scene .us-check,
   .urinal-scene .us-plate,
   .urinal-scene .us-band { animation: none; }
+  .urinal-scene .us-dodged,
+  .urinal-scene .us-sparkle { display: none; }
 }
 
 /* crowd stats: percent pills at the foot of the wall (BathroomScene `crowd` prop) */
@@ -337,4 +369,84 @@
 .urinal-scene .us-coin-b {
   font: 900 13px/1 system-ui, -apple-system, 'Segoe UI', sans-serif;
   fill: #2a1f00;
+}
+
+/* ---- newer guys ---- */
+/* lettering on backs: SECURITY, the rookie's and the local legend's numbers, the mascot's jersey */
+.urinal-scene .us-back-text {
+  font: 900 6.4px/1 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  letter-spacing: 0.3px;
+}
+.urinal-scene .us-jersey-num {
+  font: 900 21px/1 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  paint-order: stroke;
+}
+.urinal-scene .us-mascot-num {
+  font: 900 34px/1 system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+/* the napper's Zz */
+.urinal-scene .us-zz-text {
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-weight: 900;
+  fill: #5c6bc0;
+  stroke: #ffffff;
+  stroke-width: 2.5px;
+  paint-order: stroke;
+}
+.urinal-scene .us-zz-float { animation: us-zz 2.6s ease-in-out infinite; }
+@keyframes us-zz {
+  0%, 100% { transform: translate(0, 0); opacity: 0.95; }
+  50% { transform: translate(3px, -4px); opacity: 0.6; }
+}
+/* the shy guy freaks out when you're in his space */
+.urinal-scene .us-shake {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: us-shake 0.32s linear infinite;
+}
+@keyframes us-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2.5px) rotate(-1.2deg); }
+  75% { transform: translateX(2.5px) rotate(1.2deg); }
+}
+/* Dave nods at you */
+.urinal-scene .us-nod {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: us-nod 2s ease-in-out infinite;
+}
+@keyframes us-nod {
+  0%, 60%, 100% { transform: translateY(0); }
+  70% { transform: translateY(3px); }
+  80% { transform: translateY(0); }
+  88% { transform: translateY(3px); }
+}
+/* the knight clanks: a small stiff jolt now and then */
+.urinal-scene .us-clank {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: us-clank 1.8s steps(1, end) infinite;
+}
+@keyframes us-clank {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(0.9deg); }
+  56% { transform: rotate(-0.9deg); }
+  62% { transform: rotate(0deg); }
+}
+.urinal-scene .us-sweat-fly { animation: us-sweat 1.3s ease-out infinite; }
+@keyframes us-sweat {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0.25; transform: translateY(4px); }
+}
+.urinal-scene.us-reduced .us-zz-float,
+.urinal-scene.us-reduced .us-shake,
+.urinal-scene.us-reduced .us-nod,
+.urinal-scene.us-reduced .us-clank,
+.urinal-scene.us-reduced .us-sweat-fly { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .urinal-scene .us-zz-float,
+  .urinal-scene .us-shake,
+  .urinal-scene .us-nod,
+  .urinal-scene .us-clank,
+  .urinal-scene .us-sweat-fly { animation: none; }
 }

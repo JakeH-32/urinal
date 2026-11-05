@@ -29,25 +29,26 @@ export const QUIRK_STYLE: Record<Quirk, QuirkStyle> = {
   tourist: { color: '#237a35', ink: '#ffffff', tag: 'HIKER', emoji: '🎒' },
   crypto: { color: '#e5b80b', ink: '#2a1f00', tag: 'CRYPTO', emoji: '🪙' },
   finance: { color: '#8ec5ee', ink: '#0f2a44', tag: 'FINANCE', emoji: '📞' },
+  gymbro: { color: '#ff5c8a', ink: '#3a0016', tag: 'GYM BRO', emoji: '💪' },
+  twin: { color: '#b39ddb', ink: '#24124a', tag: 'TWINS', emoji: '👯' },
+  napper: { color: '#5c6bc0', ink: '#ffffff', tag: 'NAPPER', emoji: '😴' },
+  shy: { color: '#ffb59e', ink: '#4a1d10', tag: 'SHY', emoji: '😳' },
+  mascot: { color: '#9e1b32', ink: '#ffffff', tag: 'MASCOT', emoji: '🐺' },
+  security: { color: '#455a64', ink: '#ffffff', tag: 'SECURITY', emoji: '🔦' },
+  germ: { color: '#7ee0c3', ink: '#0b3d2e', tag: 'GERMS', emoji: '🧤' },
+  friend: { color: '#9ccc65', ink: '#1e3300', tag: 'YOUR BRO', emoji: '🤝' },
+  rookie: { color: '#4527a0', ink: '#ffffff', tag: 'ROOKIE', emoji: '🏀' },
+  doppel: { color: '#d9dde2', ink: '#26303b', tag: '???', emoji: '🪞' },
+  bigfoot: { color: '#4e342e', ink: '#ffe0b2', tag: 'BIGFOOT', emoji: '👣' },
+  dropper: { color: '#00bcd4', ink: '#00303a', tag: 'FULL DROP', emoji: '🩳' },
+  knight: { color: '#90a4ae', ink: '#14202a', tag: 'KNIGHT', emoji: '🛡️' },
+  sumo: { color: '#ffe082', ink: '#3a2a00', tag: 'SUMO', emoji: '🍙' },
 };
 
 /** Just the chip colours, for legends and UI. */
-export const QUIRK_COLORS: Record<Quirk, string> = {
-  normal: QUIRK_STYLE.normal.color,
-  talker: QUIRK_STYLE.talker.color,
-  splasher: QUIRK_STYLE.splasher.color,
-  boss: QUIRK_STYLE.boss.color,
-  drunk: QUIRK_STYLE.drunk.color,
-  facetime: QUIRK_STYLE.facetime.color,
-  gassy: QUIRK_STYLE.gassy.color,
-  inlaw: QUIRK_STYLE.inlaw.color,
-  pastor: QUIRK_STYLE.pastor.color,
-  peeper: QUIRK_STYLE.peeper.color,
-  pilot: QUIRK_STYLE.pilot.color,
-  tourist: QUIRK_STYLE.tourist.color,
-  crypto: QUIRK_STYLE.crypto.color,
-  finance: QUIRK_STYLE.finance.color,
-};
+export const QUIRK_COLORS = Object.fromEntries(
+  (Object.keys(QUIRK_STYLE) as Quirk[]).map((q) => [q, QUIRK_STYLE[q].color]),
+) as Record<Quirk, string>;
 
 export type HairStyle = 'crop' | 'buzz' | 'curly' | 'swoop' | 'long' | 'bun' | 'slick' | 'fringe';
 
@@ -78,6 +79,8 @@ export interface ResolvedLook {
   hair: { style: HairStyle; color: string } | null;
   skin: string;
   height: number;
+  /** The rookie's jersey number. */
+  jersey?: number;
 }
 
 function wrap(i: number, n: number): number {
@@ -118,7 +121,47 @@ export const CRYPTO_GOLD = QUIRK_STYLE.crypto.color;
 export const FLEECE_VEST = '#2c3a52';
 export const BUTTON_DOWN = '#a9d0f0';
 
-export function resolveLook(look: Guy['look'], quirk: Quirk = 'normal'): ResolvedLook {
+/** Gym Bro: a tank top in his chip colour, dark joggers. */
+export const GYM_PANTS = '#2a2a30';
+/** Security: navy uniform shirt and trousers, a gold shoulder badge, a black duty belt. */
+export const SECURITY_NAVY = '#1f2d4d';
+export const SECURITY_PANTS = '#1a2238';
+export const SECURITY_GOLD = '#e0b43c';
+/** Germaphobe: yellow rubber gloves and a pale blue surgical mask. */
+export const GLOVE_YELLOW = '#f7d038';
+export const MASK_BLUE = '#cfe6f5';
+/** The local legend's letterman jacket: maroon wool body, cream leather sleeves, gold trim. */
+export const LETTERMAN_WOOL = '#7b1e2b';
+export const LETTERMAN_LEATHER = '#efe6d2';
+export const LETTERMAN_GOLD = '#e2b84a';
+/** Bigfoot: brown fur, darker on the hands and feet. */
+export const FUR = '#6b4a2f';
+export const FUR_DARK = '#4a3220';
+/** The wolf mascot: grey fur suit, pale muzzle, a jersey in his chip colour. */
+export const WOLF_FUR = '#8a909b';
+export const WOLF_LIGHT = '#d9dce1';
+
+/** The knight: plate armour, a red plume, a kite shield (his chip colour's darker cousin). */
+export const STEEL = '#b7bfc9';
+export const STEEL_DARK = '#7d8794';
+export const KNIGHT_PLUME = '#c62f2f';
+export const SHIELD_BLUE = '#2f4f9a';
+export const SHIELD_GOLD = '#e2b84a';
+/** The sumo wrestler's mawashi belt. */
+export const MAWASHI = '#2c2a4a';
+
+export type FriendVariant = 'legend' | 'round' | 'dave';
+
+/** A friend's look comes from who he is: the local legend, the guy buying the next round, or Dave. */
+export function friendVariant(name: string): FriendVariant {
+  const n = name.toLowerCase();
+  if (n.includes('legend')) return 'legend';
+  if (n.includes('round') || n.includes('buying')) return 'round';
+  return 'dave';
+}
+
+export function resolveLook(look: Guy['look'], quirk: Quirk = 'normal', name = ''): ResolvedLook {
+  if (quirk === 'doppel') return { ...YOU_LOOK };
   let shirt: string = SHIRTS[wrap(look.shirt, SHIRTS.length)];
   let hair = look.bald ? null : HAIRS[wrap(look.hair, HAIRS.length)];
   let pants: string = PANTS[wrap(look.pants, PANTS.length)];
@@ -167,6 +210,44 @@ export function resolveLook(look: Guy['look'], quirk: Quirk = 'normal'): Resolve
     pants = PANTS[3];
     if (hair && hair.style !== 'crop' && hair.style !== 'swoop' && hair.style !== 'buzz') hair = { style: 'swoop', color: hair.color };
   }
+  const short = (fallback: HairStyle) => {
+    if (hair && hair.style !== 'crop' && hair.style !== 'buzz') hair = { style: fallback, color: hair.color };
+  };
+  if (quirk === 'twin') shirt = QUIRK_STYLE.twin.color;
+  if (quirk === 'gymbro') {
+    shirt = QUIRK_STYLE.gymbro.color;
+    pants = GYM_PANTS;
+    short('buzz');
+  }
+  if (quirk === 'security') {
+    shirt = SECURITY_NAVY;
+    pants = SECURITY_PANTS;
+    short('crop');
+  }
+  if (quirk === 'rookie') {
+    shirt = QUIRK_STYLE.rookie.color;
+    pants = shade(QUIRK_STYLE.rookie.color, 0.35);
+    short('crop');
+  }
+  if (quirk === 'friend') {
+    if (friendVariant(name) === 'legend') {
+      shirt = LETTERMAN_WOOL;
+      sleeve = LETTERMAN_LEATHER;
+      pants = PANTS[0];
+    } else shirt = QUIRK_STYLE.friend.color;
+  }
+  if (quirk === 'knight') {
+    shirt = STEEL;
+    sleeve = shade(STEEL, 0.08);
+    pants = shade(STEEL, 0.04);
+  }
+  if (quirk === 'bigfoot') {
+    shirt = FUR;
+    sleeve = shade(FUR, 0.1);
+    pants = shade(FUR, 0.06);
+    hair = null;
+    return { shirt, shirtShade: shade(FUR, 0.18), sleeve, pants, hair, skin: shade(FUR, -0.12), height: 2 };
+  }
   return {
     shirt,
     shirtShade: shade(shirt, 0.18),
@@ -175,6 +256,7 @@ export function resolveLook(look: Guy['look'], quirk: Quirk = 'normal'): Resolve
     hair,
     skin: SKINS[wrap(look.skin, SKINS.length)],
     height: wrap(look.height, 3),
+    jersey: look.jersey,
   };
 }
 

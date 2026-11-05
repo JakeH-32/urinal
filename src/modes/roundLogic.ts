@@ -197,7 +197,7 @@ export function legendFor(b: Bathroom): Legend {
   const present = new Set<FixtureKey>();
   b.slots.forEach((slot, index) => {
     if (slot.kind === 'stall') present.add('stall');
-    if (slot.flag) present.add(slot.flag);
+    if (slot.flag && slot.flag !== 'sink') present.add(slot.flag);
     const g = slot.occupant;
     if (!g) return;
     const q = QUIRKS[g.quirk] ?? QUIRKS.normal;

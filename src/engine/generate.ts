@@ -5,8 +5,9 @@
 // constraints (see `accepts`), relaxing in stages; it never throws.
 import { QUIRKS, VENUES } from '../content';
 import { SET_PIECES } from '../content/setpieces';
+import { LEGENDARY_ROOMS } from '../content/legendary';
 import type { Bathroom, Difficulty, Evaluation, Guy, Quirk, Rng, Round, SetPiece, Side, Slot, UrinalFlag } from '../types';
-import { evaluate, isOpen } from './code';
+import { actsNormal, evaluate, isOpen, zoneCovers } from './code';
 import { dailyNumber } from './daily';
 import { parseLayout } from './layout';
 import { SEED_MASK, createRng, encodePracticeCode, hashString, seedFrom } from './rng';
@@ -46,9 +47,13 @@ export function labelsMatter(b: Bathroom, ev: Evaluation = evaluate(b)): boolean
   const key = ev.greens.join();
   return b.slots.every((s, j) => {
     const g = s.occupant;
-    if (!g || g.quirk === 'normal' || s.kind !== 'urinal') return true;
-    const swapped: Guy = g.quirk === 'boss' && g.mood === 'happy' ? { ...g, mood: 'stressed' } : { ...g, quirk: 'normal', lean: undefined, mood: undefined };
-    const plain: Bathroom = { ...b, slots: b.slots.map((x, k) => (k === j ? { ...x, occupant: swapped } : x)) };
+    // Twins and the napper play by the regular rules; their label is a bonus, not the puzzle.
+    if (!g || g.quirk === 'normal' || g.quirk === 'twin' || g.quirk === 'napper' || s.kind !== 'urinal' || (g.part ?? 0) > 0) return true;
+    // A guy wider than one urinal is swapped whole, for plain guys in each of his urinals.
+    let end = j;
+    while (b.slots[end + 1]?.occupant?.quirk === g.quirk && (b.slots[end + 1].occupant?.part ?? 0) > 0) end++;
+    const swapped: Guy = g.quirk === 'boss' && g.mood === 'happy' ? { ...g, mood: 'stressed' } : { ...g, quirk: 'normal', lean: undefined, mood: undefined, part: undefined };
+    const plain: Bathroom = { ...b, slots: b.slots.map((x, k) => (k >= j && k <= end ? { ...x, occupant: swapped } : x)) };
     return evaluate(plain).greens.join() !== key;
   });
 }
@@ -67,7 +72,7 @@ const PLACEHOLDER_LOOK: Guy['look'] = { shirt: 0, pants: 0, hair: 0, skin: 0, he
 
 function guy(quirk: Quirk, rng: Rng): Guy {
   const g: Guy = { quirk, name: '', blurb: '', look: PLACEHOLDER_LOOK };
-  if (quirk === 'drunk' || quirk === 'facetime' || quirk === 'peeper') g.lean = rng.chance(0.5) ? 'left' : 'right';
+  if (quirk === 'drunk' || quirk === 'facetime' || quirk === 'peeper' || quirk === 'knight') g.lean = rng.chance(0.5) ? 'left' : 'right';
   if (quirk === 'boss') g.mood = rng.pick(['happy', 'stressed', 'angry'] as const);
   return g;
 }
@@ -100,14 +105,90 @@ function freeUrinals(b: Bathroom): number[] {
   return out;
 }
 
+/** Free plain urinals with `n - 1` more free plain urinals right after them, with no divider between. */
+function freeRuns(b: Bathroom, n: number): number[] {
+  const free = new Set(freeUrinals(b));
+  const out: number[] = [];
+  for (const i of free) {
+    let ok = true;
+    for (let k = 1; k < n && ok; k++) ok = free.has(i + k) && !b.dividers[i + k - 1];
+    if (ok) out.push(i);
+  }
+  return out;
+}
+
 function placeGuys(rng: Rng, b: Bathroom, quirks: Quirk[]): void {
   for (const q of quirks) {
     const free = freeUrinals(b);
     if (free.length === 0) return;
+    // Two-urinal guys: the napper lies across two, the wolf mascot is two urinals wide.
+    if (q === 'napper' || q === 'mascot' || q === 'sumo') {
+      const width = q === 'sumo' ? 3 : 2;
+      const runs = freeRuns(b, width);
+      if (runs.length === 0) continue;
+      const i = rng.pick(runs);
+      for (let k = 0; k < width; k++) b.slots[i + k].occupant = { ...guy(q, rng), part: k as 0 | 1 | 2 };
+      continue;
+    }
+    // Twins side by side (rarely triplets): one unit.
+    if (q === 'twin') {
+      const n = rng.chance(1 / 15) ? 3 : 2;
+      const runs = freeRuns(b, n);
+      if (runs.length === 0) continue;
+      const i = rng.pick(runs);
+      const group = i + 1; // unique within the room, and the same every time the seed is built
+      for (let k = 0; k < n; k++) b.slots[i + k].occupant = { ...guy(q, rng), group };
+      continue;
+    }
+    // Gym Bro: a sink takes this urinal's spot, and his flex reaches over the urinal on one side.
+    if (q === 'gymbro') {
+      const spots = free.filter((i) => [i - 1, i + 1].some((k) => b.slots[k]?.kind === 'urinal' && !b.slots[k].occupant && !b.slots[k].flag));
+      if (spots.length === 0) continue;
+      const i = rng.pick(spots);
+      const sides = ([-1, 1] as const).filter((d) => b.slots[i + d]?.kind === 'urinal' && !b.slots[i + d].occupant && !b.slots[i + d].flag);
+      const d = rng.pick(sides);
+      b.slots[i].flag = 'sink';
+      b.slots[i].occupant = { ...guy(q, rng), lean: d < 0 ? 'left' : 'right' };
+      continue;
+    }
     const g = guy(q, rng);
     if (q === 'gassy' || q === 'pastor') g.lean = b.door; // the smell drifts out the door; the pastor greets everyone at it
     b.slots[rng.pick(free)].occupant = g;
   }
+}
+
+/**
+ * How often each guy is drawn. Tuned against a year of dailies so everyone shows up: the classics
+ * change the answer in more rooms and survive the generator's checks more often, so they draw less.
+ */
+const QUIRK_WEIGHT: Partial<Record<Quirk, number>> = {
+  talker: 0.25,
+  boss: 0.35,
+  drunk: 0.35,
+  splasher: 0.35,
+  friend: 0.12,
+  facetime: 1.3,
+  peeper: 1.3,
+  pilot: 1.2,
+  crypto: 1.4,
+  finance: 1.4,
+  dropper: 1.5,
+  sumo: 0.25,
+  shy: 2.5,
+  napper: 2.2,
+  pastor: 2,
+  security: 2.2,
+  germ: 4,
+  knight: 3,
+  twin: 3,
+  gymbro: 5,
+  tourist: 7,
+  mascot: 8,
+};
+
+/** Picks a quirk from a list, weighted so every guy turns up now and then. */
+function pickQuirk(rng: Rng, list: readonly Quirk[]): Quirk {
+  return rng.weighted(list, (q) => QUIRK_WEIGHT[q] ?? 1);
 }
 
 function addFlags(rng: Rng, b: Bathroom, count: number, kinds: readonly UrinalFlag[]): void {
@@ -119,9 +200,9 @@ function addFlags(rng: Rng, b: Bathroom, count: number, kinds: readonly UrinalFl
 }
 
 const ALL_FLAGS: readonly UrinalFlag[] = ['low', 'puddle', 'broken'];
-const SOFT_QUIRKS: readonly Quirk[] = ['talker', 'splasher', 'facetime', 'inlaw', 'pastor', 'pilot', 'tourist', 'crypto'];
-const BIG_QUIRKS: readonly Quirk[] = ['boss', 'drunk', 'gassy', 'peeper', 'finance'];
-const ANY_QUIRK: readonly Quirk[] = ['talker', 'splasher', 'boss', 'drunk', 'facetime', 'gassy', 'inlaw', 'pastor', 'peeper', 'pilot', 'tourist', 'crypto', 'finance'];
+const SOFT_QUIRKS: readonly Quirk[] = ['talker', 'splasher', 'facetime', 'inlaw', 'pastor', 'pilot', 'tourist', 'crypto', 'twin', 'napper', 'germ', 'security', 'friend', 'dropper', 'knight', 'sumo'];
+const BIG_QUIRKS: readonly Quirk[] = ['boss', 'drunk', 'gassy', 'peeper', 'finance', 'shy', 'mascot', 'gymbro'];
+const ANY_QUIRK: readonly Quirk[] = ['talker', 'splasher', 'boss', 'drunk', 'facetime', 'gassy', 'inlaw', 'pastor', 'peeper', 'pilot', 'tourist', 'crypto', 'finance', 'shy', 'mascot', 'gymbro', 'twin', 'napper', 'germ', 'security', 'friend', 'dropper', 'knight', 'sumo'];
 
 /** Per-round intent decided once, before rejection sampling. */
 interface Plan {
@@ -203,7 +284,7 @@ function layout(rng: Rng, d: Difficulty, plan: Plan): Bathroom {
       stalls = n >= 3 && rng.chance(STALL_CHANCE) ? 1 : 0;
       b = room(n, door(rng), stalls, stallEnd(rng, 0.7));
       addDividers(rng, b, dividerMode(rng, 0.5));
-      guys = [rng.pick(SOFT_QUIRKS)];
+      guys = [pickQuirk(rng, SOFT_QUIRKS)];
       if (rng.chance(0.75)) guys.push('normal');
       if (rng.chance(0.3)) addFlags(rng, b, 1, ALL_FLAGS);
       break;
@@ -215,7 +296,7 @@ function layout(rng: Rng, d: Difficulty, plan: Plan): Bathroom {
       const nQuirk = rng.chance(0.5) ? 2 : 1;
       const nGuys = Math.max(nQuirk, rng.int(2, 3));
       guys = [];
-      for (let k = 0; k < nQuirk; k++) guys.push(rng.pick(SOFT_QUIRKS));
+      for (let k = 0; k < nQuirk; k++) guys.push(pickQuirk(rng, SOFT_QUIRKS));
       while (guys.length < nGuys) guys.push('normal');
       if (!small) addFlags(rng, b, rng.int(0, 2), ['low', 'puddle', 'low', 'puddle', 'broken']);
       break;
@@ -224,8 +305,8 @@ function layout(rng: Rng, d: Difficulty, plan: Plan): Bathroom {
       stalls = n >= 3 && rng.chance(STALL_CHANCE) ? 1 : 0;
       b = room(n, door(rng), stalls, stallEnd(rng, 0.75));
       addDividers(rng, b, dividerMode(rng, 0.75));
-      guys = [rng.pick(BIG_QUIRKS)];
-      if (rng.chance(0.5)) guys.push(rng.pick(SOFT_QUIRKS));
+      guys = [pickQuirk(rng, BIG_QUIRKS)];
+      if (rng.chance(0.5)) guys.push(pickQuirk(rng, SOFT_QUIRKS));
       const nGuys = rng.int(3, 4);
       while (guys.length < nGuys) guys.push('normal');
       if (!small) addFlags(rng, b, rng.int(0, 1), ALL_FLAGS);
@@ -240,11 +321,18 @@ function layout(rng: Rng, d: Difficulty, plan: Plan): Bathroom {
       const nGuys = rng.int(3, 5);
       const nQuirk = rng.int(2, Math.min(3, nGuys));
       guys = [];
-      for (let k = 0; k < nQuirk; k++) guys.push(rng.pick(ANY_QUIRK));
+      for (let k = 0; k < nQuirk; k++) guys.push(pickQuirk(rng, ANY_QUIRK));
       while (guys.length < nGuys) guys.push('normal');
       if (!small) addFlags(rng, b, rng.int(0, 2), ALL_FLAGS);
       break;
     }
+  }
+  // Security is there for the stall: give him one at the far end.
+  if (guys.includes('security') && stalls === 0 && n >= 4) {
+    const end = b.door === 'left' ? n - 1 : 0;
+    b.slots[end] = { kind: 'stall' };
+    b.dividers[end === 0 ? 0 : end - 1] = false;
+    stalls = 1;
   }
   placeGuys(rng, b, rng.shuffle(fitGuys(guys, n, stalls)));
   return b;
@@ -284,6 +372,15 @@ function accepts(b: Bathroom, ev: Evaluation, d: Difficulty, plan: Plan, stage: 
     if (d >= 2 && d <= 5 && straw < 1) return false;
     if ((d === 4 || d === 5) && !isTrap(b, ev)) return false;
   }
+  // Security is there for the stall: no stall, no guard.
+  if (b.slots.some((s) => s.occupant?.quirk === 'security') && !b.slots.some((s) => s.kind === 'stall')) return false;
+  // The shy guy would have left already, and nobody stands at the germaphobe's wet urinals: their space is empty when you walk in.
+  if (b.slots.some((s, j) => (s.occupant?.quirk === 'shy' || s.occupant?.quirk === 'germ') && zoneCovers(b, j).some((k) => b.slots[k].occupant))) return false;
+  // From d3 on, a room has at least one guy with a label who isn't playing by the regular rules.
+  if (d >= 3 && !b.slots.some((s) => s.occupant && !actsNormal(s.occupant))) return false;
+  // A hard (d5) room always has one of the big guys. Some need two free urinals in a row and can fail to
+  // fit, so check rather than assume.
+  if (d === 5 && !b.slots.some((s) => s.occupant && BIG_QUIRKS.includes(s.occupant.quirk))) return false;
   // Easy rooms never hinge on the stall (a hard rule: the fallback stages keep it too).
   if (d >= 2 && d <= 4 && green.reason === 'stall-forced') return false;
   if (stage >= 2) return true;
@@ -360,6 +457,21 @@ function dressGuys(rng: Rng, b: Bathroom, people?: SetPiece['people']): void {
     if (!g) continue;
     const given = s.kind === 'urinal' ? people?.[k++] : undefined;
     if (given) used.add(given.name);
+    // Rare sightings: a plain guy is now and then someone else entirely (same rules, so the answer holds).
+    if (!given && g.quirk === 'normal') {
+      const roll = rng.next();
+      if (roll < 1 / 400) g.quirk = 'doppel';
+      else if (roll < 2 / 400) g.quirk = 'bigfoot';
+      else if (roll < 2 / 400 + 1 / 140) g.quirk = 'rookie';
+    }
+    // The second half of a two-urinal guy is the same guy.
+    const prev = b.slots[b.slots.indexOf(s) - 1]?.occupant;
+    if (g.part !== undefined && g.part > 0 && prev && prev.quirk === g.quirk) {
+      g.name = prev.name;
+      g.blurb = prev.blurb;
+      g.look = prev.look;
+      continue;
+    }
     const person = given ?? pickPerson(rng, g.quirk, used);
     g.name = person.name;
     g.blurb = person.blurb;
@@ -372,6 +484,29 @@ function dressGuys(rng: Rng, b: Bathroom, people?: SetPiece['people']): void {
       bald: rng.chance(0.15),
     };
   }
+  // Rookies: each his own jersey number and his own haircut (a whole team can walk in).
+  const numbers = new Set<number>();
+  const cuts = new Set<number>();
+  for (const s of b.slots) {
+    const g = s.occupant;
+    if (g?.quirk !== 'rookie') continue;
+    let n = rng.int(1, 99);
+    while (numbers.has(n)) n = (n % 99) + 1;
+    numbers.add(n);
+    let h = g.look.hair;
+    for (let t = 0; t < 6 && cuts.has(h); t++) h = (h + 1) % 6;
+    cuts.add(h);
+    g.look = { ...g.look, jersey: n, hair: h, bald: false };
+  }
+  // Twins (and triplets) are identical: same look as the first of them.
+  const firsts = new Map<number, Guy['look']>();
+  for (const s of b.slots) {
+    const g = s.occupant;
+    if (g?.quirk !== 'twin' || g.group === undefined) continue;
+    const look = firsts.get(g.group);
+    if (look) g.look = look;
+    else firsts.set(g.group, g.look);
+  }
 }
 
 function pickVenue(rng: Rng, d: Difficulty): string {
@@ -383,10 +518,39 @@ function pickVenue(rng: Rng, d: Difficulty): string {
 // Public API
 // ---------------------------------------------------------------------------
 
+/** How often the boss is hiding in an extra stall, just for fun. */
+const BOSS_STALL_CHANCE = 1 / 30;
+
+/**
+ * Adds an occupied stall on the right end with the boss inside. It's a joke, not a rule: a stall
+ * nobody can use and nobody stands next to, so it's kept only if every spot grades exactly as before.
+ * Added on the right so no slot number moves.
+ */
+function bossInStall(rng: Rng, b: Bathroom): void {
+  if (b.slots.length <= SMALL_ROOM || b.slots.length >= 10 || b.slots.some((s) => s.occupant?.quirk === 'boss')) return;
+  const used = new Set(b.slots.flatMap((s) => (s.occupant ? [s.occupant.name] : [])));
+  const person = pickPerson(rng, 'boss', used);
+  const boss: Guy = {
+    ...guy('boss', rng),
+    name: person.name,
+    blurb: person.blurb,
+    look: { shirt: rng.int(0, 7), pants: rng.int(0, 4), hair: rng.int(0, 5), skin: rng.int(0, 4), height: rng.int(0, 2), bald: rng.chance(0.15) },
+  };
+  const next: Bathroom = { ...b, slots: [...b.slots, { kind: 'stall', occupant: boss }], dividers: [...b.dividers, false] };
+  const before = evaluate(b);
+  const after = evaluate(next);
+  if (before.greens.join() !== after.greens.join() || naivePicks(b).join() !== naivePicks(next).join()) return;
+  if (!before.slots.every((s) => after.slots[s.index]?.grade === s.grade && after.slots[s.index]?.reason === s.reason)) return;
+  b.slots = next.slots;
+  b.dividers = next.dividers;
+}
+
 export function generateRound(seed: number, difficulty: Difficulty, id: string): Round {
   const rng = createRng(seed);
   const bathroom = buildBathroom(rng.fork(`layout-d${difficulty}`), difficulty);
   dressGuys(rng.fork('people'), bathroom);
+  const extra = rng.fork('boss-stall');
+  if (difficulty >= 3 && extra.chance(BOSS_STALL_CHANCE)) bossInStall(extra, bathroom);
   const venue = pickVenue(rng.fork('venue'), difficulty);
   return { id, seed, difficulty, venue, bathroom };
 }
@@ -472,10 +636,40 @@ export function practiceDifficulty(seed: number): Difficulty {
 }
 
 /** A practice round from a 30-bit seed (difficulty derived from the seed, 2..6). */
+/** One Endless room in this many is a legendary room. */
+export const LEGEND_ODDS = 2000;
+
+/** The first Endless seed that deals legendary room `id` (for the dev gallery's links). */
+export function legendSeed(id: string): number | undefined {
+  const k = LEGENDARY_ROOMS.findIndex((r) => r.id === id);
+  if (k < 0) return undefined;
+  for (let s = 1; s < 10_000_000; s++) {
+    if (hashString('empty-room', s) % 100 === 0) continue;
+    const legend = hashString('legendary', s);
+    if (legend % LEGEND_ODDS === 0 && Math.floor(legend / LEGEND_ODDS) % LEGENDARY_ROOMS.length === k) return s;
+  }
+  return undefined;
+}
+
 export function practiceRound(seed: number): Round {
   const s = seed & SEED_MASK;
   const id = `p-${encodePracticeCode(s)}`;
+  // Rarely (about 1 in 100), nobody's in here at all. The far end from the door, obviously.
+  if (hashString('empty-room', s) % 100 === 0) return emptyRound(s, id);
+  // Very rarely (about 1 in 2,000), a legendary room: a whole basketball team, a family of Bigfoots...
+  const legend = hashString('legendary', s);
+  if (legend % LEGEND_ODDS === 0) {
+    const sp = LEGENDARY_ROOMS[Math.floor(legend / LEGEND_ODDS) % LEGENDARY_ROOMS.length];
+    return { ...setPieceRound(sp, s, id), legend: sp.id };
+  }
   const roll = hashString('set-piece', s);
   if (SET_PIECES.length > 0 && roll % 3 === 0) return setPieceRound(SET_PIECES[Math.floor(roll / 3) % SET_PIECES.length], s, id);
   return generateRound(s, practiceDifficulty(s), id);
+}
+
+/** An empty bathroom (a rare Endless room): every urinal free, the answer is the far end from the door. */
+export function emptyRound(seed: number, id: string): Round {
+  const rng = createRng(seed).fork('empty');
+  const bathroom = room(rng.int(4, 8), door(rng), 0, 'far');
+  return { id, seed, difficulty: 2, venue: pickVenue(rng.fork('venue'), 2), premise: 'Nobody’s here. Nobody.', bathroom };
 }

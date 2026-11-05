@@ -1627,3 +1627,56 @@ button {
     align-items: center;
   }
 }
+
+/* ------------------------------------------------------------------ sightings (stats card) */
+
+.sightings-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sightings-count {
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: normal;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.sightings-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 10px;
+}
+.sighting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+}
+.sighting-emoji {
+  font-size: 1.8rem;
+  line-height: 1.1;
+}
+.sighting-label {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  line-height: 1.2;
+}
+.sighting.is-locked .sighting-emoji {
+  /* A grey silhouette: the shape, none of the detail. */
+  filter: grayscale(1) brightness(0);
+  opacity: 0.18;
+}
+.sighting-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

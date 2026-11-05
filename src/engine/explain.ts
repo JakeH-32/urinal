@@ -19,6 +19,20 @@ const QUIRK_NOUN: Record<Exclude<Quirk, 'normal'>, string> = {
   tourist: 'the backpacker',
   crypto: 'the crypto guy',
   finance: 'the finance bro',
+  gymbro: 'the gym bro',
+  twin: 'the twins',
+  napper: 'the napper',
+  shy: 'the shy guy',
+  mascot: 'the mascot',
+  security: 'the security guard',
+  germ: 'the germaphobe',
+  friend: 'your friend',
+  rookie: 'the rookie',
+  doppel: 'your doppelganger',
+  bigfoot: 'Bigfoot',
+  dropper: 'the full dropper',
+  knight: 'the knight',
+  sumo: 'the sumo wrestler',
 };
 
 /** The label guy closest (by room) to slot i, if any (men in stalls have walls: they don't count). */
@@ -84,6 +98,8 @@ export function explainPick(b: Bathroom, ev: Evaluation, pick: number): string |
         return 'Same room, but the ✓ spot was against the wall.';
       case 'quick-exit':
         return 'Same room, but in a small room with a labeled guy, stay by the door.';
+      case 'missed-friend':
+        return 'Legal, but the ✓ spot was right next to your bro.';
       case 'past-talker': {
         // A talker you pass that the ✓ spot doesn't.
         const j = occupantIndices(b).find((k) => isTalker(b.slots[k].occupant) && passes(b, pick, k) && (best === undefined || !passes(b, best, k)));
@@ -113,7 +129,26 @@ export function explainPick(b: Bathroom, ev: Evaluation, pick: number): string |
   switch (guy.quirk) {
     case 'normal':
     case 'tourist':
+    case 'gymbro':
+    case 'knight':
+    case 'sumo':
+    case 'mascot':
+    case 'rookie':
+    case 'doppel':
+    case 'bigfoot':
+    case 'napper':
+    case 'friend':
       return plain;
+    case 'twin':
+      return 'The twins count as one. Crowd one, crowd both.';
+    case 'shy':
+      return 'The shy guy needs four empty urinals.';
+    case 'security':
+      return b.slots[pick].kind === 'stall' ? 'The stall isn’t safe with security in the room.' : plain;
+    case 'dropper':
+      return 'Pants at his ankles. Nobody stands closer than two urinals.';
+    case 'germ':
+      return 'He keeps flushing. The urinals beside him are wet.';
     case 'talker':
       return divider ? 'Talkers need two empty urinals, and he leans around dividers.' : 'Talkers need two empty urinals between you.';
     case 'pilot':

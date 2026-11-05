@@ -4,6 +4,9 @@ import { useState, type ReactNode } from 'react';
 import type { Bathroom, Evaluation, Grade, Guy, Quirk, Side, Slot, SlotAnalysis } from '../types';
 import { BathroomScene } from './BathroomScene';
 import { isOpen } from '../engine/code';
+import { legendSeed } from '../engine/generate';
+import { encodePracticeCode } from '../engine/rng';
+import { LEGENDARY_ROOMS } from '../content/legendary';
 
 let lookSeed = 3;
 function guy(quirk: Quirk = 'normal', opts: Partial<Guy['look']> & { lean?: Side } = {}): Guy {
@@ -46,6 +49,8 @@ function radius(g: Guy, toward: Side): number {
     case 'boss':
     case 'finance':
       return 3;
+    case 'shy':
+      return 4;
     case 'drunk':
       return toward === g.lean ? 3 : 1;
     case 'facetime':
@@ -216,6 +221,46 @@ const brosCrowded = room(
   ],
   'right',
 );
+// ---- The newest guys ----------------------------------------------------------------
+const named = (g: Guy, name: string): Guy => ({ ...g, name });
+/** One guy filling `w` neighbouring urinals (napper, mascot: 2; sumo: 3). */
+function multi(q: Quirk, w: number, opts: Parameters<typeof guy>[1] = {}): Slot[] {
+  const base = guy(q, opts);
+  return Array.from({ length: w }, (_, p) => U({ ...base, part: p as 0 | 1 | 2 }));
+}
+/** A set of identical twins (or triplets). */
+function twins(n: number, group: number, opts: Parameters<typeof guy>[1] = {}): Slot[] {
+  const base = guy('twin', opts);
+  return Array.from({ length: n }, () => U({ ...base, group }));
+}
+// Gym Bro at a sink flexing over urinal 3 (blocked); a second one hemmed in by a guy flexes tight.
+const gymRoom = room([U(), U(guy('gymbro', { lean: 'right' }), 'sink'), U(), U(guy()), U(guy('gymbro', { lean: 'left', height: 2 }), 'sink'), U(), U()], 'left');
+const twinsRoom = room([U(), ...twins(2, 1), U(), U(), ...twins(3, 2, { hair: 2 }), U()], 'right');
+const wideRoom = room([U(), ...multi('napper', 2), U(), ...multi('mascot', 2), U(guy())], 'left');
+const sumoRoom = room([U(), ...multi('sumo', 3), U(), U(guy('shy')), U()], 'right');
+const securityRoom = room([S(), U(), U(), U(guy('security')), U(), U(guy('germ')), U(), U(guy('germ', { height: 2 }))], 'right');
+const securityNoStall = room([U(guy('security', { height: 0 })), U(), U(), U(guy('germ', { bald: true })), U()], 'left');
+const friendsRoom = room(
+  [
+    U(named(guy('friend'), 'The local legend')),
+    U(),
+    U(named(guy('friend', { hair: 3 }), 'The guy buying the next round')),
+    U(),
+    U(),
+    U(named(guy('friend'), 'Your best friend Dave')),
+    U(),
+  ],
+  'left',
+);
+const rareRoom = room([U(guy('rookie')), U(), U(guy('doppel')), U(), U(guy('bigfoot')), U(), U(guy('dropper')), U()], 'left');
+const knightRoom = room([U(), U(guy('knight', { lean: 'left' })), U(), U(), U(guy('knight', { lean: 'right', hair: 1 })), U(), U(guy('dropper', { skin: 3, pants: 1 }))], 'right');
+// Reveals: the shy guy freaks out; the mascot turns; twins both turn; the guard catches you in the stall.
+const revealShyRoom = room([U(), U(), U(guy('shy')), U(), U(), U(), U(), U()], 'left');
+const revealShy = (): Evaluation => evalOf(revealShyRoom, { 7: 'clear', 4: 'doctor' }, [7], { 4: [2] });
+const revealMascotRoom = room([U(), U(), ...multi('mascot', 2), U(), U()], 'right');
+const revealTwinsRoom = room([U(), U(), ...twins(2, 7), U(), U(), U()], 'left');
+const revealSecurityRoom = room([U(guy()), U(), U(guy('security')), U(), U(guy()), S()], 'left');
+
 const looksRow = room(
   Array.from({ length: 10 }, (_, i) => U(guy('normal', { hair: i % 6, shirt: i % 8, pants: i % 5, skin: i % 5, height: i % 3, bald: i === 9 }))),
   'left',
@@ -361,6 +406,19 @@ export function SceneGallery() {
     <div style={{ maxWidth: 760, margin: '0 auto', padding: '16px', color: 'inherit' }}>
       <h1 style={{ font: '800 22px/1.2 system-ui, sans-serif' }}>Scene gallery</h1>
 
+      <Section title="Legendary rooms" note="Each link plays that room in Endless.">
+        <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.9 }}>
+          {LEGENDARY_ROOMS.map((r) => {
+            const seed = legendSeed(r.id);
+            return (
+              <li key={r.id}>
+                {seed === undefined ? r.venue : <a href={`#/endless/${encodePracticeCode(seed)}`}>{r.venue}</a>} · {r.premise}
+              </li>
+            );
+          })}
+        </ul>
+      </Section>
+
       <Section title="Crowded (10 slots): every quirk, some shoulder to shoulder" note="Quirks must read at a glance, even at phone width.">
         <BathroomScene bathroom={crowded} />
       </Section>
@@ -419,6 +477,49 @@ export function SceneGallery() {
       </Section>
       <Section title="Looks: every hair style, shirt, pants, skin, height, bald">
         <BathroomScene bathroom={looksRow} />
+      </Section>
+
+      <Section title="Gym Bro at the sink: flexing over urinal 3 (blocked), and a tight flex beside a guy (door left)">
+        <Live bathroom={gymRoom} />
+        <BathroomScene bathroom={room([U(guy('gymbro', { lean: 'right' }), 'sink'), U(), U(guy()), U(), U(guy('gymbro', { lean: 'left' }), 'sink')], 'right')} slotNumbers />
+      </Section>
+      <Section title="The boss hiding in a stall (right end): chip with his mood, shoes under the door, a line through it">
+        <Live bathroom={room([U(), U(guy()), U(), U(), U(guy('talker')), U(), S({ ...guy('boss'), mood: 'angry', name: 'Your boss Rick' })], 'left')} />
+        <BathroomScene bathroom={room([U(guy()), U(), U(), U(guy('crypto')), S({ ...guy('boss'), mood: 'happy', name: 'Your boss Linda' })], 'left')} slotNumbers />
+      </Section>
+      <Section title="Twins and triplets (door right)" note="Twin A starts the line, twin B finishes it; a third triplet adds “—yeah.”">
+        <BathroomScene bathroom={twinsRoom} slotNumbers />
+      </Section>
+      <Section title="Two-urinal guys: the napper on the floor, the wolf mascot (door left)">
+        <Live bathroom={wideRoom} />
+      </Section>
+      <Section title="Sumo across three urinals, shy guy (door right)">
+        <Live bathroom={sumoRoom} />
+      </Section>
+      <Section title="Security (beam on the stall) and two germaphobes (wet urinals beside them)">
+        <BathroomScene bathroom={securityRoom} slotNumbers />
+        <BathroomScene bathroom={securityNoStall} slotNumbers />
+      </Section>
+      <Section title="Your bro: the local legend (napkin), the next round (wallet), Dave (nods at you)">
+        <Live bathroom={friendsRoom} />
+      </Section>
+      <Section title="Rare guys: rookie (head at the ceiling), doppelganger, Bigfoot (blurry), the full dropper">
+        <BathroomScene bathroom={rareRoom} slotNumbers />
+      </Section>
+      <Section title="Knights: shield in the urinal on his shield side (door right), and another full dropper">
+        <Live bathroom={knightRoom} />
+      </Section>
+      <Section title="Reveal: inside the shy guy's space (he freaks out)">
+        <BathroomScene bathroom={revealShyRoom} picked={4} evaluation={revealShy()} />
+      </Section>
+      <Section title="Reveal: right beside the wolf mascot">
+        <BathroomScene bathroom={revealMascotRoom} picked={4} evaluation={evalOf(revealMascotRoom, { 0: 'clear', 1: 'doctor', 4: 'doctor' }, [0], { 1: [2], 4: [3] })} reducedMotion />
+      </Section>
+      <Section title="Reveal: crowding one twin crowds them both">
+        <BathroomScene bathroom={revealTwinsRoom} picked={4} evaluation={evalOf(revealTwinsRoom, { 6: 'clear', 4: 'doctor', 1: 'doctor' }, [6], { 1: [2, 3], 4: [2, 3] })} reducedMotion />
+      </Section>
+      <Section title="Reveal: the guard's flashlight finds you in the stall">
+        <BathroomScene bathroom={revealSecurityRoom} picked={5} evaluation={evalOf(revealSecurityRoom, { 5: 'doctor', 1: 'doctor', 3: 'doctor' }, [1], { 5: [2], 1: [0, 2], 3: [2, 4] })} />
       </Section>
 
       <Section title="Reveal: clear pick (far wall)">

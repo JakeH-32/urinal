@@ -72,7 +72,8 @@ export function Stall({ g, occupant, you }: StallProps) {
   const inX0 = g.x0 + 7;
   const inX1 = g.x1 - 7;
   const busy = !!occupant || !!you;
-  const look = occupant ? resolveLook(occupant.look) : null;
+  // Dressed as himself under the door (the boss's suit trousers).
+  const look = occupant ? resolveLook(occupant.look, occupant.quirk, occupant.name) : null;
   const cuff = you ? '#2f3b52' : (look?.pants ?? '#333');
   const shoe = you ? '#f4f4f4' : SHOE;
   return (

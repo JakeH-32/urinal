@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { SET_PIECES } from '../content/setpieces';
+import { LEGENDARY_ROOMS } from '../content/legendary';
 import { evaluate } from './code';
-import { SMALL_ROOM, DAILY_DIFFICULTIES, SET_PIECE_DIFFICULTIES, SET_PIECE_ROUNDS, dailyRounds, dailySetPiece, labelsMatter, practiceRound } from './generate';
+import { SMALL_ROOM, DAILY_DIFFICULTIES, SET_PIECE_DIFFICULTIES, SET_PIECE_ROUNDS, dailyRounds, dailySetPiece, labelsMatter, LEGEND_ODDS, legendSeed, practiceRound } from './generate';
+import { hashString } from './rng';
 import { parseLayout } from './layout';
 
 describe('parseLayout', () => {
@@ -20,7 +22,7 @@ describe('parseLayout', () => {
   });
 
   it('rejects junk', () => {
-    expect(() => parseLayout('_ Q _', 'left')).toThrow();
+    expect(() => parseLayout('_ Qx _', 'left')).toThrow();
     expect(() => parseLayout('| _ _', 'left')).toThrow();
     expect(() => parseLayout('_ _ |', 'left')).toThrow();
     expect(() => parseLayout('_', 'left')).toThrow();
@@ -63,5 +65,31 @@ describe('set pieces', () => {
 
   it('practice rounds are deterministic, set piece or not', () => {
     for (const seed of [1, 2, 3, 42, 999, 123456]) expect(practiceRound(seed)).toEqual(practiceRound(seed));
+  });
+});
+
+describe('legendary rooms', () => {
+  it('each answer is the single Clear spot', () => {
+    for (const sp of LEGENDARY_ROOMS) {
+      const ev = evaluate(parseLayout(sp.layout, sp.door));
+      expect(ev.greens, sp.id).toEqual([sp.answer - 1]);
+    }
+  });
+
+  it('turn up about once in 2,000 Endless rooms', () => {
+    let n = 0;
+    for (let s = 1; s <= 200000; s++) if (hashString('legendary', s) % LEGEND_ODDS === 0) n++;
+    expect(n).toBeGreaterThan(60);
+    expect(n).toBeLessThan(140);
+  });
+});
+
+describe('legendSeed', () => {
+  it('finds an Endless seed that deals each legendary room', () => {
+    for (const r of LEGENDARY_ROOMS) {
+      const s = legendSeed(r.id);
+      expect(s, r.id).toBeDefined();
+      expect(practiceRound(s as number).legend).toBe(r.id);
+    }
   });
 });

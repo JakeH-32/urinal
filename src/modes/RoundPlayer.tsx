@@ -11,6 +11,9 @@ import { crowdPercents, type RoundCrowd } from '../net/community';
 import { RoundCrowdLine } from '../ui/Crowd';
 import { PerchPuck, puckForGrade } from '../ui/Puck';
 import { resultFromEvaluation, verdictFor } from './roundLogic';
+import { useSave } from '../state/SaveContext';
+import { useToast } from '../ui/Toast';
+import { sightingById, sightingsIn, withSightings, type SightingId } from '../state/sightings';
 
 export interface RoundPlayerProps {
   round: Round;
@@ -33,7 +36,7 @@ export interface RoundPlayerProps {
 }
 
 /** Puck's size on the scene frame. */
-const PUCK_SIZE = 50;
+const PUCK_SIZE = 65;
 
 /** Next ignores taps this soon after it appears, so a fast double tap can't skip the verdict. */
 const NEXT_GUARD_MS = 400;
@@ -46,6 +49,23 @@ const MAX_STEPS = 10;
 export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel, header, extra, crowd, onRetry }: RoundPlayerProps) {
   // Pure and cheap. Computed up front so a broken engine fails loudly into the ErrorBoundary.
   const evaluation = useMemo(() => evaluate(round.bathroom), [round]);
+  // Rare characters and rooms: collect the first sighting of each, with a toast.
+  const { update } = useSave();
+  const toast = useToast();
+  useEffect(() => {
+    const ids = sightingsIn(round);
+    if (ids.length === 0) return;
+    let added: SightingId[] = [];
+    update((s) => {
+      const r = withSightings(s, ids);
+      added = r.added;
+      return r.save;
+    });
+    for (const id of added) {
+      const sg = sightingById(id);
+      toast(`${sg.emoji} New sighting: ${sg.label}`, { tone: 'success', durationMs: 4000 });
+    }
+  }, [round, update, toast]);
   const [picked, setPicked] = useState<number | undefined>(undefined);
   const [result, setResult] = useState<RoundResult | null>(null);
   const graded = useRef(false);

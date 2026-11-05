@@ -4,6 +4,7 @@ import type { Bathroom, Evaluation, Guy, Side } from '../types';
 import {
   FEET_Y,
   FLOOR_Y,
+  GUY_H,
   HIT_TOP,
   MAX_PX_PER_UNIT,
   PITCH,
@@ -20,6 +21,13 @@ import {
 import {
   CHIP_W,
   Droplets,
+  FLASH_X,
+  FLASH_Y,
+  KNIGHT_HELM_RISE,
+  SECURITY_CAP_RISE,
+  figureRise,
+  figureScale,
+  legStretch,
   FaceTimePhone,
   GasEngulf,
   GuyFigure,
@@ -36,10 +44,27 @@ import {
   bubbleLines,
   guyTop,
 } from './Guy';
+import {
+  FlashBeam,
+  KnightShield,
+  MASCOT_HEAD_Y,
+  MASCOT_SCALE,
+  MASCOT_TOP,
+  NAPPER_SCALE,
+  NapperFigure,
+  SUMO_HEAD_Y,
+  SUMO_TOP,
+  Sink,
+  SumoFigure,
+  WetUrinal,
+  WolfMascot,
+  partWidth,
+  spanCentre,
+} from './BigGuys';
 import { Divider, Doorway, Puddle, STALL_TOP_Y, SolidEnd, Stall, Urinal } from './Fixtures';
 import { GRADES } from '../grades';
 import { gearBlocked, sideOf, zoneCovers, zoneRadius } from '../engine/code';
-import { CRYPTO_LINES, FINANCE_LINES } from '../content';
+import { CRYPTO_LINES, FINANCE_LINES, KNIGHT_LINES, SHY_LINES, TWIN_LINES } from '../content';
 import {
   buildReveal,
   canPick,
@@ -50,9 +75,12 @@ import {
   slotLabel,
   spreadChips,
 } from './logic';
-import { PACK_LID, PACK_RED, POLE_BLUE, YOU_LOOK, resolveLook, shade } from './looks';
+import { PACK_LID, PACK_RED, POLE_BLUE, YOU_LOOK, friendVariant, resolveLook, shade } from './looks';
 import { STRADDLE_DROP, STRADDLE_MS } from './pose';
 import './scene.css';
+
+/** How long you stand at the urinal before the grade shows. */
+const REVEAL_BEAT_MS = 250;
 
 export interface BathroomSceneProps {
   bathroom: Bathroom;
@@ -115,6 +143,20 @@ const REACTION_TEXT: Record<Guy['quirk'], string | null> = {
   tourist: 'Mind the pack.',
   crypto: 'WAGMI.',
   finance: 'Adding you to the invite.',
+  gymbro: 'Spot me?',
+  twin: 'Ahem.',
+  napper: null,
+  shy: null,
+  mascot: 'Awoo?',
+  security: 'Move along.',
+  germ: 'Don’t touch me!',
+  friend: 'Hey!',
+  rookie: 'How did you end up in the locker room?',
+  doppel: '…',
+  bigfoot: '!',
+  dropper: 'Problem?',
+  knight: 'Halt!',
+  sumo: '…',
 };
 const FACETIME_REACTION = 'Who’s this?';
 const TALKER_LINE = 'Hey, buddy!';
@@ -122,7 +164,11 @@ const TALKER_LINE = 'Hey, buddy!';
 const PILOT_LINE = 'I’m a pilot.';
 const PILOT_REACTION = 'Captain, actually.';
 /** Guys with an always-on speech bubble aimed at the door (the finance bro is on speakerphone). */
-const isChatty = (q: Guy['quirk']) => q === 'talker' || q === 'pilot' || q === 'crypto' || q === 'finance';
+const isChatty = (q: Guy['quirk']) => q === 'talker' || q === 'pilot' || q === 'crypto' || q === 'finance' || q === 'twin' || q === 'knight';
+/** The boss hiding in a stall, through the door. One per boss (by name). Short: one line each. */
+const STALL_BOSS_LINES = ['Occupied.', 'Taking a call.', 'In a meeting.', 'Don’t come in.', 'My office now.', 'Circle back later.'];
+/** The third triplet only ever agrees. */
+const TRIPLET_LINE = '—yeah.';
 
 /** Small stable string hash (FNV-1a), so a guy's line survives a reload. */
 function hashStr(str: string): number {
@@ -141,9 +187,48 @@ function pickLine(lines: readonly string[], key: string, fallback: string): stri
 /** A chatty guy's always-on line: fixed for the talker and pilot, one per room for the bros. */
 function chatLine(guy: Guy): string {
   if (guy.quirk === 'pilot') return PILOT_LINE;
+  if (guy.quirk === 'knight') return pickLine(KNIGHT_LINES, guy.name, 'Where’s the ren faire?');
   if (guy.quirk === 'crypto') return pickLine(CRYPTO_LINES, guy.name, 'It’s still early.');
   if (guy.quirk === 'finance') return pickLine(FINANCE_LINES, guy.name, 'Let’s circle back.');
   return TALKER_LINE;
+}
+
+/** Where a twin stands in his set (left to right), and his set's line key (stable per group). */
+function twinRole(b: Bathroom, i: number): { order: number; size: number; key: number } {
+  const g = b.slots[i].occupant;
+  const list =
+    g?.group === undefined
+      ? [i]
+      : b.slots.flatMap((sl, j) => (sl.kind === 'urinal' && sl.occupant?.quirk === 'twin' && sl.occupant.group === g.group ? [j] : []));
+  const key = hashStr(`${list.map((j) => b.slots[j].occupant?.name ?? '').join('|')}#${g?.group ?? i}`);
+  return { order: Math.max(0, list.indexOf(i)), size: list.length, key };
+}
+
+/** Twin A starts the sentence, twin B finishes it, a third triplet agrees. */
+function twinLine(b: Bathroom, i: number): string {
+  const { order, key } = twinRole(b, i);
+  const pair = TWIN_LINES.length ? TWIN_LINES[key % TWIN_LINES.length] : (['Is this', '—urinal taken?'] as const);
+  return order === 0 ? pair[0] : order === 1 ? pair[1] : TRIPLET_LINE;
+}
+
+/** Twins talk outward (first one left, last one right) so the sentence reads left to right; a middle triplet faces the door. */
+function twinTurn(b: Bathroom, i: number): -1 | 1 {
+  const { order, size } = twinRole(b, i);
+  const door = b.door === 'left' ? -1 : 1;
+  if (size < 2) return door;
+  if (order === 0) return -1;
+  if (order === size - 1) return 1;
+  return door;
+}
+
+/** Dave looks at you: at your spot once you've picked, before that at the nearest open spot. */
+function daveTurn(b: Bathroom, i: number, picked: number | undefined): -1 | 1 {
+  if (picked !== undefined && picked !== i) return picked < i ? -1 : 1;
+  for (let d = 1; d < b.slots.length; d++) {
+    if (canPick(b, i - d)) return -1;
+    if (canPick(b, i + d)) return 1;
+  }
+  return b.door === 'left' ? -1 : 1;
 }
 
 /** What a chatty guy says once he turns to you. */
@@ -162,17 +247,44 @@ function bodyTilt(guy: Guy): number {
 
 /** Which way a urinal occupant's head faces: toward you when reacting; the talker faces the door
  * (where you walk in); the FaceTime guy looks at his phone; the peeper looks where his zone runs long. */
-function headTurn(guy: Guy, door: Side, reactDir: -1 | 1 | undefined): -1 | 0 | 1 {
+function headTurn(guy: Guy, b: Bathroom, i: number, reactDir: -1 | 1 | undefined, picked?: number): -1 | 0 | 1 {
   if (reactDir) return reactDir;
-  if (isChatty(guy.quirk)) return door === 'left' ? -1 : 1;
+  const door: Side = b.door;
+  if (guy.quirk === 'twin') return twinTurn(b, i);
+  // The wolf mascot faces the door too, so his snout shows.
+  if (isChatty(guy.quirk) || guy.quirk === 'mascot') return door === 'left' ? -1 : 1;
   if (guy.quirk === 'facetime' || guy.quirk === 'peeper') return guy.lean === 'left' ? -1 : 1;
+  if (guy.quirk === 'friend' && friendVariant(guy.name) === 'dave') return daveTurn(b, i, picked);
   return 0;
+}
+
+/** The nearest stall to slot i (the security guard's flashlight finds it), or undefined. */
+function nearestStall(b: Bathroom, i: number): number | undefined {
+  let best: number | undefined;
+  b.slots.forEach((sl, j) => {
+    if (sl.kind === 'stall' && (best === undefined || Math.abs(j - i) < Math.abs(best - i))) best = j;
+  });
+  return best;
+}
+
+/** The napper's chip sits over his middle, right of his head (his Zz float up from there). */
+const NAPPER_CHIP_DX = 22;
+
+/** True for every slot of a multi-urinal guy except the first (he's drawn once, from his first slot). */
+function isTrailingPart(guy: Guy): boolean {
+  return partWidth(guy.quirk) > 1 && (guy.part ?? 0) > 0;
 }
 
 /** Hand holding the prop: the drunk's lean side; the boss's free side (right unless only left is free). */
 function propSideFor(b: Bathroom, i: number): -1 | 1 {
   const guy = b.slots[i].occupant;
-  if (guy?.quirk === 'drunk' || guy?.quirk === 'facetime') return guy.lean === 'left' ? -1 : 1;
+  if (guy?.quirk === 'drunk' || guy?.quirk === 'facetime' || guy?.quirk === 'gymbro') return guy.lean === 'left' ? -1 : 1;
+  // The security guard aims his flashlight at the stall (else toward the door).
+  if (guy?.quirk === 'security') {
+    const st = nearestStall(b, i);
+    if (st !== undefined) return st < i ? -1 : 1;
+    return b.door === 'left' ? -1 : 1;
+  }
   // The finance bro holds his speakerphone out on the door side, the way he's talking.
   if (guy?.quirk === 'finance') return b.door === 'left' ? -1 : 1;
   const rightBusy = !!b.slots[i + 1]?.occupant;
@@ -183,24 +295,37 @@ function propSideFor(b: Bathroom, i: number): -1 | 1 {
 /**
  * Always-on bubbles for chatty guys at urinals, aimed at the door ("Hey, buddy!", "I'm a pilot.",
  * a crypto pitch, a speakerphone line); on the reveal they turn to you ("So…", "Captain, actually.",
- * "WAGMI."). `late` picks the layer: long reactions are drawn on top of everything else (they're
- * long enough to cross you), short ones before. Lines over BUBBLE_WRAP chars break onto two lines.
+ * "WAGMI."). Drawn last, on top of everything. Lines over BUBBLE_WRAP chars break onto two lines.
  */
 function chatBubbles(
   layout: ReturnType<typeof layoutBathroom>,
   bathroom: Bathroom,
   reactorDir: Map<number, -1 | 1>,
   picked: number | undefined,
-  late: boolean,
 ) {
   return layout.slots.map((g) => {
     const guy = bathroom.slots[g.index].occupant;
+    // The boss hiding in a stall talks through the door: a small line from the stall top, toward the room.
+    if (guy?.quirk === 'boss' && g.kind === 'stall') {
+      const toward: -1 | 1 = g.index > 0 ? -1 : 1;
+      return (
+        <g key={`talk-${g.index}`} className="us-talk">
+          <SideBubble
+            x={g.cx + toward * 16}
+            y={STALL_TOP_Y + 8}
+            text={pickLine(STALL_BOSS_LINES, guy.name, 'Occupied.')}
+            dir={toward}
+            small
+            sceneW={layout.width}
+          />
+        </g>
+      );
+    }
     if (!guy || !isChatty(guy.quirk) || g.kind !== 'urinal') return null;
     const reactDir = reactorDir.get(g.index);
-    const text = reactDir ? chatReaction(guy) : chatLine(guy);
+    const text = reactDir ? chatReaction(guy) : guy.quirk === 'twin' ? twinLine(bathroom, g.index) : chatLine(guy);
     const long = text.length > 3;
-    if ((!!reactDir && long) !== late) return null;
-    const turn = headTurn(guy, bathroom.door, reactDir) || 1;
+    const turn = headTurn(guy, bathroom, g.index, reactDir) || 1;
     const head = headPoint(guy, g.cx);
     // A neighbour on the side he's facing: drop the bubble to shoulder height so it doesn't cover that guy's head.
     // A long reaction does the same when you're standing right next to him.
@@ -211,6 +336,7 @@ function chatBubbles(
     let y = head.y + (crowdedSide ? 30 : twoLine ? (reactDir ? 16 : 12) : reactDir ? 4 : 6);
     if (crowdedSide) {
       if (twoLine) y += reactDir ? 14 : 11;
+      // Neighbouring twins: the inner one's bubble sits at shoulder height, clear of his brother's.
       // Neighbours stand at different heights: stay below his head and his own head-height bubble too.
       const nb = bathroom.slots[g.index + turn]?.occupant;
       const ng = layout.slots[g.index + turn];
@@ -218,7 +344,7 @@ function chatBubbles(
     }
     return (
       <g key={`talk-${g.index}`} className={reactDir ? 'us-talk us-reaction' : 'us-talk'}>
-        <SideBubble x={head.x + turn * 19} y={y} text={text} dir={turn} small={!reactDir} />
+        <SideBubble x={head.x + turn * 19} y={y} text={text} dir={turn} small={!reactDir} sceneW={layout.width} />
       </g>
     );
   });
@@ -226,10 +352,19 @@ function chatBubbles(
 
 /** Scene-space centre of a standing guy's head (accounts for the drunk's and peeper's tilt). */
 function headPoint(guy: Guy, cx: number): { x: number; y: number; top: number } {
-  const s = heightScale(guy.look.height);
+  const q = guy.quirk;
+  if (partWidth(q) > 1) {
+    // Multi-urinal guys: measured from the middle of their span, whichever part's slot we were given.
+    const mx = spanCentre(q, guy.part, cx);
+    if (q === 'mascot') return { x: mx, y: FEET_Y + MASCOT_HEAD_Y * MASCOT_SCALE, top: FEET_Y + MASCOT_TOP * MASCOT_SCALE };
+    if (q === 'sumo') return { x: mx, y: FEET_Y + SUMO_HEAD_Y, top: FEET_Y + SUMO_TOP };
+    return { x: mx - 58 * NAPPER_SCALE, y: FEET_Y - 18 * NAPPER_SCALE, top: FEET_Y - 31 * NAPPER_SCALE };
+  }
+  const s = figureScale(q, guy.look.height);
+  const rise = figureRise(q);
   const rad = (bodyTilt(guy) * Math.PI) / 180;
-  const r = 163 * s;
-  const rt = -guyTop(guy.look.height);
+  const r = (163 + rise) * s;
+  const rt = (GUY_H + rise) * s;
   return { x: cx + Math.sin(rad) * r, y: FEET_Y - Math.cos(rad) * r, top: FEET_Y - Math.cos(rad) * rt };
 }
 
@@ -249,15 +384,23 @@ export function BathroomScene(props: BathroomSceneProps) {
   const firedRef = useRef<string | null>(null);
   const onWalkDoneRef = useRef(onWalkDone);
   onWalkDoneRef.current = onWalkDone;
+  const beatTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(beatTimer.current), []);
   // The walker calls this when it arrives (also for an instant/restored arrival, on the next tick).
+  // A live walk holds a short beat at the urinal before the grade shows.
   const handleArrive = useCallback(() => {
     if (walkKey === null) return;
-    setArrivedKey(walkKey);
-    if (firedRef.current !== walkKey) {
-      firedRef.current = walkKey;
-      onWalkDoneRef.current?.();
-    }
-  }, [walkKey]);
+    const land = () => {
+      setArrivedKey(walkKey);
+      if (firedRef.current !== walkKey) {
+        firedRef.current = walkKey;
+        onWalkDoneRef.current?.();
+      }
+    };
+    window.clearTimeout(beatTimer.current);
+    if (reducedMotion || arrivedKey === walkKey) land();
+    else beatTimer.current = window.setTimeout(land, REVEAL_BEAT_MS);
+  }, [walkKey, reducedMotion, arrivedKey]);
   // Pick cleared (e.g. replaying the same room): the next pick walks and reports again.
   useEffect(() => {
     if (walkKey === null) {
@@ -324,7 +467,18 @@ export function BathroomScene(props: BathroomSceneProps) {
     const items: { i: number; x: number }[] = [];
     layout.slots.forEach((g) => {
       const guy = bathroom.slots[g.index].occupant;
-      if (guy && guy.quirk !== 'normal' && g.kind === 'urinal') items.push({ i: g.index, x: headPoint(guy, g.cx).x });
+      if (!guy || guy.quirk === 'normal' || isTrailingPart(guy)) return;
+      // A guy in a stall has his chip over the door: spread it with the rest.
+      if (g.kind === 'stall') {
+        items.push({ i: g.index, x: g.cx });
+        return;
+      }
+      // The napper's chip sits over the middle of him, not over his head.
+      const x =
+        guy.quirk === 'napper'
+          ? spanCentre('napper', guy.part, g.cx) + NAPPER_CHIP_DX
+          : headPoint(guy, g.cx).x;
+      items.push({ i: g.index, x });
     });
     return new Map(spreadChips(items, CHIP_W).map((c) => [c.i, c.x]));
   }, [layout, bathroom]);
@@ -352,13 +506,55 @@ export function BathroomScene(props: BathroomSceneProps) {
   // left: we see him from behind), the poles on his right. Between two tourists, the pack wins.
   const gear = useMemo(() => {
     const out: { index: number; kind: 'pack' | 'poles' }[] = [];
+    const is = (j: number, q: Guy['quirk']) => bathroom.slots[j]?.kind === 'urinal' && bathroom.slots[j].occupant?.quirk === q;
     for (const i of gearBlocked(bathroom)) {
       if (bathroom.slots[i].flag === 'broken') continue; // keep the OUT OF ORDER sign readable
-      const packOwner = bathroom.slots[i + 1]?.occupant?.quirk === 'tourist' && bathroom.slots[i + 1].kind === 'urinal';
-      out.push({ index: i, kind: packOwner ? 'pack' : 'poles' });
+      // Only the tourist's gear goes in here; Gym Bro's arm and the knight's shield are drawn on their own.
+      if (!is(i - 1, 'tourist') && !is(i + 1, 'tourist')) continue;
+      out.push({ index: i, kind: is(i + 1, 'tourist') ? 'pack' : 'poles' });
     }
     return out;
   }, [bathroom]);
+  // The knight's kite shield, propped in the urinal on his shield side (side = toward him).
+  const shields = useMemo(() => {
+    const out: { index: number; side: -1 | 1 }[] = [];
+    const blocked = gearBlocked(bathroom);
+    bathroom.slots.forEach((sl, j) => {
+      const g = sl.occupant;
+      if (sl.kind !== 'urinal' || g?.quirk !== 'knight') return;
+      const i = g.lean === 'left' ? j - 1 : j + 1;
+      if (blocked.has(i) && bathroom.slots[i].flag !== 'broken' && !out.some((o) => o.index === i)) out.push({ index: i, side: i < j ? 1 : -1 });
+    });
+    return out;
+  }, [bathroom]);
+  // The germaphobe keeps flushing: the empty urinals right beside him are wet.
+  const wetAt = useMemo(() => {
+    const out = new Set<number>();
+    bathroom.slots.forEach((sl, j) => {
+      if (sl.kind !== 'urinal' || sl.occupant?.quirk !== 'germ') return;
+      for (const i of [j - 1, j + 1]) {
+        const n = bathroom.slots[i];
+        if (n?.kind === 'urinal' && !n.occupant && n.flag !== 'sink' && n.flag !== 'broken') out.add(i);
+      }
+    });
+    return [...out];
+  }, [bathroom]);
+  // Security: a flashlight beam from his hand to the stall (or just ahead of him, with no stall).
+  const beams = useMemo(() => {
+    const out: { guy: number; x: number; y: number; tx: number; ty: number; spread: number }[] = [];
+    bathroom.slots.forEach((sl, j) => {
+      const g = sl.occupant;
+      if (sl.kind !== 'urinal' || g?.quirk !== 'security') return;
+      const side = propSideFor(bathroom, j);
+      const sc = figureScale('security', g.look.height);
+      const x = layout.slots[j].cx + side * FLASH_X * sc;
+      const y = FEET_Y + FLASH_Y * sc;
+      const st = nearestStall(bathroom, j);
+      if (st !== undefined) out.push({ guy: j, x, y, tx: layout.slots[st].cx, ty: 140, spread: 44 });
+      else out.push({ guy: j, x, y, tx: x + side * 46, ty: y - 10, spread: 12 });
+    });
+    return out;
+  }, [bathroom, layout]);
 
   const rootClass = ['urinal-scene', reducedMotion ? 'us-reduced' : '', locked ? 'us-locked' : 'us-live', className ?? '']
     .filter(Boolean)
@@ -418,6 +614,14 @@ export function BathroomScene(props: BathroomSceneProps) {
           <Draft key={`draft-${i}`} layout={layout} fromX={headPoint(bathroom.slots[i].occupant as Guy, layout.slots[i].cx).x} animate={!reducedMotion} />
         ))}
 
+        {/* a Clear: the zones you dodged flash up faintly, then fade */}
+        {!reducedMotion &&
+          reveal?.dodged.map((band) => {
+            const sp = spanOf(layout, band.lo, band.hi);
+            return (
+              <rect key={`dodged-${band.occupant}`} x={sp.x0 + 2} y={FLOOR_Y + 4} width={sp.x1 - sp.x0 - 4} height={FEET_Y + 16 - FLOOR_Y - 4} rx={6} className="us-dodged" aria-hidden="true" />
+            );
+          })}
         {/* red zone bands (behind fixtures) */}
         {reveal?.bands.map((band) => {
           const sp = spanOf(layout, band.lo, band.hi);
@@ -435,6 +639,12 @@ export function BathroomScene(props: BathroomSceneProps) {
           if (g.kind === 'stall') {
             return <Stall key={`fx-${g.index}`} g={g} occupant={slot.occupant} you={youInStall && picked === g.index} />;
           }
+          if (g.flag === 'sink') {
+            const gb = slot.occupant?.quirk === 'gymbro' ? slot.occupant : undefined;
+            const gl = gb ? resolveLook(gb.look, 'gymbro') : undefined;
+            const reflection = gb && gl ? { side: (gb.lean === 'left' ? -1 : 1) as -1 | 1, skin: gl.skin, hair: gl.hair?.color ?? null, tank: gl.shirt } : undefined;
+            return <Sink key={`fx-${g.index}`} cx={g.cx} reflection={reflection} />;
+          }
           return <Urinal key={`fx-${g.index}`} cx={g.cx} low={g.flag === 'low'} broken={g.flag === 'broken'} />;
         })}
         {layout.dividers.map((d) => (
@@ -449,6 +659,18 @@ export function BathroomScene(props: BathroomSceneProps) {
             <TrekPoles key={`gear-${index}`} cx={g.cx} low={g.flag === 'low'} />
           );
         })}
+        {/* the knight's shield in the urinal on his shield side */}
+        {shields.map(({ index, side }) => (
+          <KnightShield key={`shield-${index}`} cx={layout.slots[index].cx} low={layout.slots[index].flag === 'low'} side={side} />
+        ))}
+        {/* germaphobe: the urinals beside him are wet */}
+        {wetAt.map((i) => (
+          <WetUrinal key={`wet-u-${i}`} cx={layout.slots[i].cx} low={layout.slots[i].flag === 'low'} />
+        ))}
+        {/* security: the flashlight beam, behind the men */}
+        {beams.map((bm) => (
+          <FlashBeam key={`beam-${bm.guy}`} x={bm.x} y={bm.y} tx={bm.tx} ty={bm.ty} spread={bm.spread} />
+        ))}
         {/* FaceTime: a viewfinder over everything his camera can see (in front of urinals, behind men) */}
         {cameraSpans.map((c) => (
           <CameraFrame key={`cam-${c.guy}`} layout={layout} lo={c.lo} hi={c.hi} recAt={c.recAt} />
@@ -476,6 +698,7 @@ export function BathroomScene(props: BathroomSceneProps) {
 
         {/* reveal rings and green checks: behind the men, so legs and every speech bubble sit on top */}
         {reveal?.grade && pickedSlot && <Ring layout={layout} index={pickedSlot.index} color={GRADES[reveal.grade].color} ink={GRADES[reveal.grade].ink} />}
+        {reveal?.grade === 'clear' && pickedSlot && !reducedMotion && <Sparkle cx={pickedSlot.cx} />}
         {reveal?.missedGreens.map((i) => (
           <g key={`green-${i}`}>
             <Ring layout={layout} index={i} color={GRADES.clear.color} ink={GRADES.clear.ink} dashed />
@@ -489,11 +712,30 @@ export function BathroomScene(props: BathroomSceneProps) {
           const guy = slot.occupant;
           if (!guy) return null;
           const dir = reactorDir.get(g.index);
+          if (g.kind === 'urinal' && isTrailingPart(guy)) return null; // drawn once, from his first slot
+          if (g.kind === 'urinal' && partWidth(guy.quirk) > 1) {
+            // React if any slot of his reacted (they all carry his zone).
+            const w = partWidth(guy.quirk);
+            let rd: -1 | 1 | undefined;
+            for (let p = 0; p < w && !rd; p++) rd = reactorDir.get(g.index + p);
+            return (
+              <BigOccupant
+                key={`occ-${g.index}`}
+                guy={guy}
+                cx={g.cx}
+                index={g.index}
+                turn={headTurn(guy, bathroom, g.index, rd)}
+                chipX={chipX.get(g.index)}
+                reduced={!!reducedMotion}
+                reacting={!!rd}
+              />
+            );
+          }
           if (g.kind === 'stall') {
             return (
               <g key={`occ-${g.index}`} className="us-occupant">
                 <title>{`${guy.name}: ${guy.blurb}`}</title>
-                <QuirkChip x={g.cx} y={STALL_TOP_Y + 52} quirk={guy.quirk} mood={guy.mood} />
+                <QuirkChip x={chipX.get(g.index) ?? g.cx} y={STALL_TOP_Y + 52} quirk={guy.quirk} mood={guy.mood} />
               </g>
             );
           }
@@ -503,10 +745,13 @@ export function BathroomScene(props: BathroomSceneProps) {
               guy={guy}
               cx={g.cx}
               index={g.index}
-              turn={headTurn(guy, bathroom.door, dir)}
+              turn={headTurn(guy, bathroom, g.index, dir, picked)}
               chipX={chipX.get(g.index)}
               propSide={guy.quirk === 'facetime' && dir ? dir : propSideFor(bathroom, g.index)}
               straddle={slot.flag === 'puddle'}
+              reacting={!!dir}
+              flexReach={guy.quirk !== 'gymbro' || !bathroom.slots[g.index + (guy.lean === 'left' ? -1 : 1)]?.occupant}
+              flexRoom={guy.quirk !== 'gymbro' || !bathroom.slots[g.index + (guy.lean === 'left' ? 1 : -1)]?.occupant}
             />
           );
         })}
@@ -535,6 +780,13 @@ export function BathroomScene(props: BathroomSceneProps) {
           const guy = bathroom.slots[index].occupant;
           if (!guy) return null;
           const stall = g.kind === 'stall';
+          if (stall && guy.quirk === 'boss') return null; // he's hiding; his door line stays as it is
+          // A multi-urinal guy says it once, from the first of his slots that reacted.
+          if (!stall && partWidth(guy.quirk) > 1) {
+            const first = index - (guy.part ?? 0);
+            const firstReactor = reveal.reactors.find((r) => r.index >= first && r.index < first + partWidth(guy.quirk));
+            if (firstReactor?.index !== index) return null;
+          }
           if (!stall && isChatty(guy.quirk)) return null; // chatBubbles turns his bubble to you
           const head = stall ? { x: g.cx, y: STALL_TOP_Y + 14 } : headPoint(guy, g.cx);
           const text = stall
@@ -545,7 +797,9 @@ export function BathroomScene(props: BathroomSceneProps) {
                 : guy.quirk === 'gassy'
                   ? null
                   : (REACTION_TEXT[guy.quirk] ?? '!')
-            : REACTION_TEXT[guy.quirk];
+            : guy.quirk === 'shy'
+              ? pickLine(SHY_LINES, guy.name, 'Nope. Nope.')
+              : REACTION_TEXT[guy.quirk];
           if (guy.quirk === 'gassy') {
             // PFFT over him (at his hip, downwind side); the cloud on "you" is drawn in its own layer.
             const lean: -1 | 1 = guy.lean === 'left' ? -1 : 1;
@@ -573,7 +827,7 @@ export function BathroomScene(props: BathroomSceneProps) {
                     <FaceTimePhone />
                   </g>
                 </g>
-                <SideBubble x={px} y={py} text={FACETIME_REACTION} dir={dir} small />
+                <SideBubble x={px} y={py} text={FACETIME_REACTION} dir={dir} small sceneW={W} />
               </g>
             );
           }
@@ -587,18 +841,17 @@ export function BathroomScene(props: BathroomSceneProps) {
               {/* right next to you, a wordy bubble drops to shoulder height so it doesn't cover your head */}
               {text && (
                 <SideBubble
-                  x={head.x + dir * 19}
-                  y={head.y + (text.length > 3 && Math.abs((reveal.picked ?? index) - index) === 1 ? 30 : 4)}
+                  x={head.x + dir * (guy.quirk === 'mascot' && !stall ? 50 : guy.quirk === 'sumo' && !stall ? 26 : 19)}
+                  y={Math.max(30, head.y + (text.length > 3 && Math.abs((reveal.picked ?? index) - index) === 1 ? 30 : 4))}
                   text={text}
                   dir={dir}
+                  sceneW={W}
                 />
               )}
             </g>
           );
         })}
 
-        {/* talkers (the pilot, the crypto bro, the finance bro on speaker) never stop talking */}
-        {chatBubbles(layout, bathroom, reactorDir, reveal?.picked, false)}
 
         {/* after the pick, puffs drift from each gassy guy toward the door (where his smell goes), out to the
             edge of his reach: they only reach you if you're downwind and inside it */}
@@ -638,11 +891,11 @@ export function BathroomScene(props: BathroomSceneProps) {
           )}
 
 
-        {/* long reactions (the pilot's correction, the finance bro's invite) on top */}
-        {chatBubbles(layout, bathroom, reactorDir, reveal?.picked, true)}
-
         {/* crowd stats: what share of players picked each spot (after the reveal) */}
         {reveal && crowd && <CrowdLabels layout={layout} bathroom={bathroom} crowd={crowd} />}
+
+        {/* talkers (the pilot, the crypto bro, the finance bro on speaker, the knight) never stop talking: on top of everything */}
+        {chatBubbles(layout, bathroom, reactorDir, reveal?.picked)}
 
         {/* pickable hit areas */}
         {!locked &&
@@ -691,6 +944,27 @@ function Footprints({ cx }: { cx: number }) {
     <g className="us-footprints">
       <ellipse cx={cx - 9} cy={FEET_Y - 1} rx={7} ry={3.6} />
       <ellipse cx={cx + 9} cy={FEET_Y - 1} rx={7} ry={3.6} />
+    </g>
+  );
+}
+
+/** A Clear: three small glints rise off the top of the ring and fade. Plays once. */
+function Sparkle({ cx }: { cx: number }) {
+  const glints = [
+    { dx: -18, delay: 0, s: 1 },
+    { dx: 4, delay: 90, s: 1.3 },
+    { dx: 20, delay: 170, s: 0.85 },
+  ];
+  return (
+    <g className="us-sparkle" aria-hidden="true">
+      {glints.map((g, i) => (
+        <path
+          key={i}
+          d="M0,-6 Q0.9,-0.9 6,0 Q0.9,0.9 0,6 Q-0.9,0.9 -6,0 Q-0.9,-0.9 0,-6 Z"
+          transform={`translate(${cx + g.dx} ${HIT_TOP + 8}) scale(${g.s})`}
+          style={{ animationDelay: `${g.delay}ms` }}
+        />
+      ))}
     </g>
   );
 }
@@ -772,33 +1046,66 @@ interface OccupantProps {
   propSide: -1 | 1;
   /** Standing over a puddle: legs spread wide. */
   straddle?: boolean;
+  /** He's reacting to you (the shy guy freaks out). */
+  reacting?: boolean;
+  /** Gym Bro: room to stretch his flexing arm over the next urinal. */
+  flexReach?: boolean;
+  /** Gym Bro: room for his other arm out over his own sink. */
+  flexRoom?: boolean;
 }
 
-function Occupant({ guy, cx, index, turn, chipX, propSide, straddle }: OccupantProps) {
-  const look = useMemo(() => resolveLook(guy.look, guy.quirk), [guy.look, guy.quirk]);
+/** Extra height (unscaled) of a hat or helmet over the head, so the chip sits clear of it. */
+function hatRise(q: Guy['quirk']): number {
+  if (q === 'pilot') return PILOT_CAP_RISE;
+  if (q === 'tourist') return TOURIST_HAT_RISE;
+  if (q === 'security') return SECURITY_CAP_RISE;
+  if (q === 'knight') return KNIGHT_HELM_RISE;
+  return 0;
+}
+
+function Occupant({ guy, cx, index, turn, chipX, propSide, straddle, reacting, flexReach, flexRoom }: OccupantProps) {
+  const look = useMemo(() => resolveLook(guy.look, guy.quirk, guy.name), [guy.look, guy.quirk, guy.name]);
+  const blurId = `us-blur-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const tilt = bodyTilt(guy);
   const head = headPoint(guy, cx);
   const drunk = guy.quirk === 'drunk';
+  const q = guy.quirk;
+  const friend = q === 'friend' ? friendVariant(guy.name) : undefined;
+  const s = figureScale(q, guy.look.height);
+  // The rookie's head is at the top edge: his chip rides at his waist instead.
+  const chipY = q === 'rookie' ? FEET_Y - 84 * legStretch(q) * s + 24 : head.top - 5 - hatRise(q) * s;
+  const motion = drunk ? 'us-wobble' : q === 'knight' ? 'us-clank' : q === 'shy' && reacting ? 'us-shake' : 'us-sway';
   return (
     <g className={`us-occupant us-occupant-${guy.quirk}`}>
+      {/* Bigfoot: always a little out of focus, like every photo of him */}
+      {q === 'bigfoot' && (
+        <filter id={blurId} x="-10%" y="-5%" width="120%" height="110%">
+          <feGaussianBlur stdDeviation={0.6} />
+        </filter>
+      )}
       <title>{`${guy.name}: ${guy.blurb}`}</title>
       {guy.quirk === 'splasher' && (
         <g transform={`translate(${cx},${FEET_Y})`}>
           <SplashPuddle />
         </g>
       )}
-      <g transform={`translate(${cx},${FEET_Y})${tilt ? ` rotate(${tilt})` : ''}`}>
-        <g
-          className={drunk ? 'us-wobble' : 'us-sway'}
-          style={{ animationDelay: `${-((index * 0.61) % 2.4).toFixed(2)}s` }}
-        >
+      <g
+        transform={`translate(${cx},${FEET_Y})${tilt ? ` rotate(${tilt})` : ''}`}
+        filter={q === 'bigfoot' ? `url(#${blurId})` : undefined}
+      >
+        <g className={motion} style={{ animationDelay: `${-((index * 0.61) % 2.4).toFixed(2)}s` }}>
           <GuyFigure
             look={look}
+            hoodie={q === 'doppel'}
             quirk={guy.quirk}
             turn={turn}
-            talking={isChatty(guy.quirk) || guy.quirk === 'facetime'}
+            talking={isChatty(guy.quirk) || guy.quirk === 'facetime' || (q === 'shy' && reacting)}
             propSide={propSide}
             straddle={straddle ? 1 : 0}
+            friend={friend}
+            flexReach={flexReach}
+            flexRoom={flexRoom}
+            nod={friend === 'dave'}
           />
         </g>
       </g>
@@ -810,11 +1117,42 @@ function Occupant({ guy, cx, index, turn, chipX, propSide, straddle }: OccupantP
       {/* chip stays upright even when the guy leans; the drunk's and peeper's point the long way */}
       <QuirkChip
         x={chipX ?? head.x}
-        y={head.top - 5 - (guy.quirk === 'pilot' ? PILOT_CAP_RISE : guy.quirk === 'tourist' ? TOURIST_HAT_RISE : 0) * heightScale(guy.look.height)}
+        y={chipY}
         quirk={guy.quirk}
         lean={guy.quirk === 'drunk' || guy.quirk === 'peeper' ? guy.lean : undefined}
         mood={guy.mood}
       />
+    </g>
+  );
+}
+
+interface BigOccupantProps {
+  guy: Guy;
+  /** Centre of his first slot. */
+  cx: number;
+  index: number;
+  turn: -1 | 0 | 1;
+  chipX?: number;
+  reduced: boolean;
+  reacting: boolean;
+}
+
+/** The guys who fill more than one urinal (the napper, the wolf mascot, the sumo): drawn once across all of them. */
+function BigOccupant({ guy, cx, index, turn, chipX, reduced, reacting }: BigOccupantProps) {
+  const look = useMemo(() => resolveLook(guy.look, guy.quirk, guy.name), [guy.look, guy.quirk, guy.name]);
+  const q = guy.quirk;
+  const mx = spanCentre(q, guy.part, cx);
+  const head = headPoint(guy, cx);
+  const napper = q === 'napper';
+  return (
+    <g className={`us-occupant us-occupant-${q}`}>
+      <title>{`${guy.name}: ${guy.blurb}`}</title>
+      <g transform={`translate(${mx},${FEET_Y})`}>
+        <g className={napper ? undefined : 'us-sway'} style={{ animationDelay: `${-((index * 0.61) % 2.4).toFixed(2)}s` }}>
+          {napper ? <NapperFigure look={look} reduced={reduced} /> : q === 'mascot' ? <WolfMascot turn={turn} talking={reacting} /> : <SumoFigure look={look} />}
+        </g>
+      </g>
+      <QuirkChip x={chipX ?? (napper ? mx + NAPPER_CHIP_DX : mx)} y={napper ? FEET_Y - 50 : head.top - 4} quirk={q} />
     </g>
   );
 }

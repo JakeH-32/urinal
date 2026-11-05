@@ -1,7 +1,7 @@
 import { writeFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { Round } from '../types';
-import { evaluate } from './code';
+import { actsNormal, evaluate, zoneCovers } from './code';
 import { dateKeyOf } from './daily';
 import { SMALL_ROOM, dailyDifficulties, dailyRoundSeed, dailyRounds, generateRound, isTrap, naivePicks, practiceDifficulty, practiceRound, warmupRounds } from './generate';
 import { decodePracticeCode } from './rng';
@@ -68,7 +68,13 @@ describe('400 days of dailies', () => {
         const pick = ev.slots.filter((s) => s.pickable);
         const broke = pick.filter((s) => s.grade === 'amber' || s.grade === 'doctor').length;
         const straw = pick.filter((s) => s.grade === 'straw').length;
-        const guys = b.slots.flatMap((s) => (s.occupant ? [s.occupant] : []));
+        // One entry per person: a two-urinal guy fills two slots, and a set of twins counts as one.
+        const guys = b.slots.flatMap((s, i) => {
+          const g = s.occupant;
+          if (!g || (g.part ?? 0) > 0) return [];
+          if (g.quirk === 'twin' && b.slots[i - 1]?.occupant?.quirk === 'twin' && b.slots[i - 1]?.occupant?.group === g.group) return [];
+          return [g];
+        });
 
         expect(n, where).toBeGreaterThanOrEqual(2);
         expect(n, where).toBeLessThanOrEqual(10);
@@ -85,7 +91,7 @@ describe('400 days of dailies', () => {
 
         // d3+: never a single free spot.
         if (r.difficulty >= 3) expect(b.slots.filter((s) => !s.occupant && s.flag !== 'broken').length, where).toBeGreaterThanOrEqual(2);
-        // People: unique names, sane looks, lean only on lopsided quirks, nobody in a stall.
+        // People: unique names, sane looks, lean only on lopsided quirks, only the boss in a stall.
         expect(new Set(guys.map((g) => g.name)).size, where).toBe(guys.length);
         for (const g of guys) {
           expect(g.name.length).toBeGreaterThan(0);
@@ -95,14 +101,16 @@ describe('400 days of dailies', () => {
           expect(g.look.hair).toBeLessThanOrEqual(5);
           expect(g.look.skin).toBeLessThanOrEqual(4);
           expect(g.look.height).toBeLessThanOrEqual(2);
-          expect(g.lean !== undefined).toBe(g.quirk === 'drunk' || g.quirk === 'peeper' || g.quirk === 'facetime' || g.quirk === 'gassy' || g.quirk === 'pastor');
+          expect(g.lean !== undefined).toBe(g.quirk === 'drunk' || g.quirk === 'peeper' || g.quirk === 'facetime' || g.quirk === 'gassy' || g.quirk === 'pastor' || g.quirk === 'gymbro' || g.quirk === 'knight');
           if (g.quirk === 'gassy' || g.quirk === 'pastor') expect(g.lean, where).toBe(b.door);
         }
-        for (const s of b.slots) if (s.kind === 'stall') expect(s.occupant).toBeUndefined();
+        for (const s of b.slots) if (s.kind === 'stall' && s.occupant) expect(s.occupant.quirk).toBe('boss'); // only the boss, hiding (just for fun)
 
         // Difficulty shape: a smooth ramp.
-        const quirks = guys.filter((g) => g.quirk !== 'normal').map((g) => g.quirk);
-        const hasStall = b.slots.some((s) => s.kind === 'stall');
+        // Rare look-alikes (the rookie, the doppelganger, Bigfoot) play by regular rules, so they count as plain guys here.
+        const inStall = new Set(b.slots.filter((s) => s.kind === 'stall').map((s) => s.occupant));
+        const quirks = guys.filter((g) => !actsNormal(g) && !inStall.has(g)).map((g) => g.quirk); // the stall boss is just for fun
+        const hasStall = b.slots.some((s) => s.kind === 'stall' && !s.occupant);
         const hasDivider = b.dividers.some(Boolean);
         if (r.difficulty <= 2) {
           expect(quirks, where).toEqual([]);
@@ -114,10 +122,10 @@ describe('400 days of dailies', () => {
         }
         if (r.difficulty === 3) {
           expect(quirks).toHaveLength(1);
-          expect(['talker', 'splasher', 'facetime', 'inlaw', 'pastor', 'pilot', 'tourist', 'crypto']).toContain(quirks[0]);
+          expect(['talker', 'splasher', 'facetime', 'inlaw', 'pastor', 'pilot', 'tourist', 'crypto', 'twin', 'napper', 'germ', 'security', 'friend', 'dropper', 'knight', 'sumo']).toContain(quirks[0]);
         }
-        if (r.difficulty === 4) for (const q of quirks) expect(['talker', 'splasher', 'facetime', 'inlaw', 'pastor', 'pilot', 'tourist', 'crypto']).toContain(q);
-        if (r.difficulty === 5) expect(quirks.some((q) => q === 'boss' || q === 'drunk' || q === 'gassy' || q === 'peeper' || q === 'finance'), where).toBe(true);
+        if (r.difficulty === 4) for (const q of quirks) expect(['talker', 'splasher', 'facetime', 'inlaw', 'pastor', 'pilot', 'tourist', 'crypto', 'twin', 'napper', 'germ', 'security', 'friend', 'dropper', 'knight', 'sumo']).toContain(q);
+        if (r.difficulty === 5) expect(guys.map((g) => g.quirk).some((q) => q === 'boss' || q === 'drunk' || q === 'gassy' || q === 'peeper' || q === 'finance' || q === 'shy' || q === 'mascot' || q === 'gymbro'), where).toBe(true);
         if (r.difficulty <= 4) expect(ev.slots[ev.greens[0]].reason).not.toBe('stall-forced');
       }
     }
@@ -152,7 +160,7 @@ describe('400 days of dailies', () => {
     // Stalls are rare: d6 stall answers stay under 12%, and under 8% of all rooms have a stall at all.
     expect(pct(6, 'clear:stall-forced')).toBeLessThanOrEqual(0.12);
     const rooms = ALL.flat();
-    const withStall = rooms.filter((r) => r.bathroom.slots.some((s) => s.kind === 'stall')).length;
+    const withStall = rooms.filter((r) => r.bathroom.slots.some((s) => s.kind === 'stall' && !s.occupant)).length;
     expect(withStall / rooms.length).toBeLessThan(0.08);
     expect(pct(6, 'clear:only-option')).toBeGreaterThan(0.03);
     // Small rooms show up ~20% on d2..d6.
@@ -197,4 +205,57 @@ describe('daily shape and warm-up', () => {
     for (const r of rs) expect(evaluate(r.bathroom).greens).toHaveLength(1);
     expect(JSON.stringify(warmupRounds())).toBe(JSON.stringify(rs));
   });
+});
+
+describe('empty room', () => {
+  it('is rare, and its one answer is the far end from the door', () => {
+    let empties = 0;
+    for (let seed = 0; seed < 4000; seed++) {
+      const r = practiceRound(seed);
+      if (r.bathroom.slots.some((x) => x.occupant)) continue;
+      empties++;
+      const ev = evaluate(r.bathroom);
+      expect(ev.greens).toEqual([r.bathroom.door === 'left' ? r.bathroom.slots.length - 1 : 0]);
+    }
+    expect(empties).toBeGreaterThan(15);
+    expect(empties).toBeLessThan(80);
+  }, 30000);
+});
+
+describe('shy guy and germaphobe', () => {
+  it('never spawns with someone already in his space (and security always has a stall)', () => {
+    let seen = 0;
+    for (let seed = 1; seed <= 800; seed++) {
+      for (const d of [5, 6] as const) {
+        const b = generateRound(seed, d, 't').bathroom;
+        b.slots.forEach((s, j) => {
+          if (s.occupant?.quirk !== 'shy' && s.occupant?.quirk !== 'germ') return;
+          seen++;
+          expect(zoneCovers(b, j).filter((k) => b.slots[k].occupant)).toEqual([]);
+        });
+        if (b.slots.some((s) => s.occupant?.quirk === 'security')) expect(b.slots.some((s) => s.kind === 'stall')).toBe(true);
+        b.slots.forEach(() => {
+        });
+      }
+    }
+    expect(seen).toBeGreaterThan(20);
+  }, 30000);
+});
+
+describe('boss in a stall', () => {
+  it('turns up now and then and never changes a grade', () => {
+    let seen = 0;
+    for (let seed = 1; seed <= 1500; seed++) {
+      const r = generateRound(seed, 5, 't');
+      const last = r.bathroom.slots[r.bathroom.slots.length - 1];
+      if (last.kind !== 'stall' || last.occupant?.quirk !== 'boss') continue;
+      seen++;
+      const without = { ...r.bathroom, slots: r.bathroom.slots.slice(0, -1), dividers: r.bathroom.dividers.slice(0, -1) };
+      const a = evaluate(r.bathroom);
+      const b = evaluate(without);
+      expect(a.greens).toEqual(b.greens);
+      for (const s of b.slots) expect(a.slots[s.index].grade).toBe(s.grade);
+    }
+    expect(seen).toBeGreaterThan(5);
+  }, 30000);
 });

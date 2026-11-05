@@ -52,7 +52,7 @@ export interface Rng {
   fork(label: string): Rng;
 }
 
-export type Quirk = 'normal' | 'talker' | 'splasher' | 'boss' | 'drunk' | 'facetime' | 'gassy' | 'inlaw' | 'pastor' | 'peeper' | 'pilot' | 'tourist' | 'crypto' | 'finance';
+export type Quirk = 'normal' | 'talker' | 'splasher' | 'boss' | 'drunk' | 'facetime' | 'gassy' | 'inlaw' | 'pastor' | 'peeper' | 'pilot' | 'tourist' | 'crypto' | 'finance' | 'gymbro' | 'twin' | 'napper' | 'shy' | 'mascot' | 'security' | 'germ' | 'friend' | 'rookie' | 'doppel' | 'bigfoot' | 'dropper' | 'knight' | 'sumo';
 export type Side = 'left' | 'right';
 export type BossMood = 'happy' | 'stressed' | 'angry';
 
@@ -72,15 +72,21 @@ export interface Guy {
    * angry = 3. Unset reads as stressed.
    */
   mood?: BossMood;
+  /** Twins and triplets: guys with the same group act as one (crowd one, you crowd them all). */
+  group?: number;
+  /** Guys wider than one urinal (the napper and mascot take two, the sumo three): which piece of him this slot holds. */
+  part?: 0 | 1 | 2;
   /** Display name + one-line description, filled from content pools. */
   name: string;
   blurb: string;
   /** Cosmetic, seeded: index into the scene's palettes. */
-  look: { shirt: number; pants: number; hair: number; skin: number; height: number; bald: boolean };
+  /** `jersey`: the rookie's number (1-99). */
+  look: { shirt: number; pants: number; hair: number; skin: number; height: number; bald: boolean; jersey?: number };
 }
 
 export type SlotKind = 'urinal' | 'stall';
-export type UrinalFlag = 'low' | 'puddle' | 'broken';
+/** sink: Gym Bro's sink in a urinal's spot (never pickable). */
+export type UrinalFlag = 'low' | 'puddle' | 'broken' | 'sink';
 
 export interface Slot {
   kind: SlotKind;
@@ -108,6 +114,8 @@ export interface Round {
   /** Set-piece rounds only: the one-line setup that makes the room a puzzle. */
   premise?: string;
   bathroom: Bathroom;
+  /** Legendary rooms only: which one (a Sighting). */
+  legend?: string;
 }
 
 /**
@@ -170,7 +178,17 @@ export type Reason =
   | 'pilot'
   | 'tourist'
   | 'crypto'
-  | 'finance';
+  | 'finance'
+  | 'gymbro'
+  | 'twin'
+  | 'shy'
+  | 'mascot'
+  | 'security'
+  | 'germ'
+  | 'dropper'
+  | 'knight'
+  | 'sumo'
+  | 'missed-friend'; // legal, but a friend's spot (right next to him) was free
 
 export interface SlotAnalysis {
   index: number;
@@ -244,4 +262,6 @@ export interface SaveData {
   seenTutorial: boolean;
   /** True once the first-visit warm-up (three easy rooms before the first daily) is done or skipped. */
   warmupDone: boolean;
+  /** Rare sightings found so far (ids from src/state/sightings.ts). Survives a progress reset. */
+  sightings?: string[];
 }

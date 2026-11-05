@@ -3,6 +3,7 @@
 // blocked (Safari private mode, sandboxed iframes, quota errors...).
 import type { DailyRecord, Grade, PracticeCurrent, Reason, RoundResult, SaveData, Settings } from '../types';
 import { GRADE_ORDER } from '../grades';
+import { isSightingId } from './sightings';
 
 export const STORAGE_KEY = 'urinal:v1';
 export const ROUNDS_PER_DAY = 5;
@@ -38,6 +39,16 @@ const REASON_SET: Record<Reason, true> = {
   tourist: true,
   crypto: true,
   finance: true,
+  gymbro: true,
+  twin: true,
+  shy: true,
+  mascot: true,
+  security: true,
+  germ: true,
+  dropper: true,
+  knight: true,
+  sumo: true,
+  'missed-friend': true,
 };
 
 export const REASONS: readonly Reason[] = Object.keys(REASON_SET) as Reason[];
@@ -54,6 +65,7 @@ export function defaultSave(): SaveData {
     practice: { played: 0, greens: 0, bestRun: 0 },
     seenTutorial: false,
     warmupDone: false,
+    sightings: [],
   };
 }
 
@@ -152,6 +164,12 @@ export function withPracticeCurrent(save: SaveData, current: PracticeCurrent): S
   return { ...save, practice: { ...save.practice, current: { ...current, history } } };
 }
 
+/** Known sighting ids only, no duplicates, in the order they were found. */
+function migrateSightings(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.filter(isSightingId))];
+}
+
 /**
  * Turn anything (parsed JSON, a JSON string, garbage, an older save) into a valid SaveData.
  * Unknown fields are dropped, missing/invalid fields fall back to defaults.
@@ -177,6 +195,7 @@ export function migrate(raw: unknown): SaveData {
     practice,
     seenTutorial: bool(data.seenTutorial, false),
     warmupDone: bool(data.warmupDone, played),
+    sightings: migrateSightings(data.sightings),
   };
 }
 
@@ -235,7 +254,13 @@ export function recordPractice(save: SaveData, grade: Grade, run: number): SaveD
   };
 }
 
-/** Wipe progress but keep settings (and don't force the tutorial or warm-up again). */
+/** Wipe progress but keep settings (and don't force the tutorial or warm-up again). Sightings stay: a find is a find. */
 export function resetProgress(save: SaveData): SaveData {
-  return { ...defaultSave(), settings: { ...save.settings }, seenTutorial: save.seenTutorial, warmupDone: save.warmupDone };
+  return {
+    ...defaultSave(),
+    settings: { ...save.settings },
+    seenTutorial: save.seenTutorial,
+    warmupDone: save.warmupDone,
+    sightings: [...(save.sightings ?? [])],
+  };
 }

@@ -23,11 +23,25 @@ export const QUIRK_BADGES: Record<Quirk, string | null> = {
   tourist: '🎒',
   crypto: '🪙',
   finance: '📞',
+  gymbro: '💪',
+  twin: '👯',
+  napper: '😴',
+  shy: '😳',
+  mascot: '🐺',
+  security: '🔦',
+  germ: '🧤',
+  friend: '🤝',
+  rookie: '🏀',
+  doppel: '🪞',
+  bigfoot: '👣',
+  dropper: '🩳',
+  knight: '🛡️',
+  sumo: '🍙',
 };
 
 /** The slot on its own: unoccupied and not broken. A tourist's gear can still block it; see `canPick`. */
 export function isPickable(slot: Slot): boolean {
-  return !slot.occupant && slot.flag !== 'broken';
+  return !slot.occupant && slot.flag !== 'broken' && slot.flag !== 'sink';
 }
 
 /**
@@ -54,6 +68,7 @@ export function slotLabel(slot: Slot, index: number): string {
     return `Stall ${n}, free`;
   }
   if (slot.flag === 'broken') return `Urinal ${n}, out of order`;
+  if (slot.flag === 'sink') return slot.occupant ? `Sink ${n}, ${QUIRK_STYLE[slot.occupant.quirk].tag.toLowerCase() || 'someone'} at it` : `Sink ${n}`;
   const base = slot.flag === 'low' ? `Low urinal ${n}` : `Urinal ${n}`;
   const extra = slot.flag === 'puddle' ? ', puddle' : '';
   if (slot.occupant) {
@@ -68,11 +83,13 @@ export function slotLabel(slot: Slot, index: number): string {
 
 /** One-sentence summary for the scene's accessible name. */
 export function describeBathroom(b: Bathroom): string {
-  const urinals = b.slots.filter((s) => s.kind === 'urinal').length;
-  const stalls = b.slots.length - urinals;
+  const urinals = b.slots.filter((s) => s.kind === 'urinal' && s.flag !== 'sink').length;
+  const sinks = b.slots.filter((s) => s.flag === 'sink').length;
+  const stalls = b.slots.filter((s) => s.kind === 'stall').length;
   const busy = b.slots.filter((s) => s.occupant).length;
   const parts = [`${urinals} urinal${urinals === 1 ? '' : 's'}`];
   if (stalls) parts.push(`${stalls} stall${stalls === 1 ? '' : 's'}`);
+  if (sinks) parts.push(`${sinks} sink${sinks === 1 ? '' : 's'}`);
   return `Bathroom: ${parts.join(' and ')}, ${busy} occupied, door on the ${b.door}.`;
 }
 
@@ -126,6 +143,8 @@ export interface Reveal {
   missedGreens: number[];
   /** Zone bands to draw (only for an amber/doctor pick). */
   bands: ZoneBand[];
+  /** A Clear: the zones of the nearest guy on each side, flashed faintly to show what you dodged. */
+  dodged: ZoneBand[];
   /** Occupants that react, with the direction toward "you" (-1 = you are to his left). */
   reactors: { index: number; dir: -1 | 1 }[];
 }
@@ -151,7 +170,18 @@ export function buildReveal(evaluation: Evaluation, picked: number | undefined, 
       if (g.lean && g.lean !== youOn) reactors.push({ index: j, dir: picked < j ? -1 : 1 });
     }
   }
-  return { picked, grade, missedGreens, bands, reactors };
+  const dodged: ZoneBand[] = [];
+  if (grade === 'clear' && picked !== undefined && bathroom) {
+    for (const dir of [-1, 1]) {
+      for (let j = picked + dir; j >= 0 && j < bathroom.slots.length; j += dir) {
+        if (!bathroom.slots[j].occupant) continue;
+        const z = zoneOf(evaluation, j);
+        if (z.hi > z.lo) dodged.push(z);
+        break;
+      }
+    }
+  }
+  return { picked, grade, missedGreens, bands, dodged, reactors };
 }
 
 /**

@@ -20,6 +20,22 @@ function slotFor(tok: string): Slot {
     case 'N': return { kind: 'urinal', occupant: guy('normal') };
     case 'T': return { kind: 'urinal', occupant: guy('talker') };
     case 'A': return { kind: 'urinal', occupant: guy('pilot') };
+    case 'Y<': return { kind: 'urinal', flag: 'sink', occupant: guy('gymbro', 'left') };
+    case 'Y>': return { kind: 'urinal', flag: 'sink', occupant: guy('gymbro', 'right') };
+    case 'J': return { kind: 'urinal', occupant: guy('twin') }; // neighbouring J's are one set of twins
+    case 'Z': return { kind: 'urinal', occupant: guy('napper') }; // always in pairs: Z Z
+    case 'Q': return { kind: 'urinal', occupant: guy('mascot') }; // always in pairs: Q Q
+    case 'H': return { kind: 'urinal', occupant: guy('shy') };
+    case 'V': return { kind: 'urinal', occupant: guy('security') };
+    case 'Ge': return { kind: 'urinal', occupant: guy('germ') };
+    case 'Fr': return { kind: 'urinal', occupant: guy('friend') };
+    case 'Rk': return { kind: 'urinal', occupant: guy('rookie') };
+    case 'Dp': return { kind: 'urinal', occupant: guy('doppel') };
+    case 'Bf': return { kind: 'urinal', occupant: guy('bigfoot') };
+    case 'Fd': return { kind: 'urinal', occupant: guy('dropper') };
+    case 'Kn<': return { kind: 'urinal', occupant: guy('knight', 'left') }; // shield in the urinal to his left
+    case 'Kn>': return { kind: 'urinal', occupant: guy('knight', 'right') };
+    case 'Sm': return { kind: 'urinal', occupant: guy('sumo') }; // always three: Sm Sm Sm
     case 'K': return { kind: 'urinal', occupant: guy('tourist') };
     case 'C': return { kind: 'urinal', occupant: guy('crypto') };
     case 'M': return { kind: 'urinal', occupant: guy('finance') };
@@ -57,6 +73,15 @@ export function parseLayout(spec: string, door: Side): Bathroom {
   }
   if (pending) throw new Error(`trailing divider in "${spec}"`);
   for (const s of slots) if (s.occupant?.quirk === 'gassy' || s.occupant?.quirk === 'pastor') s.occupant.lean = door;
+  // Pair up the two-urinal guys (Z Z, Q Q) and group runs of twins (J J or J J J).
+  slots.forEach((s, i) => {
+    const g = s.occupant;
+    if (!g) return;
+    const prev = slots[i - 1]?.occupant;
+    const width = g.quirk === 'sumo' ? 3 : g.quirk === 'napper' || g.quirk === 'mascot' ? 2 : 1;
+    if (width > 1) g.part = (prev?.quirk === g.quirk && prev.part !== undefined && prev.part < width - 1 ? prev.part + 1 : 0) as 0 | 1 | 2;
+    if (g.quirk === 'twin') g.group = prev?.quirk === 'twin' && prev.group !== undefined ? prev.group : i + 1;
+  });
   if (slots.length < 2) throw new Error(`layout needs 2+ slots: "${spec}"`);
   return { slots, dividers, door };
 }

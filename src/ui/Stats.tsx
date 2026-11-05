@@ -5,6 +5,7 @@ import { dailyStats } from '../modes/roundLogic';
 import { LinkButton } from './Button';
 import { HydrationBar } from './HydrationChart';
 import { PerchPuck } from './Puck';
+import { SIGHTINGS } from '../state/sightings';
 
 export function Stats() {
   const { save } = useSave();
@@ -12,6 +13,7 @@ export function Stats() {
   const st = useMemo(() => dailyStats(save, todayKey), [save, todayKey]);
   const max = Math.max(1, ...st.distribution);
   const p = save.practice;
+  const found = new Set(save.sightings ?? []);
 
   const tiles: [string, string][] = [
     ['Played', String(st.played)],
@@ -80,6 +82,36 @@ export function Stats() {
             <dt className="stat-label">Best run</dt>
           </div>
         </dl>
+      </section>
+
+      <section className="card">
+        <h2 className="h3 sightings-head">
+          Sightings
+          <span className="sightings-count">
+            {found.size} of {SIGHTINGS.length}
+          </span>
+        </h2>
+        <ul className="sightings-grid">
+          {SIGHTINGS.map((sg) =>
+            found.has(sg.id) ? (
+              <li key={sg.id} className="sighting is-found" title={sg.rarity}>
+                <span className="sighting-emoji" aria-hidden="true">
+                  {sg.emoji}
+                </span>
+                <span className="sighting-label">{sg.label}</span>
+              </li>
+            ) : (
+              <li key={sg.id} className="sighting is-locked" title={sg.rarity}>
+                <span className="sighting-emoji" aria-hidden="true">
+                  {sg.emoji}
+                </span>
+                <span className="sighting-label">
+                  ???<span className="sighting-sr"> ({sg.rarity}, not found yet)</span>
+                </span>
+              </li>
+            ),
+          )}
+        </ul>
       </section>
 
       <div className="row row--center">

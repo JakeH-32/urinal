@@ -249,6 +249,54 @@ describe('evaluate', () => {
     expect(evaluate(parseLayout('_ N | _ L', 'right')).greens).toEqual([3]);
   });
 
+  it('gym bro: his sink is not a urinal, and his flex blocks the urinal on that side', () => {
+    const b = parseLayout('_ _ Y> _ _ _', 'left');
+    expect(b.slots[2].flag).toBe('sink');
+    expect([...gearBlocked(b)]).toEqual([3]);
+    expect(grades(b)[2]).toBe('-');
+    expect(grades(b)[3]).toBe('-');
+  });
+
+  it('twins are one unit: crowd one, crowd both', () => {
+    const ev = evaluate(parseLayout('_ _ J J _ _', 'left'));
+    expect(ev.slots[1].violatedBy).toEqual([2, 3]);
+  });
+
+  it('the napper lies across two urinals; the urinal beside him is standing over him', () => {
+    const b = parseLayout('_ Z Z _', 'left');
+    expect(b.slots[1].occupant?.part).toBe(0);
+    expect(b.slots[2].occupant?.part).toBe(1);
+    expect(evaluate(b).slots[0].violations).toBe(1);
+    expect(evaluate(b).slots[3].violations).toBe(1);
+  });
+
+  it('the sumo takes three urinals and you can stand right beside him', () => {
+    const b = parseLayout('_ Sm Sm Sm _ _', 'left');
+    expect([1, 2, 3].map((i) => b.slots[i].occupant?.part)).toEqual([0, 1, 2]);
+    const ev = evaluate(b);
+    expect(ev.slots[0].violations).toBe(0);
+    expect(ev.slots[4].violations).toBe(0);
+  });
+
+  it('shy guy needs four empty urinals', () => {
+    expect(zoneCovers(parseLayout('H _ _ _ _ _', 'left'), 0)).toEqual([1, 2, 3, 4]);
+  });
+
+  it('security: the stall is never safe while he is in the room', () => {
+    const ev = evaluate(parseLayout('V _ _ _ _ _ _ S', 'left'));
+    expect(ev.slots[7].violations).toBe(1);
+    expect(ev.slots[7].reason).toBe('security');
+  });
+
+  it('germaphobe: the urinals beside him are wet (worse than a dry spot that breaks the code)', () => {
+    const g = grades(parseLayout('_ Ge _', 'left'));
+    expect(g[0]).not.toBe('C:perfect');
+  });
+
+  it('a friend: right next to him wins, if it is legal', () => {
+    expect(evaluate(parseLayout('_ _ Fr _ _ _ _', 'left')).greens).toEqual([1, 3]);
+  });
+
   it('stall-forced when every urinal violates', () => {
     const b = bath('S _ _ B _', 'left');
     const ev = evaluate(b);
