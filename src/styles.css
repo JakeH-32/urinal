@@ -1448,18 +1448,42 @@ button {
 .puck-perch {
   position: absolute;
   right: 6%;
-  /* Stand on the top edge: his feet sit about 12% up from the bottom of his box. */
-  top: calc(var(--puck-size) * -0.86);
+  /* Sit on the top edge: the bottom of his body is about 66% down his box; his legs hang over the front. */
+  top: calc(var(--puck-size) * -0.64);
   width: var(--puck-size);
   height: var(--puck-size);
   z-index: 3;
   pointer-events: none;
   transform-origin: 50% 90%;
 }
+.wordmark-tile {
+  position: relative;
+}
 .wordmark .puck-perch {
-  right: -10px;
+  right: 50%;
+  margin-right: calc(var(--puck-size) * -0.5);
 }
 /* On a card or title: tucked inside the top-right corner instead of standing on the edge. */
+.puck .puck-leg {
+  transform-box: fill-box;
+  transform-origin: 50% 0%;
+  animation: puck-swing 2.4s ease-in-out infinite;
+}
+.puck .puck-leg-r {
+  animation-delay: -1.2s;
+}
+@keyframes puck-swing {
+  0%, 100% { transform: rotate(-9deg); }
+  50% { transform: rotate(9deg); }
+}
+.reduce-motion .puck .puck-leg {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .puck .puck-leg {
+    animation: none;
+  }
+}
 .puck-perch .puck {
   width: 100%;
   height: 100%;

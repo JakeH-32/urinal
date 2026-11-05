@@ -243,16 +243,28 @@ const HOLES: readonly (readonly [number, number])[] = [
 ];
 
 /** Puck, the mascot. `size` is the rendered width in px. */
-export function Puck({ mood = 'deadpan', size = 96, className }: { mood?: PuckMood; size?: number; className?: string }) {
+export function Puck({ mood = 'deadpan', size = 96, className, perched }: { mood?: PuckMood; size?: number; className?: string; perched?: boolean }) {
   const p = POSE[mood];
   const a = arms(p.arms);
   const y0 = BOT + 30;
   return (
-    <svg className={['puck', className].filter(Boolean).join(' ')} viewBox="0 0 330 330" width={size} height={size} aria-hidden="true">
+    <svg className={['puck', className].filter(Boolean).join(' ')} viewBox="0 0 330 330" overflow="visible" width={size} height={size} aria-hidden="true">
       <g transform="translate(9,8)">
-        <ellipse cx={CX} cy={BOT + 80} rx={90} ry={10} fill={INK} opacity={0.12} />
+        {!perched && <ellipse cx={CX} cy={BOT + 80} rx={90} ry={10} fill={INK} opacity={0.12} />}
         <g className="puck-bob">
-        {p.sit ? (
+        {perched ? (
+          // Sitting on an edge: legs hang straight down over the front and swing, one after the other.
+          <>
+            <g className="puck-leg puck-leg-l">
+              <path d={`M126 ${y0 - 6} V${y0 + 92}`} {...stroke(8)} />
+              <ellipse cx={132} cy={y0 + 96} rx={16} ry={9} fill={INK} />
+            </g>
+            <g className="puck-leg puck-leg-r">
+              <path d={`M186 ${y0 - 6} V${y0 + 92}`} {...stroke(8)} />
+              <ellipse cx={180} cy={y0 + 96} rx={16} ry={9} fill={INK} />
+            </g>
+          </>
+        ) : p.sit ? (
           <>
             <path d={`M124 ${y0} q-6 14 -22 18 M188 ${y0} q6 14 22 18`} {...stroke(7)} />
             <ellipse cx={96} cy={y0 + 20} rx={12} ry={7} fill={INK} />
@@ -324,7 +336,7 @@ function reaction(mood: PuckMood): string {
 export function PerchPuck({ mood, size = 64, inside }: { mood: PuckMood; size?: number; inside?: boolean }) {
   return (
     <span key={mood} className={`puck-perch${inside ? ' puck-perch--inside' : ''} puck-react-${reaction(mood)}${mood === 'sleeping' ? ' is-asleep' : ''}`} style={{ ['--puck-size' as string]: `${size}px` }}>
-      <Puck mood={mood} size={size} />
+      <Puck mood={mood} size={size} perched={!inside} />
     </span>
   );
 }

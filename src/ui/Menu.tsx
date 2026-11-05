@@ -26,10 +26,10 @@ export function Menu() {
     <div className="menu">
       <header className="hero">
         <h1 className="wordmark" aria-label="Urinal">
-          <PerchPuck mood={record?.finished ? 'sleeping' : 'deadpan'} size={56} />
           {'URINAL'.split('').map((ch, i) => (
             <span key={i} className="wordmark-tile" aria-hidden="true">
               {ch}
+              {i === 5 && <PerchPuck mood={record?.finished ? 'sleeping' : 'deadpan'} size={56} />}
             </span>
           ))}
         </h1>
