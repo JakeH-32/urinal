@@ -1,5 +1,5 @@
 // End-of-day card: score, rank, tiles, streak, share, countdown, and a review of the five rounds.
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { DailyRecord, Evaluation, Round } from '../types';
 import { RESULT_TITLES } from '../content';
 import { buildShareText } from '../engine/daily';
@@ -35,51 +35,66 @@ export function rankTitle(clears: number): string {
   return RESULT_TITLES[Math.max(0, Math.min(RESULT_TITLES.length - 1, clears))] ?? '';
 }
 
-async function copyLink(url: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(url);
-    return true;
-  } catch {
-    return false;
-  }
+/**
+ * A share picture, made ahead of time. Phones only open the share sheet straight after a tap, and drawing
+ * the picture takes a moment, so it's made when the screen opens and the tap just shares it.
+ */
+function usePrebuiltImage(make: (() => Promise<Blob>) | null, name: string): File | null {
+  const [file, setFile] = useState<File | null>(null);
+  useEffect(() => {
+    if (!make) return;
+    let live = true;
+    // Let the page (and Puck) render first; he's copied into the picture.
+    const t = window.setTimeout(() => {
+      make()
+        .then((blob) => live && setFile(new File([blob], name, { type: 'image/png' })))
+        .catch(() => undefined);
+    }, 300);
+    return () => {
+      live = false;
+      window.clearTimeout(t);
+    };
+    // Built once per record.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name]);
+  return file;
 }
+
+const puckMarkup = () => document.querySelector('.results-card .puck, .puck')?.outerHTML ?? null;
 
 /** Phones only: a story-sized image (score, tiles, rank, Puck) through the share sheet, e.g. to Instagram Stories. */
 function StoryShare({ record, clears }: { record: DailyRecord; clears: number }) {
   const toast = useToast();
-  const [busy, setBusy] = useState(false);
   const phone = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
+  const file = usePrebuiltImage(
+    phone ? () => drawStoryImage(record, { clears, total: ROUNDS_PER_DAY, title: rankTitle(clears), puckSvg: puckMarkup(), site: 'urinal.app' }) : null,
+    `urinal-${record.number}-story.png`,
+  );
   if (!phone) return null;
   const onClick = async () => {
-    if (busy) return;
-    setBusy(true);
-    // Instagram only takes links from its Link sticker, so put the link on the clipboard first (while the tap still counts).
-    const copied = await copyLink('https://urinal.app');
+    if (!file) return;
+    // Instagram only takes links from its Link sticker, so the link goes on the clipboard too. Not awaited:
+    // the share sheet has to open while the tap still counts.
+    navigator.clipboard?.writeText('https://urinal.app').catch(() => undefined);
     try {
-      const puckSvg = document.querySelector('.results-card .puck, .puck')?.outerHTML ?? null;
-      const blob = await drawStoryImage(record, { clears, total: ROUNDS_PER_DAY, title: rankTitle(clears), puckSvg, site: 'urinal.app' });
-      const file = new File([blob], `urinal-${record.number}.png`, { type: 'image/png' });
       if (navigator.canShare?.({ files: [file] })) {
-        if (copied) toast('urinal.app copied. Add a Link sticker and paste.', { tone: 'success' });
         // The link rides along: Instagram ignores it, Messages and other chats show it under the picture.
         await navigator.share({ files: [file], title: `Urinal #${record.number}`, text: 'https://urinal.app' });
       } else {
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
+        a.href = URL.createObjectURL(file);
         a.download = file.name;
         a.click();
         setTimeout(() => URL.revokeObjectURL(a.href), 4000);
         toast('Image saved. Post it from your photos.', { tone: 'success' });
       }
     } catch (err) {
-      if (!(err instanceof Error && err.name === 'AbortError')) toast('Couldn’t make the image.', { tone: 'danger' });
-    } finally {
-      setBusy(false);
+      if (!(err instanceof Error && err.name === 'AbortError')) toast('Couldn’t open the share sheet. Try again.', { tone: 'danger' });
     }
   };
   return (
-    <Button variant="default" onClick={onClick} disabled={busy}>
-      {busy ? 'Making it…' : 'Share to story'}
+    <Button variant="default" onClick={onClick} disabled={!file}>
+      {file ? 'Share to story' : 'Making it…'}
     </Button>
   );
 }
@@ -87,13 +102,12 @@ function StoryShare({ record, clears }: { record: DailyRecord; clears: number })
 export function DailyShare({ record, variant = 'primary' }: { record: DailyRecord; variant?: 'primary' | 'default' }) {
   const text = useMemo(() => buildShareText(record, routeUrl({ name: 'daily' })), [record]);
   // A square card rides along with the text where the share sheet takes files (Messages shows it as a picture).
-  const image = async () => {
-    const clears = clearsIn(record.results);
-    const puckSvg = document.querySelector('.results-card .puck, .puck')?.outerHTML ?? null;
-    const blob = await drawCardImage(record, { clears, total: ROUNDS_PER_DAY, title: rankTitle(clears), puckSvg, site: 'urinal.app' });
-    return new File([blob], `urinal-${record.number}.png`, { type: 'image/png' });
-  };
-  return <ShareButton text={text} title={`Urinal #${record.number}`} label="Share result" variant={variant} image={record.finished ? image : undefined} />;
+  const clears = clearsIn(record.results);
+  const file = usePrebuiltImage(
+    record.finished ? () => drawCardImage(record, { clears, total: ROUNDS_PER_DAY, title: rankTitle(clears), puckSvg: puckMarkup(), site: 'urinal.app' }) : null,
+    `urinal-${record.number}.png`,
+  );
+  return <ShareButton text={text} title={`Urinal #${record.number}`} label="Share result" variant={variant} image={file ? () => Promise.resolve(file) : undefined} />;
 }
 
 export interface DailyResultsProps {
