@@ -84,6 +84,12 @@ export async function drawStoryImage(record: DailyRecord, opts: { clears: number
     c.stroke();
   }
 
+  // Everything else sits a little smaller in the middle, with more wall around it.
+  c.save();
+  c.translate(W / 2, H / 2);
+  c.scale(0.86, 0.86);
+  c.translate(-W / 2, -H / 2);
+
   // URINAL letter tiles.
   const letters = 'URINAL'.split('');
   const ts = 132;
@@ -141,6 +147,7 @@ export async function drawStoryImage(record: DailyRecord, opts: { clears: number
   c.font = `900 56px ${display}`;
   c.textBaseline = 'middle';
   c.fillText(opts.site, W / 2, 1790);
+  c.restore();
 
   return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('no image'))), 'image/png'));
 }

@@ -35,6 +35,15 @@ export function rankTitle(clears: number): string {
   return RESULT_TITLES[Math.max(0, Math.min(RESULT_TITLES.length - 1, clears))] ?? '';
 }
 
+async function copyLink(url: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Phones only: a story-sized image (score, tiles, rank, Puck) through the share sheet, e.g. to Instagram Stories. */
 function StoryShare({ record, clears }: { record: DailyRecord; clears: number }) {
   const toast = useToast();
@@ -44,11 +53,14 @@ function StoryShare({ record, clears }: { record: DailyRecord; clears: number })
   const onClick = async () => {
     if (busy) return;
     setBusy(true);
+    // Instagram only takes links from its Link sticker, so put the link on the clipboard first (while the tap still counts).
+    const copied = await copyLink('https://urinal.app');
     try {
       const puckSvg = document.querySelector('.results-card .puck')?.outerHTML ?? null;
       const blob = await drawStoryImage(record, { clears, total: ROUNDS_PER_DAY, title: rankTitle(clears), puckSvg, site: 'urinal.app' });
       const file = new File([blob], `urinal-${record.number}.png`, { type: 'image/png' });
       if (navigator.canShare?.({ files: [file] })) {
+        if (copied) toast('urinal.app copied. Add a Link sticker and paste.', { tone: 'success' });
         await navigator.share({ files: [file], title: `Urinal #${record.number}` });
       } else {
         const a = document.createElement('a');
