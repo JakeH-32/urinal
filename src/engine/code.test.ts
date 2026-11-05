@@ -245,6 +245,10 @@ describe('evaluate', () => {
     expect(grades(parseLayout('M | _ | _ | _ _', 'left'))[3]).not.toMatch(/finance/);
   });
 
+  it('a low urinal with a real gap beats a clean one right beside a guy through a divider (playtest, Urinal #8 r3)', () => {
+    expect(evaluate(parseLayout('_ N | _ L', 'right')).greens).toEqual([3]);
+  });
+
   it('stall-forced when every urinal violates', () => {
     const b = bath('S _ _ B _', 'left');
     const ev = evaluate(b);

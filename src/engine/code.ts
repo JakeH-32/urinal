@@ -237,6 +237,9 @@ interface Cand {
 
 /** Ranking comparator: negative when x ranks better than y, 0 on an exact tie. */
 function compareCand(b: Bathroom, x: Cand, y: Cand): number {
+  // Two legal urinals: right beside a guy (through a divider) loses to a gap, even when the gap is the
+  // low urinal (playtest: a real gap beats standing next to a stranger).
+  if (x.tier <= 1 && y.tier <= 1 && x.beside !== y.beside) return x.beside - y.beside;
   if (x.tier !== y.tier) return x.tier - y.tier;
   if (x.severity !== y.severity) return x.severity - y.severity;
   if (x.violations !== y.violations) return x.violations - y.violations;
