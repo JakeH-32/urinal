@@ -107,7 +107,7 @@ export function DailyShare({ record, variant = 'primary' }: { record: DailyRecor
     record.finished ? () => drawCardImage(record, { clears, total: ROUNDS_PER_DAY, title: rankTitle(clears), puckSvg: puckMarkup(), site: 'urinal.app' }) : null,
     `urinal-${record.number}.png`,
   );
-  return <ShareButton text={text} title={`Urinal #${record.number}`} label="Share result" variant={variant} image={file ? () => Promise.resolve(file) : undefined} />;
+  return <ShareButton text={text} title={`Urinal #${record.number}`} label="Share result" variant={variant} image={file ? () => Promise.resolve(file) : undefined} imageText="https://urinal.app" />;
 }
 
 export interface DailyResultsProps {

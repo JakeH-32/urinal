@@ -12,6 +12,8 @@ export interface ShareButtonProps {
   block?: boolean;
   /** Optional picture to attach where the share sheet takes files (made on tap). */
   image?: () => Promise<File>;
+  /** The text sent with the picture (the picture already says the rest). Defaults to `text`. */
+  imageText?: string;
 }
 
 async function copyText(text: string): Promise<boolean> {
@@ -40,7 +42,7 @@ async function copyText(text: string): Promise<boolean> {
 }
 
 /** navigator.share when available, else clipboard + "Copied!" toast. */
-export function ShareButton({ text, url, title = 'Urinal', label = 'Share', variant = 'default', block, image }: ShareButtonProps) {
+export function ShareButton({ text, url, title = 'Urinal', label = 'Share', variant = 'default', block, image, imageText }: ShareButtonProps) {
   const toast = useToast();
   const full = url ? `${text}\n${url}` : text;
 
@@ -51,7 +53,7 @@ export function ShareButton({ text, url, title = 'Urinal', label = 'Share', vari
       if (image) {
         try {
           const file = await image();
-          const withFile: ShareData = { ...data, files: [file] };
+          const withFile: ShareData = { title, text: imageText ?? data.text, files: [file] };
           if (navigator.canShare?.(withFile)) {
             await navigator.share(withFile);
             return;
