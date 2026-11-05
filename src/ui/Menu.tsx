@@ -9,6 +9,7 @@ import { LinkButton } from './Button';
 import { TileRow } from './Tiles';
 import { useNow, useReducedMotion, useRotating } from './hooks';
 import { ROUNDS_PER_DAY } from '../state/storage';
+import { Puck } from './Puck';
 
 export function Menu() {
   const { save } = useSave();
@@ -31,6 +32,7 @@ export function Menu() {
             </span>
           ))}
         </h1>
+        <Puck mood="deadpan" size={88} className="menu-puck" />
         <p className="tagline" key={tagline}>
           {tagline}
         </p>
