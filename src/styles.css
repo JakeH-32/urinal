@@ -1498,11 +1498,7 @@ button {
   padding-left: 52px;
   padding-right: 52px;
 }
-@media (min-width: 640px) {
-  .round .scene-frame .puck-perch {
-    --puck-size: 64px !important;
-  }
-}
+
 .puck .puck-bob {
   transform-box: view-box;
   transform-origin: 50% 85%;

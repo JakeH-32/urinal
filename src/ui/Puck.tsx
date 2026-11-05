@@ -32,7 +32,8 @@ type Arm = 'down' | 'thumbs' | 'cheeks' | 'chin' | 'limp' | 'hips' | 'wave' | 'n
 
 const POSE: Record<PuckMood, { eyes: string; mouth: string; arms: Arm; sit?: boolean; extra?: 'sleep' | 'sweat' | 'stink' }> = {
   deadpan: { eyes: 'deadpan', mouth: 'flat', arms: 'down' },
-  approves: { eyes: 'content', mouth: 'smirk', arms: 'thumbs' },
+  // Hands on hips, not a thumbs-up: at small sizes a raised single digit reads as the wrong finger.
+  approves: { eyes: 'content', mouth: 'smirk', arms: 'hips' },
   eyebrow: { eyes: 'brow', mouth: 'flat', arms: 'hips' },
   wince: { eyes: 'squeeze', mouth: 'zig', arms: 'down', extra: 'sweat' },
   horrified: { eyes: 'wide', mouth: 'O', arms: 'cheeks' },
@@ -333,9 +334,9 @@ function reaction(mood: PuckMood): string {
  * Puck perched on the top edge of whatever he's placed in (the parent needs position: relative):
  * idle bob and blinks, and a little hop / jolt / nod each time his face changes.
  */
-export function PerchPuck({ mood, size = 64, inside }: { mood: PuckMood; size?: number; inside?: boolean }) {
+export function PerchPuck({ mood, size = 64, inside, at }: { mood: PuckMood; size?: number; inside?: boolean; at?: { right: number; top: number } | null }) {
   return (
-    <span key={mood} className={`puck-perch${inside ? ' puck-perch--inside' : ''} puck-react-${reaction(mood)}${mood === 'sleeping' ? ' is-asleep' : ''}`} style={{ ['--puck-size' as string]: `${size}px` }}>
+    <span key={mood} className={`puck-perch${inside ? ' puck-perch--inside' : ''} puck-react-${reaction(mood)}${mood === 'sleeping' ? ' is-asleep' : ''}`} style={{ ['--puck-size' as string]: `${size}px`, ...(at ? { right: at.right, top: at.top } : {}) }}>
       <Puck mood={mood} size={size} perched={!inside} />
     </span>
   );

@@ -1,5 +1,5 @@
 // One bathroom: pick -> walk in -> grade -> verdict -> Next. Shared by Daily and Practice.
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Round, RoundResult } from '../types';
 import { BathroomScene } from '../scene';
 import { evaluate } from '../engine/code';
@@ -32,6 +32,9 @@ export interface RoundPlayerProps {
   onRetry?: () => void;
 }
 
+/** Puck's size on the scene frame. */
+const PUCK_SIZE = 56;
+
 /** Next ignores taps this soon after it appears, so a fast double tap can't skip the verdict. */
 const NEXT_GUARD_MS = 400;
 
@@ -49,6 +52,26 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
   const stepTimer = useRef<number | undefined>(undefined);
   const fallbackTimer = useRef<number | undefined>(undefined);
   const nextRef = useRef<HTMLButtonElement>(null);
+  // Puck sits on the bathroom's real top edge. The scene is often narrower than its row (and its height
+  // changes with the screen), so measure where its frame actually is and keep him on it.
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [perch, setPerch] = useState<{ right: number; top: number } | null>(null);
+  useLayoutEffect(() => {
+    const frame = frameRef.current;
+    const scene = frame?.querySelector<HTMLElement>('.urinal-scene');
+    if (!frame || !scene) return;
+    const place = () => {
+      const f = frame.getBoundingClientRect();
+      const s = scene.getBoundingClientRect();
+      const size = PUCK_SIZE;
+      setPerch({ right: Math.round(f.right - s.right + Math.max(8, s.width * 0.05)), top: Math.round(s.top - f.top - size * 0.64) });
+    };
+    place();
+    const ro = new ResizeObserver(place);
+    ro.observe(frame);
+    ro.observe(scene);
+    return () => ro.disconnect();
+  }, [round]);
   const shownAt = useRef(0);
 
   // Latest callbacks, so timers never call stale props.
@@ -120,8 +143,8 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
     <div className="round">
       {header}
       {round.premise && <p className="round-premise">{round.premise}</p>}
-      <div className={`scene-frame${picked === undefined ? ' is-picking' : ''}`}>
-        <PerchPuck size={52} mood={result ? (round.bathroom.slots[result.pick]?.flag === 'puddle' ? 'disgusted' : puckForGrade(result.grade)) : 'thinking'} />
+      <div ref={frameRef} className={`scene-frame${picked === undefined ? ' is-picking' : ''}`}>
+        <PerchPuck size={PUCK_SIZE} at={perch} mood={result ? (round.bathroom.slots[result.pick]?.flag === 'puddle' ? 'disgusted' : puckForGrade(result.grade)) : 'thinking'} />
         <BathroomScene
           bathroom={round.bathroom}
           onPick={onPick}
