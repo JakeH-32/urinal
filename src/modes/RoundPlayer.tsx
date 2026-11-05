@@ -66,7 +66,12 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
       const size = PUCK_SIZE;
       // Sitting on the frame's top edge, legs over the wall. Never over the text above: try the right corner,
       // then the left corner, then sunk into the frame (only his top above the edge).
-      const texts = [...(frame.parentElement?.querySelectorAll('.round-venue, .round-premise, .round-count') ?? [])].map((t) => t.getBoundingClientRect());
+      // The words themselves, line by line (a text block's own box spans the full width).
+      const texts = [...(frame.parentElement?.querySelectorAll('.round-venue, .round-premise, .round-count') ?? [])].flatMap((t) => {
+        const range = document.createRange();
+        range.selectNodeContents(t);
+        return [...range.getClientRects()];
+      });
       const right = (x: number) => Math.round(f.right - x);
       const candidates = [
         { r: right(s.right - 6), t: s.top - f.top - size * 0.62 },
