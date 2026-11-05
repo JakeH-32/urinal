@@ -1433,22 +1433,34 @@ button {
   width: auto;
 }
 
-/* Puck, the mascot */
+/* Puck, the mascot: peeks in from the bottom-left edge, never over the content. */
 .puck {
   display: block;
   flex: none;
 }
-.menu-puck,
-.results-puck {
-  margin: 0 auto;
+.corner-puck {
+  position: fixed;
+  left: -18px;
+  bottom: 12px;
+  z-index: 25;
+  width: 72px;
+  height: 72px;
+  transform: rotate(10deg);
+  pointer-events: none;
 }
-.countdown-puck {
-  display: inline-block;
-  vertical-align: middle;
-  margin-right: 4px;
+/* Phones: sit above the pinned Next bar. */
+@media (max-width: 639px) {
+  .app:has(.verdict) .corner-puck {
+    bottom: 92px;
+  }
 }
-.stats-empty {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+/* Wide screens: he gets the empty gutter, a bit bigger. */
+@media (min-width: 1000px) {
+  .corner-puck {
+    left: 24px;
+    bottom: 24px;
+    width: 120px;
+    height: 120px;
+    transform: rotate(6deg);
+  }
 }

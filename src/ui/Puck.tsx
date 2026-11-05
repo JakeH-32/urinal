@@ -304,3 +304,8 @@ export function puckForClears(clears: number, total: number): PuckMood {
 export function puckForGrade(grade: Grade): PuckMood {
   return grade === 'clear' ? 'approves' : grade === 'straw' ? 'eyebrow' : grade === 'amber' ? 'wince' : 'horrified';
 }
+
+/** Puck peeking in from the bottom-left edge of the screen, out of the way of the content. */
+export function CornerPuck({ mood }: { mood: PuckMood }) {
+  return <Puck mood={mood} size={88} className="corner-puck" />;
+}

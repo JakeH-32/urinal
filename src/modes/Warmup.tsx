@@ -8,7 +8,7 @@ import { warmupRounds } from '../engine/generate';
 import { sfx } from '../audio/sfx';
 import { Button } from '../ui/Button';
 import { TileRow } from '../ui/Tiles';
-import { Puck } from '../ui/Puck';
+import { CornerPuck } from '../ui/Puck';
 import { useReducedMotion } from '../ui/hooks';
 import { RoundPlayer } from './RoundPlayer';
 
@@ -23,7 +23,7 @@ export function Warmup({ number, onDone }: { number: number; onDone(): void }) {
   if (finished) {
     return (
       <section className="card warmup-done center">
-        <Puck mood="approves" size={96} />
+        <CornerPuck mood="approves" />
         <TileRow results={results} total={rounds.length} />
         <h2 className="page-title">Warmed up.</h2>
         <p>That was the easy part. Today’s Urinal is five bathrooms, and they get harder.</p>

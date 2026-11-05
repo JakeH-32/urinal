@@ -9,6 +9,7 @@ import { Button } from '../ui/Button';
 import { GradeUrinal } from '../ui/GradeUrinal';
 import { crowdPercents, type RoundCrowd } from '../net/community';
 import { RoundCrowdLine } from '../ui/Crowd';
+import { CornerPuck, puckForGrade } from '../ui/Puck';
 import { resultFromEvaluation, verdictLine, violatorName } from './roundLogic';
 
 export interface RoundPlayerProps {
@@ -117,6 +118,7 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
 
   return (
     <div className="round">
+      <CornerPuck mood={result ? (round.bathroom.slots[result.pick]?.flag === 'puddle' ? 'disgusted' : puckForGrade(result.grade)) : 'thinking'} />
       {header}
       {round.premise && <p className="round-premise">{round.premise}</p>}
       <div className={`scene-frame${picked === undefined ? ' is-picking' : ''}`}>

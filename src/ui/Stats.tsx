@@ -4,7 +4,7 @@ import { displayStreak, toDateKey } from '../state/dailyStreak';
 import { dailyStats } from '../modes/roundLogic';
 import { LinkButton } from './Button';
 import { HydrationBar } from './HydrationChart';
-import { Puck } from './Puck';
+import { CornerPuck } from './Puck';
 
 export function Stats() {
   const { save } = useSave();
@@ -23,6 +23,7 @@ export function Stats() {
 
   return (
     <div className="stats">
+      <CornerPuck mood="thinking" />
       <h1 className="page-title">Stats</h1>
 
       <section className="card">
@@ -39,10 +40,7 @@ export function Stats() {
       <section className="card">
         <h2 className="h3">Clears per day</h2>
         {st.played === 0 ? (
-          <div className="stats-empty">
-            <Puck mood="thinking" size={64} />
-            <p className="muted">Finish a daily to see this</p>
-          </div>
+          <p className="muted">Finish a daily to see this</p>
         ) : (
           <ol className="dist" aria-label="Distribution of clears per finished day">
             {st.distribution.map((n, g) => (
