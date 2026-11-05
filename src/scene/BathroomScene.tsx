@@ -600,20 +600,20 @@ export function BathroomScene(props: BathroomSceneProps) {
         {/* talkers (the pilot, the crypto bro, the finance bro on speaker) never stop talking */}
         {chatBubbles(layout, bathroom, reactorDir, reveal?.picked, false)}
 
-        {/* after the pick, puffs drift from each gassy guy toward you: all the way if you're in his reach,
-            fading out at the edge of it if you're not */}
+        {/* after the pick, puffs drift from each gassy guy toward the door (where his smell goes), out to the
+            edge of his reach: they only reach you if you're downwind and inside it */}
         {reveal &&
           pickedSlot &&
           !reducedMotion &&
           gassyAt.map((i) => {
             const guy = bathroom.slots[i].occupant as Guy;
             const g = layout.slots[i];
-            const dir: -1 | 1 = pickedSlot.cx > g.cx ? 1 : -1;
+            const dir: -1 | 1 = guy.lean === 'left' ? -1 : 1;
             const s = heightScale(guy.look.height);
             const startX = g.cx + dir * 22 * s;
             const startY = FEET_Y - 96 * s;
             const reach = zoneRadius(guy, dir > 0 ? 'right' : 'left') * PITCH;
-            const dist = Math.max(0, Math.min(Math.abs(pickedSlot.cx - startX), reach));
+            const dist = reach;
             return (
               <g key={`drift-${i}`} className="us-gas-drift" aria-hidden="true">
                 {[0, 1, 2, 3].map((k) => (

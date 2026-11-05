@@ -608,9 +608,9 @@ button {
     /* 6px = the scene's top + bottom border. */
     max-width: min(var(--us-max-w, 100%), calc((100cqh - 6px) * var(--us-aspect, 3) + 6px));
   }
-  /* Reserve the verdict's height up front so the scene doesn't shrink when it appears. */
+  /* Reserve the verdict's full height up front so the scene never shrinks when it appears. */
   .round-foot {
-    min-height: 112px;
+    min-height: 150px;
     display: grid;
     align-content: center;
   }
@@ -1564,4 +1564,21 @@ button {
 .reduce-motion .puck .puck-bob,
 .reduce-motion .puck .puck-eyes {
   animation: none !important;
+}
+
+/* Wide screens: Next on top, the extras (Replay room, Share room) as one short row under it. */
+@media (min-width: 640px) {
+  .verdict-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 260px;
+  }
+  .verdict-actions > .btn:first-child {
+    flex: 1 1 100%;
+  }
+  .verdict-actions > .btn:not(:first-child) {
+    flex: 1 1 0;
+    padding-inline: 10px;
+  }
 }
