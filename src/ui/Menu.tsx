@@ -9,7 +9,7 @@ import { LinkButton } from './Button';
 import { TileRow } from './Tiles';
 import { useNow, useReducedMotion, useRotating } from './hooks';
 import { ROUNDS_PER_DAY } from '../state/storage';
-import { CornerPuck } from './Puck';
+import { PerchPuck } from './Puck';
 
 export function Menu() {
   const { save } = useSave();
@@ -24,9 +24,9 @@ export function Menu() {
 
   return (
     <div className="menu">
-      <CornerPuck mood={record?.finished ? 'sleeping' : 'deadpan'} />
       <header className="hero">
         <h1 className="wordmark" aria-label="Urinal">
+          <PerchPuck mood={record?.finished ? 'sleeping' : 'deadpan'} size={56} />
           {'URINAL'.split('').map((ch, i) => (
             <span key={i} className="wordmark-tile" aria-hidden="true">
               {ch}

@@ -251,6 +251,7 @@ export function Puck({ mood = 'deadpan', size = 96, className }: { mood?: PuckMo
     <svg className={['puck', className].filter(Boolean).join(' ')} viewBox="0 0 330 330" width={size} height={size} aria-hidden="true">
       <g transform="translate(9,8)">
         <ellipse cx={CX} cy={BOT + 80} rx={90} ry={10} fill={INK} opacity={0.12} />
+        <g className="puck-bob">
         {p.sit ? (
           <>
             <path d={`M124 ${y0} q-6 14 -22 18 M188 ${y0} q6 14 22 18`} {...stroke(7)} />
@@ -271,7 +272,9 @@ export function Puck({ mood = 'deadpan', size = 96, className }: { mood?: PuckMo
         {HOLES.map(([dx, dy], k) => (
           <ellipse key={k} cx={CX + dx} cy={TOP + dy} rx={6} ry={3} fill="#d76f96" />
         ))}
-        <Eyes kind={p.eyes} />
+        <g className="puck-eyes">
+          <Eyes kind={p.eyes} />
+        </g>
         <Mouth kind={p.mouth} />
         {a.front}
         {p.extra === 'sleep' && (
@@ -286,6 +289,7 @@ export function Puck({ mood = 'deadpan', size = 96, className }: { mood?: PuckMo
         )}
         {p.extra === 'sweat' && <path d={`M232 ${FY - 30} q8 12 0 18 q-8 -6 0 -18z`} fill="#9ed3f5" stroke={INK} strokeWidth={3} />}
         {p.extra === 'stink' && <path d={`M210 ${FY - 20} q8 -8 0 -16 q-8 -8 0 -16`} stroke="#6f8418" strokeWidth={4} fill="none" strokeLinecap="round" />}
+        </g>
       </g>
     </svg>
   );
@@ -305,7 +309,22 @@ export function puckForGrade(grade: Grade): PuckMood {
   return grade === 'clear' ? 'approves' : grade === 'straw' ? 'eyebrow' : grade === 'amber' ? 'wince' : 'horrified';
 }
 
-/** Puck peeking in from the bottom-left edge of the screen, out of the way of the content. */
-export function CornerPuck({ mood }: { mood: PuckMood }) {
-  return <Puck mood={mood} size={88} className="corner-puck" />;
+/** How Puck moves into a new face: a hop for most, a jolt back for See a Doctor, a nod for approval. */
+function reaction(mood: PuckMood): string {
+  if (mood === 'horrified' || mood === 'disgusted') return 'jolt';
+  if (mood === 'approves' || mood === 'eyebrow') return 'nod';
+  if (mood === 'sleeping') return 'droop';
+  return 'hop';
+}
+
+/**
+ * Puck perched on the top edge of whatever he's placed in (the parent needs position: relative):
+ * idle bob and blinks, and a little hop / jolt / nod each time his face changes.
+ */
+export function PerchPuck({ mood, size = 64, inside }: { mood: PuckMood; size?: number; inside?: boolean }) {
+  return (
+    <span key={mood} className={`puck-perch${inside ? ' puck-perch--inside' : ''} puck-react-${reaction(mood)}${mood === 'sleeping' ? ' is-asleep' : ''}`} style={{ ['--puck-size' as string]: `${size}px` }}>
+      <Puck mood={mood} size={size} />
+    </span>
+  );
 }

@@ -4,7 +4,7 @@ import { displayStreak, toDateKey } from '../state/dailyStreak';
 import { dailyStats } from '../modes/roundLogic';
 import { LinkButton } from './Button';
 import { HydrationBar } from './HydrationChart';
-import { CornerPuck } from './Puck';
+import { PerchPuck } from './Puck';
 
 export function Stats() {
   const { save } = useSave();
@@ -23,8 +23,10 @@ export function Stats() {
 
   return (
     <div className="stats">
-      <CornerPuck mood="thinking" />
-      <h1 className="page-title">Stats</h1>
+      <h1 className="page-title perch-host">
+        Stats
+        <PerchPuck mood="deadpan" size={52} inside />
+      </h1>
 
       <section className="card">
         <dl className="stat-grid">

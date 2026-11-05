@@ -15,7 +15,7 @@ import { HydrationChart } from '../ui/HydrationChart';
 import { hydrationPoints, pickableOnly, type DayCrowd } from '../net/community';
 import { DayCrowdSummary, ReviewCrowd } from '../ui/Crowd';
 import { RoomReview } from './RoomReview';
-import { CornerPuck, puckForClears } from '../ui/Puck';
+import { PerchPuck, puckForClears } from '../ui/Puck';
 import { clearsIn, gradeCounts, verdictLine, violatorName } from './roundLogic';
 
 export function NextCountdown({ label = 'Hold it. Next Urinal in' }: { label?: string }) {
@@ -75,11 +75,11 @@ export function DailyResults({ record, todayKey, rounds, crowd }: DailyResultsPr
   const reviewRound = reviewRes && rounds ? (rounds.find((r) => r.id === reviewRes.roundId) ?? rounds[reviewing ?? 0]) : undefined;
   return (
     <div className="results">
-      <CornerPuck mood={puckForClears(clears, ROUNDS_PER_DAY)} />
       {reviewRound && reviewRes && reviewing !== null && (
         <RoomReview round={reviewRound} result={reviewRes} title={`Urinal #${record.number} · Round ${reviewing + 1}`} onClose={() => setReviewing(null)} />
       )}
       <section className="card results-card">
+        <PerchPuck mood={puckForClears(clears, ROUNDS_PER_DAY)} size={64} inside />
         <div className="results-main">
           <p className="results-kicker">Urinal #{record.number}</p>
           <p className="results-score">
