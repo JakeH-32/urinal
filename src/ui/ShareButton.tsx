@@ -10,6 +10,8 @@ export interface ShareButtonProps {
   label?: string;
   variant?: ButtonVariant;
   block?: boolean;
+  /** Optional picture to attach where the share sheet takes files (made on tap). */
+  image?: () => Promise<File>;
 }
 
 async function copyText(text: string): Promise<boolean> {
@@ -38,13 +40,26 @@ async function copyText(text: string): Promise<boolean> {
 }
 
 /** navigator.share when available, else clipboard + "Copied!" toast. */
-export function ShareButton({ text, url, title = 'Urinal', label = 'Share', variant = 'default', block }: ShareButtonProps) {
+export function ShareButton({ text, url, title = 'Urinal', label = 'Share', variant = 'default', block, image }: ShareButtonProps) {
   const toast = useToast();
   const full = url ? `${text}\n${url}` : text;
 
   const onShare = async () => {
     const data: ShareData = url ? { title, text, url } : { title, text };
     if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      // Picture + text when the share sheet takes files (phones); otherwise text alone.
+      if (image) {
+        try {
+          const file = await image();
+          const withFile: ShareData = { ...data, files: [file] };
+          if (navigator.canShare?.(withFile)) {
+            await navigator.share(withFile);
+            return;
+          }
+        } catch (err) {
+          if (err instanceof Error && err.name === 'AbortError') return;
+        }
+      }
       try {
         if (!navigator.canShare || navigator.canShare(data)) {
           await navigator.share(data);

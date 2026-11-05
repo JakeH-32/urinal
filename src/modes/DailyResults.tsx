@@ -15,7 +15,7 @@ import { HydrationChart } from '../ui/HydrationChart';
 import { hydrationPoints, pickableOnly, type DayCrowd } from '../net/community';
 import { DayCrowdSummary, ReviewCrowd } from '../ui/Crowd';
 import { RoomReview } from './RoomReview';
-import { drawStoryImage } from '../ui/storyImage';
+import { drawCardImage, drawStoryImage } from '../ui/storyImage';
 import { Button } from '../ui/Button';
 import { useToast } from '../ui/Toast';
 import { PerchPuck, puckForClears } from '../ui/Puck';
@@ -56,7 +56,7 @@ function StoryShare({ record, clears }: { record: DailyRecord; clears: number })
     // Instagram only takes links from its Link sticker, so put the link on the clipboard first (while the tap still counts).
     const copied = await copyLink('https://urinal.app');
     try {
-      const puckSvg = document.querySelector('.results-card .puck')?.outerHTML ?? null;
+      const puckSvg = document.querySelector('.results-card .puck, .puck')?.outerHTML ?? null;
       const blob = await drawStoryImage(record, { clears, total: ROUNDS_PER_DAY, title: rankTitle(clears), puckSvg, site: 'urinal.app' });
       const file = new File([blob], `urinal-${record.number}.png`, { type: 'image/png' });
       if (navigator.canShare?.({ files: [file] })) {
@@ -85,7 +85,14 @@ function StoryShare({ record, clears }: { record: DailyRecord; clears: number })
 
 export function DailyShare({ record, variant = 'primary' }: { record: DailyRecord; variant?: 'primary' | 'default' }) {
   const text = useMemo(() => buildShareText(record, routeUrl({ name: 'daily' })), [record]);
-  return <ShareButton text={text} title={`Urinal #${record.number}`} label="Share result" variant={variant} />;
+  // A square card rides along with the text where the share sheet takes files (Messages shows it as a picture).
+  const image = async () => {
+    const clears = clearsIn(record.results);
+    const puckSvg = document.querySelector('.results-card .puck, .puck')?.outerHTML ?? null;
+    const blob = await drawCardImage(record, { clears, total: ROUNDS_PER_DAY, title: rankTitle(clears), puckSvg, site: 'urinal.app' });
+    return new File([blob], `urinal-${record.number}.png`, { type: 'image/png' });
+  };
+  return <ShareButton text={text} title={`Urinal #${record.number}`} label="Share result" variant={variant} image={record.finished ? image : undefined} />;
 }
 
 export interface DailyResultsProps {

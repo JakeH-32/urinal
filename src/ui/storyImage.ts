@@ -151,3 +151,86 @@ export async function drawStoryImage(record: DailyRecord, opts: { clears: number
 
   return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('no image'))), 'image/png'));
 }
+
+/** A square card of the same thing (for Messages and other chats), 1200x1200. */
+export async function drawCardImage(record: DailyRecord, opts: { clears: number; total: number; title: string; puckSvg: string | null; site: string }): Promise<Blob> {
+  const S = 1200;
+  const canvas = document.createElement('canvas');
+  canvas.width = S;
+  canvas.height = S;
+  const c = canvas.getContext('2d');
+  if (!c) throw new Error('no canvas');
+  try {
+    await document.fonts?.ready;
+  } catch {
+    /* fonts are a nicety */
+  }
+  const display = "'Archivo Black', 'Arial Black', Impact, sans-serif";
+  const body = "'Inter', system-ui, sans-serif";
+
+  c.fillStyle = BG;
+  c.fillRect(0, 0, S, S);
+  c.strokeStyle = GROUT;
+  c.lineWidth = 3;
+  for (let x = 0; x <= S; x += 100) {
+    c.beginPath();
+    c.moveTo(x, 0);
+    c.lineTo(x, S);
+    c.stroke();
+    c.beginPath();
+    c.moveTo(0, x);
+    c.lineTo(S, x);
+    c.stroke();
+  }
+
+  // URINAL tiles across the top.
+  const letters = 'URINAL'.split('');
+  const ts = 120;
+  const gap = 16;
+  const lx = (S - (letters.length * ts + (letters.length - 1) * gap)) / 2;
+  letters.forEach((ch, i) => tile(c, lx + i * (ts + gap), 90, ts, '#ffffff', INK, ch, `900 68px ${display}`));
+
+  // Puck on the left, the score on the right.
+  if (opts.puckSvg) {
+    const img = await loadSvg(opts.puckSvg);
+    if (img) c.drawImage(img, 110, 300, 400, 400);
+  }
+  c.textAlign = 'left';
+  c.textBaseline = 'alphabetic';
+  c.fillStyle = '#55607a';
+  c.font = `600 50px ${body}`;
+  c.fillText(`Urinal #${record.number}`, 600, 400);
+  c.fillStyle = INK;
+  c.font = `900 220px ${display}`;
+  const score = String(opts.clears);
+  c.fillText(score, 594, 610);
+  const sw = c.measureText(score).width;
+  c.fillStyle = '#55607a';
+  c.font = `900 92px ${display}`;
+  c.fillText(`/${opts.total}`, 600 + sw, 610);
+  c.fillStyle = INK;
+  c.font = `900 66px ${display}`;
+  c.fillText(opts.title, 600, 700);
+
+  // Grade tiles.
+  const gs = 130;
+  const gg = 20;
+  const n = record.results.length;
+  const gx = (S - (n * gs + (n - 1) * gg)) / 2;
+  record.results.forEach((r, i) => {
+    const g = GRADES[r.grade];
+    tile(c, gx + i * (gs + gg), 790, gs, g.color, g.ink, GRADE_GLYPH[r.grade], `900 64px ${body}`);
+  });
+
+  // Where to play.
+  c.fillStyle = INK;
+  roundRect(c, (S - 560) / 2, 1020, 560, 104, 28);
+  c.fill();
+  c.fillStyle = '#ffffff';
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  c.font = `900 52px ${display}`;
+  c.fillText(opts.site, S / 2, 1074);
+
+  return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('no image'))), 'image/png'));
+}
