@@ -15,6 +15,9 @@ import { HydrationChart } from '../ui/HydrationChart';
 import { hydrationPoints, pickableOnly, type DayCrowd } from '../net/community';
 import { DayCrowdSummary, ReviewCrowd } from '../ui/Crowd';
 import { RoomReview } from './RoomReview';
+import { drawStoryImage } from '../ui/storyImage';
+import { Button } from '../ui/Button';
+import { useToast } from '../ui/Toast';
 import { PerchPuck, puckForClears } from '../ui/Puck';
 import { clearsIn, gradeCounts, verdictLine, violatorName } from './roundLogic';
 
@@ -30,6 +33,42 @@ export function NextCountdown({ label = 'Hold it. Next Urinal in' }: { label?: s
 /** Rank title by number of clears (0..5). */
 export function rankTitle(clears: number): string {
   return RESULT_TITLES[Math.max(0, Math.min(RESULT_TITLES.length - 1, clears))] ?? '';
+}
+
+/** Phones only: a story-sized image (score, tiles, rank, Puck) through the share sheet, e.g. to Instagram Stories. */
+function StoryShare({ record, clears }: { record: DailyRecord; clears: number }) {
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const phone = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
+  if (!phone) return null;
+  const onClick = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const puckSvg = document.querySelector('.results-card .puck')?.outerHTML ?? null;
+      const blob = await drawStoryImage(record, { clears, total: ROUNDS_PER_DAY, title: rankTitle(clears), puckSvg, site: 'urinal.app' });
+      const file = new File([blob], `urinal-${record.number}.png`, { type: 'image/png' });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: `Urinal #${record.number}` });
+      } else {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = file.name;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+        toast('Image saved. Post it from your photos.', { tone: 'success' });
+      }
+    } catch (err) {
+      if (!(err instanceof Error && err.name === 'AbortError')) toast('Couldn’t make the image.', { tone: 'danger' });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Button variant="default" onClick={onClick} disabled={busy}>
+      {busy ? 'Making it…' : 'Share to story'}
+    </Button>
+  );
 }
 
 export function DailyShare({ record, variant = 'primary' }: { record: DailyRecord; variant?: 'primary' | 'default' }) {
@@ -91,6 +130,7 @@ export function DailyResults({ record, todayKey, rounds, crowd }: DailyResultsPr
           {crowd && <DayCrowdSummary crowd={crowd} points={hydrationPoints(record.results)} />}
           <div className="row row--center">
             <DailyShare record={record} />
+            <StoryShare record={record} clears={clears} />
           </div>
           {record.dateKey === todayKey && <NextCountdown />}
         </div>
