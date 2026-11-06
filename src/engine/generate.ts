@@ -170,7 +170,7 @@ const QUIRK_WEIGHT: Partial<Record<Quirk, number>> = {
   facetime: 1.3,
   peeper: 1.3,
   pilot: 1.2,
-  crypto: 1.4,
+  crypto: 0.7,
   finance: 1.4,
   dropper: 1.5,
   sumo: 0.25,

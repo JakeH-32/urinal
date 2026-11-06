@@ -75,7 +75,8 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
   // Puck sits on the bathroom's real top edge. The scene is often narrower than its row (and its height
   // changes with the screen), so measure where its frame actually is and keep him on it.
   const frameRef = useRef<HTMLDivElement>(null);
-  const [perch, setPerch] = useState<{ right: number; top: number } | null>(null);
+  const [perch, setPerch] = useState<{ right: number; top: number; pad: number } | null>(null);
+  const padRef = useRef(0);
   useLayoutEffect(() => {
     const frame = frameRef.current;
     const scene = frame?.querySelector<HTMLElement>('.urinal-scene');
@@ -84,27 +85,29 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
       const f = frame.getBoundingClientRect();
       const s = scene.getBoundingClientRect();
       const size = PUCK_SIZE;
+      // Where the scene's top edge would be with no extra room pushed in above it.
+      const sTop = s.top - padRef.current;
       // Sitting on the frame's top edge, legs over the wall. Never over the text above: try the right corner,
-      // then the left corner, then sunk into the frame (only his top above the edge).
+      // then the left. If the words cover both (a small room under a long title), push the room down just
+      // far enough to clear the better corner; only if that's a lot, sink him into the frame instead.
       // The words themselves, line by line (a text block's own box spans the full width).
       const texts = [...(frame.parentElement?.querySelectorAll('.round-venue, .round-premise, .round-count') ?? [])].flatMap((t) => {
         const range = document.createRange();
         range.selectNodeContents(t);
         return [...range.getClientRects()];
       });
-      const right = (x: number) => Math.round(f.right - x);
-      const candidates = [
-        { r: right(s.right - 6), t: s.top - f.top - size * 0.62 },
-        { r: right(s.left + 6 + size), t: s.top - f.top - size * 0.62 },
-        { r: right(s.right - 6), t: s.top - f.top - size * 0.3 },
-      ];
-      const clear = (c: { r: number; t: number }) => {
-        const left = f.right - c.r - size;
-        const top = f.top + c.t;
-        return texts.every((r) => r.right < left || r.left > left + size || r.bottom - 2 < top + size * 0.1 || r.top > top + size);
-      };
-      const pick = candidates.find(clear) ?? candidates[candidates.length - 1];
-      setPerch({ right: pick.r, top: Math.round(pick.t) });
+      const lift = size * 0.62;
+      // How far the room must move down for Puck to clear every word at this corner.
+      const needed = (x: number) =>
+        Math.max(0, ...texts.filter((r) => !(r.right < x || r.left > x + size)).map((r) => Math.ceil(r.bottom - 2 - (sTop - lift + size * 0.1))));
+      const corners = [s.right - 6 - size, s.left + 6].map((x) => ({ x, pad: needed(x) }));
+      const best = corners.reduce((a, b) => (b.pad < a.pad ? b : a));
+      const next =
+        best.pad <= size * 0.6
+          ? { right: Math.round(f.right - best.x - size), top: Math.round(sTop + best.pad - f.top - lift), pad: best.pad }
+          : { right: Math.round(f.right - (s.right - 6)), top: Math.round(sTop - f.top - size * 0.3), pad: 0 };
+      padRef.current = next.pad;
+      setPerch(next);
     };
     place();
     // Re-check whenever the frame or the text above it changes size, and once the fonts arrive (the
@@ -190,7 +193,7 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
     <div className="round">
       {header}
       {round.premise && <p className="round-premise">{round.premise}</p>}
-      <div ref={frameRef} className={`scene-frame${picked === undefined ? ' is-picking' : ''}`}>
+      <div ref={frameRef} className={`scene-frame${picked === undefined ? ' is-picking' : ''}`} style={perch?.pad ? { paddingTop: perch.pad } : undefined}>
         <PerchPuck size={PUCK_SIZE} at={perch} mood={result ? (round.bathroom.slots[result.pick]?.flag === 'puddle' ? 'disgusted' : puckForGrade(result.grade)) : 'thinking'} />
         <BathroomScene
           bathroom={round.bathroom}
