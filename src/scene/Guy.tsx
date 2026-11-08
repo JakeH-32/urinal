@@ -1135,16 +1135,32 @@ export function QuirkChip({ x, y, quirk, lean, mood }: { x: number; y: number; q
   if (!st.tag) return null;
   const emoji = quirk === 'boss' && mood ? BOSS_MOOD_EMOJI[mood] : st.emoji;
   // A drunk's chip points the way he sways (a peeper's, the way he looks), so the lopsided zone reads at a glance.
-  const tag = lean ? (lean === 'left' ? `◀ ${st.tag}` : `${st.tag} ▶`) : st.tag;
   const w = CHIP_W;
-  const h = 18;
-  const squeeze = tag.length > 6 ? { textLength: w - 10, lengthAdjust: 'spacingAndGlyphs' as const } : {};
+  // A long two-word name ("CRYPTO BRO") stacks on two lines rather than squashing into one.
+  const space = st.tag.indexOf(' ');
+  const lines = st.tag.length > 7 && space > 0 ? [st.tag.slice(0, space), st.tag.slice(space + 1)] : [st.tag];
+  if (lean) lines[lines.length === 1 ? 0 : lean === 'left' ? 0 : 1] = lean === 'left' ? `◀ ${lines[0]}` : `${lines[lines.length - 1]} ▶`;
+  const lh = 11;
+  const h = 18 + (lines.length - 1) * lh;
+  const long = lines.some((l) => l.length > 7);
+  const fit = (l: string) => (l.length > 6 ? { textLength: w - 10, lengthAdjust: 'spacingAndGlyphs' as const } : {});
   return (
     <g className={`us-chip us-chip-${quirk}`} transform={`translate(${x},${y})`}>
       <rect className="us-chip-box" x={-w / 2} y={-h} width={w} height={h} rx={9} fill={st.color} />
-      <text className="us-chip-text" x={0} y={-h / 2 + 0.5} textAnchor="middle" dominantBaseline="central" fill={st.ink} {...squeeze}>
-        {tag}
-      </text>
+      {lines.map((l, k) => (
+        <text
+          key={k}
+          className={long ? 'us-chip-text us-chip-text-sm' : 'us-chip-text'}
+          x={0}
+          y={-h / 2 + 0.5 + (k - (lines.length - 1) / 2) * lh}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fill={st.ink}
+          {...fit(l)}
+        >
+          {l}
+        </text>
+      ))}
       <circle className="us-chip-disc" cx={0} cy={-h - 9} r={10.5} fill="#fff" stroke={st.color} />
       <text className="us-emoji" x={0} y={-h - 8} textAnchor="middle" dominantBaseline="central" fontSize={quirk === 'boss' && mood ? 19 : 12.5}>
         {emoji}

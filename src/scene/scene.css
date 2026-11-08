@@ -154,6 +154,7 @@
   font: 900 11.5px/1 system-ui, -apple-system, 'Segoe UI', sans-serif;
   letter-spacing: 0.4px;
 }
+.urinal-scene .us-chip-text-sm { font-size: 10px; letter-spacing: 0.2px; }
 .urinal-scene .us-bubble-text-sm { font-size: 10px; font-weight: 800; }
 
 @keyframes us-sway {
