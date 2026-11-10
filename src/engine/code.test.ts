@@ -282,10 +282,14 @@ describe('evaluate', () => {
     expect(zoneCovers(parseLayout('H _ _ _ _ _', 'left'), 0)).toEqual([1, 2, 3, 4]);
   });
 
-  it('security: the stall is never safe while he is in the room', () => {
-    const ev = evaluate(parseLayout('V _ _ _ _ _ _ S', 'left'));
-    expect(ev.slots[7].violations).toBe(1);
-    expect(ev.slots[7].reason).toBe('security');
+  it('security guards a urinal for no reason: it can’t be picked, and standing beside him is fine', () => {
+    const b = parseLayout('_ _ V _', 'left');
+    const ev = evaluate(b);
+    expect(ev.slots[2].pickable).toBe(false);
+    expect(ev.slots[1].violations).toBe(0);
+    expect(ev.slots[3].violations).toBe(0);
+    // ...but a spot away from him beats one right beside him.
+    expect(evaluate(parseLayout('_ _ _ V _ _ _', 'left')).greens).not.toContain(4);
   });
 
   it('germaphobe: the urinals beside him are wet (worse than a dry spot that breaks the code)', () => {

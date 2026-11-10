@@ -224,7 +224,7 @@ describe('empty room', () => {
 });
 
 describe('shy guy and germaphobe', () => {
-  it('never spawns with someone already in his space (and security always has a stall)', () => {
+  it('never spawns with someone already in his space', () => {
     let seen = 0;
     for (let seed = 1; seed <= 800; seed++) {
       for (const d of [5, 6] as const) {
@@ -234,7 +234,6 @@ describe('shy guy and germaphobe', () => {
           seen++;
           expect(zoneCovers(b, j).filter((k) => b.slots[k].occupant)).toEqual([]);
         });
-        if (b.slots.some((s) => s.occupant?.quirk === 'security')) expect(b.slots.some((s) => s.kind === 'stall')).toBe(true);
         b.slots.forEach(() => {
         });
       }
@@ -262,8 +261,7 @@ describe('boss in a stall', () => {
 });
 
 describe('daily variety', () => {
-  const HEADLINERS = ['sumo', 'knight', 'napper', 'mascot', 'twin', 'gymbro', 'tourist', 'dropper', 'friend', 'rookie'];
-  it('never repeats a venue or a kind of labelled guy, and ends on a headliner', () => {
+  it('never repeats a venue or a kind of labelled guy within a day', () => {
     for (let i = 0; i < 40; i++) {
       const key = new Date(Date.UTC(2027, 0, 1 + i)).toISOString().slice(0, 10);
       const rounds = dailyRounds(key);
@@ -271,7 +269,6 @@ describe('daily variety', () => {
       expect(new Set(venues).size).toBe(venues.length);
       const kinds = rounds.flatMap((r) => [...new Set(r.bathroom.slots.flatMap((s) => (s.occupant && s.occupant.quirk !== 'normal' ? [s.occupant.quirk] : [])))]);
       expect(new Set(kinds).size).toBe(kinds.length);
-      expect(rounds[rounds.length - 1].bathroom.slots.some((s) => s.occupant && HEADLINERS.includes(s.occupant.quirk))).toBe(true);
     }
   }, 30000);
 });

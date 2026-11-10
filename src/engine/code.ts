@@ -25,7 +25,7 @@ export const BASE_RADIUS: Record<Quirk, number> = {
   napper: 1,
   shy: 4,
   mascot: 1,
-  security: 1,
+  security: 0, // guarding a taped-off urinal (nobody knows why), not using it
   germ: 1,
   friend: 0,
   rookie: 1,
@@ -128,8 +128,9 @@ export function sideOf(i: number, j: number): Side {
 /** True when slot j holds a guy who projects a zone (a guy in a stall has walls, so he doesn't). */
 export function hasZone(b: Bathroom, j: number): boolean {
   const s = b.slots[j];
-  // The sumo already fills three urinals and a friend is someone you want next to you: neither projects any space.
-  return !!s?.occupant && s.kind === 'urinal' && s.occupant.quirk !== 'sumo' && s.occupant.quirk !== 'friend';
+  // The sumo already fills three urinals, a friend is someone you want next to you, and security is only
+  // guarding his urinal: none of them project any space.
+  return !!s?.occupant && s.kind === 'urinal' && s.occupant.quirk !== 'sumo' && s.occupant.quirk !== 'friend' && s.occupant.quirk !== 'security';
 }
 
 /** clearance(i, guy at j) = effDist - radius toward i. <= 0 is a violation. */
@@ -220,10 +221,9 @@ export function culpritOf(b: Bathroom, i: number): number | null {
   let bestR = -Infinity;
   for (const j of occupantIndices(b)) {
     if (j === i) continue;
-    // In a stall only the crypto bro reaches you (he pitches through the door), and security, from anywhere.
-    const q = b.slots[j].occupant?.quirk;
-    if (stall && q !== 'crypto' && q !== 'security') continue;
-    const c = stall && q === 'security' ? 0 : clearanceTo(b, i, j);
+    // In a stall only the crypto bro reaches you (he pitches through the door).
+    if (stall && b.slots[j].occupant?.quirk !== 'crypto') continue;
+    const c = clearanceTo(b, i, j);
     if (c > 0) continue;
     const r = zoneRadius(b.slots[j].occupant as Guy, sideOf(i, j));
     if (c < bestC || (c === bestC && r > bestR)) {
@@ -310,15 +310,15 @@ function analyzeSlot(b: Bathroom, i: number, occ: number[]): Cand {
   if (slot.kind === 'stall') {
     // A stall has walls, except against the crypto bro: within his reach he pitches through the door.
     const pitched = occ.filter((j) => b.slots[j].occupant?.quirk === 'crypto' && clearanceTo(b, i, j) <= 0);
-    // The security guard watches the stall from anywhere in the room.
-    const watched = occ.filter((j) => b.slots[j].occupant?.quirk === 'security');
-    if (pitched.length + watched.length === 0) return { index: i, tier: 2, violations: 0, severity: 0, pastTalkers, beside: 0, gap: Infinity, clearance: Infinity, tightQuirks: 0, violatedBy: [], friendNext: 0 };
+    if (pitched.length === 0) return { index: i, tier: 2, violations: 0, severity: 0, pastTalkers, beside: 0, gap: Infinity, clearance: Infinity, tightQuirks: 0, violatedBy: [], friendNext: 0 };
     const clearance = pitched.length ? Math.min(...pitched.map((j) => roomTo(b, i, j))) : 0;
-    const severity = pitched.reduce((t, j) => t + 2 * depthIn(b, i, j), 0) + 2 * watched.length;
-    const violatedBy = [...pitched, ...watched];
+    const severity = pitched.reduce((t, j) => t + 2 * depthIn(b, i, j), 0);
+    const violatedBy = pitched;
     return { index: i, tier: 3, violations: violatedBy.length, severity, pastTalkers, beside: 0, gap: Infinity, clearance, tightQuirks: 0, violatedBy, friendNext: 0 };
   }
-  const beside = occ.filter((j) => Math.abs(i - j) === 1).length;
+  // The guard takes no space, but he's still a man standing right there: legal, just not the best spot.
+  const guard = [i - 1, i + 1].filter((j) => b.slots[j]?.kind === 'urinal' && b.slots[j].occupant?.quirk === 'security').length;
+  const beside = occ.filter((j) => Math.abs(i - j) === 1).length + guard;
   const gap = occ.reduce((m, j) => (j === i ? m : Math.min(m, Math.abs(i - j) - 1)), Infinity);
   let clearance = Infinity;
   let tightQuirks = 0;
@@ -367,7 +367,7 @@ function violationReason(b: Bathroom, i: number): Reason {
   const j = culpritOf(b, i);
   if (j === null) return 'adjacent';
   const g = b.slots[j].occupant;
-  if (!g || actsNormal(g) || g.quirk === 'normal' || g.quirk === 'napper' || g.quirk === 'sumo' || g.quirk === 'friend') return 'adjacent';
+  if (!g || actsNormal(g) || g.quirk === 'normal' || g.quirk === 'napper' || g.quirk === 'sumo' || g.quirk === 'friend' || g.quirk === 'security') return 'adjacent';
   // Every other quirk projects space and has its own reason of the same name.
   return g.quirk as Reason;
 }

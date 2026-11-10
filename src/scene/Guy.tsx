@@ -624,10 +624,6 @@ export function GuyFigure({ look, hoodie, quirk = 'normal', turn = 0, talking, p
   );
 }
 
-/** Flashlight lens, relative to the security guard's feet (unscaled), on his propSide. */
-export const FLASH_X = 62;
-export const FLASH_Y = -110.7;
-
 /** How far the security guard's cap rises above a bare head (unscaled). */
 export const SECURITY_CAP_RISE = 6;
 /** How far the knight's helmet and plume rise above a bare head (unscaled). */

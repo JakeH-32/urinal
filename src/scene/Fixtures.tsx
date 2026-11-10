@@ -118,6 +118,35 @@ export function Stall({ g, occupant, you }: StallProps) {
 
 export const STALL_TOP_Y = STALL_TOP;
 
+/**
+ * Yellow-and-black caution tape in an X across the urinal the security guard is guarding. It runs
+ * wider than the urinal so its corners show above his shoulders and beside his legs.
+ */
+export function UrinalTape({ cx }: { cx: number }) {
+  return <CautionTape x0={cx - 33} x1={cx + 33} y0={90} y1={200} />;
+}
+
+function CautionTape({ x0, x1, y0, y1 }: { x0: number; x1: number; y0: number; y1: number }) {
+  const strips: [number, number, number, number][] = [
+    [x0 - 4, y0, x1 + 4, y1],
+    [x1 + 4, y0, x0 - 4, y1],
+  ];
+  return (
+    <g className="us-tape" aria-hidden="true">
+      {strips.map(([ax, ay, bx, by], i) => {
+        const d = `M${ax},${ay} L${bx},${by}`;
+        return (
+          <g key={i}>
+            <path d={d} stroke="var(--us-ink)" strokeWidth={11} strokeLinecap="butt" />
+            <path d={d} stroke="#f6c90e" strokeWidth={8.4} strokeLinecap="butt" />
+            <path d={d} stroke="#1d1d22" strokeWidth={8.4} strokeDasharray="5 6" strokeLinecap="butt" />
+          </g>
+        );
+      })}
+    </g>
+  );
+}
+
 /** Privacy panel between two urinals: a dark slab from above the urinals down to the floor. */
 export function Divider({ x }: { x: number }) {
   const top = 88;

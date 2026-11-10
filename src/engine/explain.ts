@@ -96,7 +96,8 @@ function tightQuirkIndex(b: Bathroom, i: number): number | undefined {
 
 /** Guys standing directly beside slot i (a divider between doesn't change that). */
 function besideCount(b: Bathroom, i: number): number {
-  return occupantIndices(b).filter((j) => Math.abs(j - i) === 1).length;
+  const guard = [i - 1, i + 1].filter((j) => b.slots[j]?.kind === 'urinal' && b.slots[j].occupant?.quirk === 'security').length;
+  return occupantIndices(b).filter((j) => Math.abs(j - i) === 1).length + guard;
 }
 
 const COUNT_WORD = ['no', 'one', 'two', 'three', 'four', 'five'];
@@ -189,6 +190,7 @@ export function explainPick(b: Bathroom, ev: Evaluation, pick: number): string |
     case 'bigfoot':
     case 'napper':
     case 'friend':
+    case 'security': // guards the stall, takes no urinal space
       return plain;
     case 'security':
       return b.slots[pick].kind === 'stall' ? 'The stall isn’t safe with security in the room.' : plain;

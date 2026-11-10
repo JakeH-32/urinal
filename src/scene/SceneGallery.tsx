@@ -238,8 +238,11 @@ const gymRoom = room([U(), U(guy('gymbro', { lean: 'right' }), 'sink'), U(), U(g
 const twinsRoom = room([U(), ...twins(2, 1), U(), U(), ...twins(3, 2, { hair: 2 }), U()], 'right');
 const wideRoom = room([U(), ...multi('napper', 2), U(), ...multi('mascot', 2), U(guy())], 'left');
 const sumoRoom = room([U(), ...multi('sumo', 3), U(), U(guy('shy')), U()], 'right');
-const securityRoom = room([S(), U(), U(), U(guy('security')), U(), U(guy('germ')), U(), U(guy('germ', { height: 2 }))], 'right');
-const securityNoStall = room([U(guy('security', { height: 0 })), U(), U(), U(guy('germ', { bald: true })), U()], 'left');
+// Security guards a taped-off stall: at the solid end (door right), and by the door (door left).
+// Security guards one random urinal, for no stated reason: mid-row next to a stall, and at the end wall.
+const securityRoom = room([S(), U(), U(guy()), U(), U(guy('security')), U(guy('germ')), U(), U(guy('germ', { height: 2 }))], 'right');
+const securityNoStall = room([U(), U(guy('germ', { bald: true })), U(), U(), U(guy('security', { height: 0 }))], 'left');
+const securityEnds = room([U(guy('security', { height: 2 })), U(), U(guy()), U(), U(), U(guy('talker')), U(guy('security', { bald: true }))], 'right');
 const friendsRoom = room(
   [
     U(named(guy('friend'), 'The local legend')),
@@ -259,7 +262,7 @@ const revealShyRoom = room([U(), U(), U(guy('shy')), U(), U(), U(), U(), U()], '
 const revealShy = (): Evaluation => evalOf(revealShyRoom, { 7: 'clear', 4: 'doctor' }, [7], { 4: [2] });
 const revealMascotRoom = room([U(), U(), ...multi('mascot', 2), U(), U()], 'right');
 const revealTwinsRoom = room([U(), U(), ...twins(2, 7), U(), U(), U()], 'left');
-const revealSecurityRoom = room([U(guy()), U(), U(guy('security')), U(), U(guy()), S()], 'left');
+const revealSecurityRoom = room([U(guy()), U(), U(), U(guy()), U(guy('security')), U()], 'left');
 
 const looksRow = room(
   Array.from({ length: 10 }, (_, i) => U(guy('normal', { hair: i % 6, shirt: i % 8, pants: i % 5, skin: i % 5, height: i % 3, bald: i === 9 }))),
@@ -496,9 +499,12 @@ export function SceneGallery() {
       <Section title="Sumo across three urinals, shy guy (door right)">
         <Live bathroom={sumoRoom} />
       </Section>
-      <Section title="Security (beam on the stall) and two germaphobes (wet urinals beside them)">
+      <Section title="Security guarding a taped-off urinal (why?), and germaphobes (wet urinals beside them)">
         <BathroomScene bathroom={securityRoom} slotNumbers />
         <BathroomScene bathroom={securityNoStall} slotNumbers />
+      </Section>
+      <Section title="Security guarding a urinal at each end (door right)" note="His urinal is taped off and can't be picked; he stands in front of it, arms at his sides. Right beside him is fine.">
+        <Live bathroom={securityEnds} />
       </Section>
       <Section title="Your bro: the local legend (napkin), the next round (wallet), Dave (nods at you)">
         <Live bathroom={friendsRoom} />
@@ -518,8 +524,8 @@ export function SceneGallery() {
       <Section title="Reveal: crowding one twin crowds them both">
         <BathroomScene bathroom={revealTwinsRoom} picked={4} evaluation={evalOf(revealTwinsRoom, { 6: 'clear', 4: 'doctor', 1: 'doctor' }, [6], { 1: [2, 3], 4: [2, 3] })} reducedMotion />
       </Section>
-      <Section title="Reveal: the guard's flashlight finds you in the stall">
-        <BathroomScene bathroom={revealSecurityRoom} picked={5} evaluation={evalOf(revealSecurityRoom, { 5: 'doctor', 1: 'doctor', 3: 'doctor' }, [1], { 5: [2], 1: [0, 2], 3: [2, 4] })} />
+      <Section title="Reveal: right beside the guard (fine: he projects no space, so no reaction)">
+        <BathroomScene bathroom={revealSecurityRoom} picked={5} evaluation={evalOf(revealSecurityRoom, { 5: 'clear', 1: 'clear', 2: 'straw' }, [5, 1])} />
       </Section>
 
       <Section title="Reveal: clear pick (far wall)">

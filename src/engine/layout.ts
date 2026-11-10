@@ -26,7 +26,7 @@ function slotFor(tok: string): Slot {
     case 'Z': return { kind: 'urinal', occupant: guy('napper') }; // always in pairs: Z Z
     case 'Q': return { kind: 'urinal', occupant: guy('mascot') }; // always in pairs: Q Q
     case 'H': return { kind: 'urinal', occupant: guy('shy') };
-    case 'V': return { kind: 'urinal', occupant: guy('security') };
+    case 'V': return { kind: 'urinal', occupant: guy('security') }; // guarding this urinal, for no stated reason
     case 'Ge': return { kind: 'urinal', occupant: guy('germ') };
     case 'Fr': return { kind: 'urinal', occupant: guy('friend') };
     case 'Rk': return { kind: 'urinal', occupant: guy('rookie') };

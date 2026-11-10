@@ -331,13 +331,6 @@ function layout(rng: Rng, d: Difficulty, plan: Plan): Bathroom {
       break;
     }
   }
-  // Security is there for the stall: give him one at the far end.
-  if (guys.includes('security') && stalls === 0 && n >= 4) {
-    const end = b.door === 'left' ? n - 1 : 0;
-    b.slots[end] = { kind: 'stall' };
-    b.dividers[end === 0 ? 0 : end - 1] = false;
-    stalls = 1;
-  }
   placeGuys(rng, b, rng.shuffle(fitGuys(guys, n, stalls)));
   return b;
 }
@@ -376,12 +369,12 @@ function accepts(b: Bathroom, ev: Evaluation, d: Difficulty, plan: Plan, stage: 
     if (d >= 2 && d <= 5 && straw < 1) return false;
     if ((d === 4 || d === 5) && !isTrap(b, ev)) return false;
   }
-  // Security is there for the stall: no stall, no guard.
-  if (b.slots.some((s) => s.occupant?.quirk === 'security') && !b.slots.some((s) => s.kind === 'stall')) return false;
   // The shy guy would have left already, and nobody stands at the germaphobe's wet urinals: their space is empty when you walk in.
   if (b.slots.some((s, j) => (s.occupant?.quirk === 'shy' || s.occupant?.quirk === 'germ') && zoneCovers(b, j).some((k) => b.slots[k].occupant))) return false;
+  // The security guard only ever guards a urinal right next to somebody: it makes no sense, and that's the joke.
+  if (b.slots.some((s, j) => s.kind === 'urinal' && s.occupant?.quirk === 'security' && ![j - 1, j + 1].some((k) => b.slots[k]?.kind === 'urinal' && b.slots[k].occupant && b.slots[k].occupant!.quirk !== 'security'))) return false;
   // From d3 on, a room has at least one guy with a label who isn't playing by the regular rules.
-  if (d >= 3 && !b.slots.some((s) => s.occupant && !actsNormal(s.occupant))) return false;
+  if (d >= 3 && !b.slots.some((s) => s.kind === 'urinal' && s.occupant && !actsNormal(s.occupant))) return false;
   // A hard (d5) room always has one of the big guys. Some need two free urinals in a row and can fail to
   // fit, so check rather than assume.
   if (d === 5 && !b.slots.some((s) => s.occupant && BIG_QUIRKS.includes(s.occupant.quirk))) return false;
@@ -440,10 +433,8 @@ function buildBathroom(rng: Rng, d: Difficulty, featured?: Quirk): Bathroom {
 /**
  * Endless: a truly random room. Any size, any mix of guys, flags and dividers, nothing shaped to a
  * difficulty. Only sanity rules: one right answer, a real choice, and the guys' own rules (shy/germ
- * space empty). The security guard needs a stall to guard, so he sits these out.
+ * space empty, the guard next to somebody).
  */
-const RANDOM_QUIRKS: readonly Quirk[] = ANY_QUIRK.filter((q) => q !== 'security');
-
 function randomBathroom(rng: Rng): Bathroom {
   for (let a = 0; a < 400; a++) {
     const n = rng.weighted([2, 3, 4, 5, 6, 7, 8, 9, 10], (k) => (k <= 3 ? 0.6 : k === 4 ? 1 : 2));
@@ -452,7 +443,7 @@ function randomBathroom(rng: Rng): Bathroom {
     if (rng.chance(0.4)) addDividers(rng, b, rng.chance(0.5) ? 'all' : 'some');
     const nGuys = rng.int(1, Math.max(1, Math.ceil((n - stalls) / 2)));
     const guys: Quirk[] = [];
-    for (let k = 0; k < nGuys; k++) guys.push(rng.chance(0.4) ? 'normal' : pickQuirk(rng, RANDOM_QUIRKS));
+    for (let k = 0; k < nGuys; k++) guys.push(rng.chance(0.4) ? 'normal' : pickQuirk(rng, ANY_QUIRK));
     if (n > SMALL_ROOM && rng.chance(0.4)) addFlags(rng, b, rng.int(1, 2), ALL_FLAGS);
     placeGuys(rng, b, guys);
     if (randomOk(b, evaluate(b))) return b;
@@ -465,6 +456,7 @@ function randomOk(b: Bathroom, ev: Evaluation): boolean {
   const pickable = ev.slots.filter((s) => s.pickable).length;
   if (pickable < 2) return false;
   if (b.slots.some((s, j) => (s.occupant?.quirk === 'shy' || s.occupant?.quirk === 'germ') && zoneCovers(b, j).some((k) => b.slots[k].occupant))) return false;
+  if (b.slots.some((s, j) => s.kind === 'urinal' && s.occupant?.quirk === 'security' && ![j - 1, j + 1].some((k) => b.slots[k]?.kind === 'urinal' && b.slots[k].occupant && b.slots[k].occupant!.quirk !== 'security'))) return false;
   return true;
 }
 
@@ -651,19 +643,19 @@ const STAR_PICKS = HEADLINERS.filter((q) => q !== 'rookie');
 const freshStars = (seen: Set<Quirk>) => (STAR_PICKS.some((q) => !seen.has(q)) ? STAR_PICKS.filter((q) => !seen.has(q)) : STAR_PICKS);
 const hasHeadliner = (b: Bathroom) => b.slots.some((s) => s.occupant && HEADLINERS.includes(s.occupant.quirk));
 
-/** The labelled guys in a room (the kinds that make it a "type" of room). */
-function roomQuirks(b: Bathroom): Set<Quirk> {
-  return new Set(b.slots.flatMap((s) => (s.occupant && s.occupant.quirk !== 'normal' ? [s.occupant.quirk] : [])));
-}
-
-/** A room is a gimme if it's tiny or nearly every wrong spot is obviously wrong. */
-export function isGimme(b: Bathroom): boolean {
-  if (b.slots.length <= SMALL_ROOM) return true;
-  const ev = evaluate(b);
-  const tempting = ev.slots.filter((s) => s.pickable && s.grade !== 'clear' && s.grade !== 'doctor').length;
-  return tempting < 2;
-}
-
+/** The labelled guys in a room (the kinds that make it a "type" of room). */
+function roomQuirks(b: Bathroom): Set<Quirk> {
+  return new Set(b.slots.flatMap((s) => (s.occupant && s.occupant.quirk !== 'normal' ? [s.occupant.quirk] : [])));
+}
+
+/** A room is a gimme if it's tiny or nearly every wrong spot is obviously wrong. */
+export function isGimme(b: Bathroom): boolean {
+  if (b.slots.length <= SMALL_ROOM) return true;
+  const ev = evaluate(b);
+  const tempting = ev.slots.filter((s) => s.pickable && s.grade !== 'clear' && s.grade !== 'doctor').length;
+  return tempting < 2;
+}
+
 /** The rounds of a given local date (YYYY-MM-DD), by dailyDifficulties. Same for everyone. */
 export function dailyRounds(dateKey: string): Round[] {
   if (dateKey >= DAILY_VARIETY_FROM) return variedDaily(dateKey);

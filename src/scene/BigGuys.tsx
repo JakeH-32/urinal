@@ -1,11 +1,14 @@
 // Fixtures and figures for the newer guys: Gym Bro's sink, the germaphobe's wet urinals, the knight's
-// shield, the security guard's flashlight beam, and the multi-urinal guys (napper, wolf mascot, sumo).
+// shield, the security guard at the urinal he's taped off, and the multi-urinal guys (napper, wolf mascot, sumo).
 import { useId } from 'react';
 import type { Quirk } from '../types';
 import { FEET_Y, PITCH, urinalMetrics } from './geometry';
 import {
   MAWASHI,
   QUIRK_STYLE,
+  SECURITY_GOLD,
+  SECURITY_NAVY,
+  SECURITY_PANTS,
   SHIELD_BLUE,
   SHIELD_GOLD,
   STEEL,
@@ -157,12 +160,87 @@ export function KnightShield({ cx, low, side }: { cx: number; low?: boolean; sid
   );
 }
 
-/** The security guard's flashlight beam, from the lens to a target spot (scene coords). */
-export function FlashBeam({ x, y, tx, ty, spread }: { x: number; y: number; tx: number; ty: number; spread: number }) {
+/** How far his cap rises above a bare head (unscaled). */
+export const GUARD_CAP_RISE = 8;
+
+/**
+ * The security guard on duty in front of the urinal he's taped off, facing the room,
+ * arms at his sides, chin up, smug. Navy uniform, cap, gold badge, duty belt. Feet at (0, 0), unscaled.
+ */
+export function GuardFigure({ look }: { look: ResolvedLook }) {
+  const navy = SECURITY_NAVY;
+  const sleeve = shade(navy, -0.12);
+  const skin = look.skin;
+  const hair = look.hair?.color ?? '#3a2a20';
+  // a gentle knee bend: everything above the knees sits a touch lower
+  const crouch = 2;
   return (
-    <g className="us-beam" aria-hidden="true">
-      <polygon points={`${x},${y - 2} ${tx},${ty - spread} ${tx},${ty + spread} ${x},${y + 2}`} fill="#fff3a3" opacity={0.34} />
-      <ellipse cx={tx} cy={ty} rx={spread * 0.45} ry={spread} fill="#fff6c2" opacity={0.5} />
+    <g>
+      {/* feet a bit wider than his shoulders, knees just slightly bent */}
+      <ellipse className="us-ink" cx={-19} cy={-4} rx={9.5} ry={5} fill="#1b1b1f" />
+      <ellipse className="us-ink" cx={19} cy={-4} rx={9.5} ry={5} fill="#1b1b1f" />
+      <path
+        className="us-ink"
+        fill={SECURITY_PANTS}
+        d="M-18,-82 L18,-82 L25,-44 L26,-8 L13,-8 L11,-42 L0,-57 L-11,-42 L-13,-8 L-26,-8 L-25,-44 Z"
+      />
+      <path d="M-20,-66 L-22,-44 L-21,-14 M20,-66 L22,-44 L21,-14" fill="none" stroke={shade(SECURITY_PANTS, -0.25)} strokeWidth={1.2} />
+      {/* leaning back a little, chest puffed out */}
+      <g transform={`translate(0,${crouch})`}>
+        <path
+          className="us-ink"
+          fill={navy}
+          d="M-21,-145 C-29,-144 -30,-134 -28,-124 Q-25,-102 -19,-81 L19,-81 Q25,-102 28,-124 C30,-134 29,-144 21,-145 Z"
+        />
+        {/* chest puff: two pec curves catching the light */}
+        <path d="M-19,-122 Q-10,-114 -2,-121 M2,-121 Q10,-114 19,-122" fill="none" stroke={shade(navy, -0.35)} strokeWidth={1.4} strokeLinecap="round" />
+        {/* collar, tie */}
+        <path className="us-ink" fill={sleeve} d="M-11,-146 L0,-135 L11,-146 L8,-150 L0,-143 L-8,-150 Z" strokeWidth={1.5} />
+        <path className="us-ink" fill="#121826" d="M-2.6,-138 L2.6,-138 L3.4,-113 L0,-109 L-3.4,-113 Z" strokeWidth={1.3} />
+        {/* badge on his left chest (screen right), name tag on the other side */}
+        <path className="us-ink" fill={SECURITY_GOLD} d="M9,-136 L17,-136 L17.5,-129 Q13,-123 8.5,-129 Z" strokeWidth={1.3} />
+        <circle cx={13} cy={-131.5} r={1.6} fill={shade(SECURITY_GOLD, 0.35)} />
+        <rect x={-17} y={-134} width={9} height={3.4} rx={0.8} fill="#e8eef2" />
+        {/* duty belt: buckle, radio, pouch */}
+        <rect className="us-ink" x={-21} y={-88} width={42} height={7} fill="#15171b" strokeWidth={1.6} />
+        <rect x={-3.5} y={-87} width={7} height={5} rx={1} fill="#c9d2db" />
+        <rect className="us-ink" x={8} y={-97} width={7} height={12} rx={1.5} fill="#24272d" strokeWidth={1.4} />
+        <path d="M13,-97 V-104" stroke="var(--us-ink)" strokeWidth={1.8} strokeLinecap="round" />
+        <rect className="us-ink" x={-15} y={-91} width={7} height={9} rx={1.5} fill="#24272d" strokeWidth={1.4} />
+        {/* arms at his sides, hands by his belt */}
+        {[-1, 1].map((sx) => (
+          <g key={sx} transform={sx < 0 ? 'scale(-1,1)' : undefined}>
+            <path d="M23,-138 C29,-126 30,-108 28,-92" fill="none" stroke="var(--us-ink)" strokeWidth={12.5} strokeLinecap="round" />
+            <path d="M23,-138 C29,-126 30,-108 28,-92" fill="none" stroke={sleeve} strokeWidth={8.6} strokeLinecap="round" />
+            <path className="us-ink" fill={SECURITY_GOLD} d="M21,-142 L27,-143 L28,-137 L24,-133 L20,-137 Z" strokeWidth={1.2} />
+            <ellipse className="us-ink" cx={28} cy={-87} rx={5} ry={5.6} fill={skin} strokeWidth={1.6} />
+          </g>
+        ))}
+        {/* neck: a bit more of it showing, chin's up */}
+        <rect className="us-ink" x={-6.5} y={-157} width={13} height={14} fill={skin} />
+        <path d="M-5,-149 Q0,-147 5,-149" fill="none" stroke={shade(skin, 0.2)} strokeWidth={1.2} />
+        {/* head tipped back: chin up, looking down his nose */}
+        <g transform="translate(0,-3)">
+          <ellipse className="us-ink" cx={-14} cy={-163} rx={3.4} ry={4.8} fill={skin} />
+          <ellipse className="us-ink" cx={14} cy={-163} rx={3.4} ry={4.8} fill={skin} />
+          <circle className="us-ink" cx={0} cy={-165} r={14} fill={skin} />
+          {/* one brow cocked, heavy lids, pupils low: smug */}
+          <path d="M-9.5,-170.5 L-3,-170 M3,-172.5 Q6.5,-175 10,-172" fill="none" stroke="#1d1d22" strokeWidth={1.8} strokeLinecap="round" />
+          <path d="M-8,-166.5 H-2.5 M2.5,-166.5 H8" stroke="#1d1d22" strokeWidth={1.4} strokeLinecap="round" />
+          <circle cx={-5.2} cy={-165} r={1.4} fill="#1d1d22" />
+          <circle cx={5.2} cy={-165} r={1.4} fill="#1d1d22" />
+          {/* nose up: nostrils show */}
+          <circle cx={-1.5} cy={-160} r={0.9} fill={shade(skin, 0.4)} />
+          <circle cx={1.5} cy={-160} r={0.9} fill={shade(skin, 0.4)} />
+          <path d="M-6,-157.5 Q0,-160 6,-157.5 L5,-156 Q0,-158 -5,-156 Z" fill={hair} />
+          {/* lopsided smirk */}
+          <path d="M-4,-153.5 Q1,-152 5.5,-155" fill="none" stroke="#1d1d22" strokeWidth={1.4} strokeLinecap="round" />
+          {/* cap pushed back with the chin up: more crown, a thin peak */}
+          <path className="us-ink" fill={navy} d="M-15,-171 Q-15.5,-186 0,-186 Q15.5,-186 15,-171 Z" strokeWidth={1.8} />
+          <path className="us-ink" fill={SECURITY_GOLD} d="M-3,-182 L3,-182 L3.4,-178 L0,-175.5 L-3.4,-178 Z" strokeWidth={1} />
+          <path className="us-ink" fill="#121826" d="M-16.5,-171 Q0,-168.5 16.5,-171 Q15,-167.5 0,-167 Q-15,-167.5 -16.5,-171 Z" strokeWidth={1.5} />
+        </g>
+      </g>
     </g>
   );
 }

@@ -404,7 +404,7 @@ export const QUIRKS: Record<Quirk, QuirkText> = {
   security: {
     label: 'Security',
     emoji: '🔦',
-    rule: 'The stall isn’t safe while he’s here.',
+    rule: 'Guarding this urinal. Won’t say why.',
     people: [
       { name: 'Officer Lonnie of mall security', blurb: 'Has the stall on a twenty-minute watch.' },
       { name: 'A mall cop named Rex', blurb: 'Carries a flashlight. The lights are on.' },
@@ -1254,7 +1254,7 @@ export const WHOS_WHO: { quirk: Exclude<Quirk, 'normal'>; line: string }[] = [
   { quirk: 'napper', line: 'Lay down for a second. An hour ago.' },
   { quirk: 'shy', line: 'Can’t go with an audience. Everyone’s an audience.' },
   { quirk: 'mascot', line: 'Stays in character, even in here.' },
-  { quirk: 'security', line: 'Keeps an eye on the stall. Both eyes.' },
+  { quirk: 'security', line: 'Guarding one urinal. Won’t say why.' },
   { quirk: 'germ', line: 'Flushes on arrival, during, and on the way out.' },
   { quirk: 'friend', line: 'Finally, someone you want to stand next to.' },
   { quirk: 'dropper', line: 'Pants at his ankles. Zero regrets.' },

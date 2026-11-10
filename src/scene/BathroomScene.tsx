@@ -21,8 +21,6 @@ import {
 import {
   CHIP_W,
   Droplets,
-  FLASH_X,
-  FLASH_Y,
   KNIGHT_HELM_RISE,
   SECURITY_CAP_RISE,
   figureRise,
@@ -45,7 +43,8 @@ import {
   guyTop,
 } from './Guy';
 import {
-  FlashBeam,
+  GUARD_CAP_RISE,
+  GuardFigure,
   KnightShield,
   MASCOT_HEAD_Y,
   MASCOT_SCALE,
@@ -61,10 +60,10 @@ import {
   partWidth,
   spanCentre,
 } from './BigGuys';
-import { Divider, Doorway, Puddle, STALL_TOP_Y, SolidEnd, Stall, Urinal } from './Fixtures';
+import { Divider, Doorway, Puddle, STALL_TOP_Y, SolidEnd, Stall, Urinal, UrinalTape } from './Fixtures';
 import { GRADES } from '../grades';
 import { gearBlocked, sideOf, zoneCovers, zoneRadius } from '../engine/code';
-import { CRYPTO_LINES, FINANCE_LINES, KNIGHT_LINES, SHY_LINES, TWIN_LINES } from '../content';
+import { CRYPTO_LINES, FINANCE_LINES, KNIGHT_LINES, SECURITY_LINES, SHY_LINES, TWIN_LINES } from '../content';
 import {
   buildReveal,
   canPick,
@@ -164,7 +163,7 @@ const TALKER_LINE = 'Hey, buddy!';
 const PILOT_LINE = 'I’m a pilot.';
 const PILOT_REACTION = 'Captain, actually.';
 /** Guys with an always-on speech bubble aimed at the door (the finance bro is on speakerphone). */
-const isChatty = (q: Guy['quirk']) => q === 'talker' || q === 'pilot' || q === 'crypto' || q === 'finance' || q === 'twin' || q === 'knight';
+const isChatty = (q: Guy['quirk']) => q === 'talker' || q === 'pilot' || q === 'crypto' || q === 'finance' || q === 'twin' || q === 'knight' || q === 'security';
 /** The boss hiding in a stall, through the door. One per boss (by name). Short: one line each. */
 const STALL_BOSS_LINES = ['Occupied.', 'Taking a call.', 'In a meeting.', 'Don’t come in.', 'My office now.', 'Circle back later.'];
 /** The third triplet only ever agrees. */
@@ -210,6 +209,7 @@ function roomLine(b: Bathroom, index: number, pool: readonly string[], fallback:
 function chatLine(b: Bathroom, index: number): string {
   const guy = b.slots[index].occupant!;
   if (guy.quirk === 'pilot') return roomLine(b, index, PILOT_LINES, PILOT_LINE);
+  if (guy.quirk === 'security') return roomLine(b, index, SECURITY_LINES, 'You can’t pee here.');
   if (guy.quirk === 'knight') return roomLine(b, index, KNIGHT_LINES, 'Where’s the ren faire?');
   if (guy.quirk === 'crypto') return roomLine(b, index, CRYPTO_LINES, 'It’s still early.');
   if (guy.quirk === 'finance') return roomLine(b, index, FINANCE_LINES, 'Let’s circle back.');
@@ -281,15 +281,6 @@ function headTurn(guy: Guy, b: Bathroom, i: number, reactDir: -1 | 1 | undefined
   return 0;
 }
 
-/** The nearest stall to slot i (the security guard's flashlight finds it), or undefined. */
-function nearestStall(b: Bathroom, i: number): number | undefined {
-  let best: number | undefined;
-  b.slots.forEach((sl, j) => {
-    if (sl.kind === 'stall' && (best === undefined || Math.abs(j - i) < Math.abs(best - i))) best = j;
-  });
-  return best;
-}
-
 /** The napper's chip sits over his middle, right of his head (his Zz float up from there). */
 const NAPPER_CHIP_DX = 22;
 
@@ -302,12 +293,6 @@ function isTrailingPart(guy: Guy): boolean {
 function propSideFor(b: Bathroom, i: number): -1 | 1 {
   const guy = b.slots[i].occupant;
   if (guy?.quirk === 'drunk' || guy?.quirk === 'facetime' || guy?.quirk === 'gymbro') return guy.lean === 'left' ? -1 : 1;
-  // The security guard aims his flashlight at the stall (else toward the door).
-  if (guy?.quirk === 'security') {
-    const st = nearestStall(b, i);
-    if (st !== undefined) return st < i ? -1 : 1;
-    return b.door === 'left' ? -1 : 1;
-  }
   // The finance bro holds his speakerphone out on the door side, the way he's talking.
   if (guy?.quirk === 'finance') return b.door === 'left' ? -1 : 1;
   const rightBusy = !!b.slots[i + 1]?.occupant;
@@ -562,22 +547,6 @@ export function BathroomScene(props: BathroomSceneProps) {
     });
     return [...out];
   }, [bathroom]);
-  // Security: a flashlight beam from his hand to the stall (or just ahead of him, with no stall).
-  const beams = useMemo(() => {
-    const out: { guy: number; x: number; y: number; tx: number; ty: number; spread: number }[] = [];
-    bathroom.slots.forEach((sl, j) => {
-      const g = sl.occupant;
-      if (sl.kind !== 'urinal' || g?.quirk !== 'security') return;
-      const side = propSideFor(bathroom, j);
-      const sc = figureScale('security', g.look.height);
-      const x = layout.slots[j].cx + side * FLASH_X * sc;
-      const y = FEET_Y + FLASH_Y * sc;
-      const st = nearestStall(bathroom, j);
-      if (st !== undefined) out.push({ guy: j, x, y, tx: layout.slots[st].cx, ty: 140, spread: 44 });
-      else out.push({ guy: j, x, y, tx: x + side * 46, ty: y - 10, spread: 12 });
-    });
-    return out;
-  }, [bathroom, layout]);
 
   const rootClass = ['urinal-scene', reducedMotion ? 'us-reduced' : '', locked ? 'us-locked' : 'us-live', className ?? '']
     .filter(Boolean)
@@ -668,7 +637,14 @@ export function BathroomScene(props: BathroomSceneProps) {
             const reflection = gb && gl ? { side: (gb.lean === 'left' ? -1 : 1) as -1 | 1, skin: gl.skin, hair: gl.hair?.color ?? null, tank: gl.shirt } : undefined;
             return <Sink key={`fx-${g.index}`} cx={g.cx} reflection={reflection} />;
           }
-          return <Urinal key={`fx-${g.index}`} cx={g.cx} low={g.flag === 'low'} broken={g.flag === 'broken'} />;
+          const guarded = slot.occupant?.quirk === 'security';
+          return (
+            <g key={`fx-${g.index}`}>
+              <Urinal cx={g.cx} low={g.flag === 'low'} broken={g.flag === 'broken'} />
+              {/* the urinal security is guarding, for no stated reason: taped off */}
+              {guarded && <UrinalTape cx={g.cx} />}
+            </g>
+          );
         })}
         {layout.dividers.map((d) => (
           <Divider key={`div-${d.index}`} x={d.x} />
@@ -689,10 +665,6 @@ export function BathroomScene(props: BathroomSceneProps) {
         {/* germaphobe: the urinals beside him are wet */}
         {wetAt.map((i) => (
           <WetUrinal key={`wet-u-${i}`} cx={layout.slots[i].cx} low={layout.slots[i].flag === 'low'} />
-        ))}
-        {/* security: the flashlight beam, behind the men */}
-        {beams.map((bm) => (
-          <FlashBeam key={`beam-${bm.guy}`} x={bm.x} y={bm.y} tx={bm.tx} ty={bm.ty} spread={bm.spread} />
         ))}
         {/* FaceTime: a viewfinder over everything his camera can see (in front of urinals, behind men) */}
         {cameraSpans.map((c) => (
@@ -754,6 +726,9 @@ export function BathroomScene(props: BathroomSceneProps) {
               />
             );
           }
+          if (g.kind === 'urinal' && guy.quirk === 'security') {
+            return <UrinalGuard key={`occ-${g.index}`} guy={guy} cx={g.cx} chipX={chipX.get(g.index)} />;
+          }
           if (g.kind === 'stall') {
             return (
               <g key={`occ-${g.index}`} className="us-occupant">
@@ -804,6 +779,7 @@ export function BathroomScene(props: BathroomSceneProps) {
           if (!guy) return null;
           const stall = g.kind === 'stall';
           if (stall && guy.quirk === 'boss') return null; // he's hiding; his door line stays as it is
+          if (guy.quirk === 'security') return null; // he's on duty, not bothered by you
           // A multi-urinal guy says it once, from the first of his slots that reacted.
           if (!stall && partWidth(guy.quirk) > 1) {
             const first = index - (guy.part ?? 0);
@@ -1145,6 +1121,21 @@ function Occupant({ guy, cx, index, turn, chipX, propSide, straddle, reacting, f
         lean={guy.quirk === 'drunk' || guy.quirk === 'peeper' ? guy.lean : undefined}
         mood={guy.mood}
       />
+    </g>
+  );
+}
+
+/** The security guard on duty in front of the urinal he's taped off, for no stated reason (facing the room, arms at his sides). */
+function UrinalGuard({ guy, cx, chipX }: { guy: Guy; cx: number; chipX?: number }) {
+  const look = useMemo(() => resolveLook(guy.look, 'security', guy.name), [guy.look, guy.name]);
+  const s = heightScale(guy.look.height) * 0.88;
+  return (
+    <g className="us-occupant us-occupant-security us-guard">
+      <title>{`${guy.name}: ${guy.blurb}`}</title>
+      <g transform={`translate(${cx},${FEET_Y}) scale(${s})`}>
+        <GuardFigure look={look} />
+      </g>
+      <QuirkChip x={chipX ?? cx} y={FEET_Y - (GUY_H + GUARD_CAP_RISE) * s - 5} quirk="security" />
     </g>
   );
 }
