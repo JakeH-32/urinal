@@ -433,6 +433,48 @@ function buildBathroom(rng: Rng, d: Difficulty): Bathroom {
   return fallbackLayout(rng.fork('fallback'));
 }
 
+/**
+ * Endless: a truly random room. Any size, any mix of guys, flags and dividers, nothing shaped to a
+ * difficulty. Only sanity rules: one right answer, a real choice, and the guys' own rules (shy/germ
+ * space empty). The security guard needs a stall to guard, so he sits these out.
+ */
+const RANDOM_QUIRKS: readonly Quirk[] = ANY_QUIRK.filter((q) => q !== 'security');
+
+function randomBathroom(rng: Rng): Bathroom {
+  for (let a = 0; a < 400; a++) {
+    const n = rng.weighted([2, 3, 4, 5, 6, 7, 8, 9, 10], (k) => (k <= 3 ? 0.6 : k === 4 ? 1 : 2));
+    const stalls = n >= 4 && rng.chance(0.08) ? 1 : 0;
+    const b = room(n, door(rng), stalls, stallEnd(rng, 0.7));
+    if (rng.chance(0.4)) addDividers(rng, b, rng.chance(0.5) ? 'all' : 'some');
+    const nGuys = rng.int(1, Math.max(1, Math.ceil((n - stalls) / 2)));
+    const guys: Quirk[] = [];
+    for (let k = 0; k < nGuys; k++) guys.push(rng.chance(0.4) ? 'normal' : pickQuirk(rng, RANDOM_QUIRKS));
+    if (n > SMALL_ROOM && rng.chance(0.4)) addFlags(rng, b, rng.int(1, 2), ALL_FLAGS);
+    placeGuys(rng, b, guys);
+    if (randomOk(b, evaluate(b))) return b;
+  }
+  return fallbackLayout(rng.fork('fallback'));
+}
+
+function randomOk(b: Bathroom, ev: Evaluation): boolean {
+  if (ev.greens.length !== 1 || !b.slots.some((s) => s.occupant)) return false;
+  const pickable = ev.slots.filter((s) => s.pickable).length;
+  if (pickable < 2) return false;
+  if (b.slots.some((s, j) => (s.occupant?.quirk === 'shy' || s.occupant?.quirk === 'germ') && zoneCovers(b, j).some((k) => b.slots[k].occupant))) return false;
+  return true;
+}
+
+/** An Endless room from the random generator (difficulty is only a label here). */
+export function randomRound(seed: number, id: string): Round {
+  const rng = createRng(seed);
+  const bathroom = randomBathroom(rng.fork('random-room'));
+  dressGuys(rng.fork('people'), bathroom);
+  const extra = rng.fork('boss-stall');
+  if (extra.chance(BOSS_STALL_CHANCE)) bossInStall(extra, bathroom);
+  const d = practiceDifficulty(seed);
+  return { id, seed, difficulty: d, venue: pickVenue(rng.fork('venue'), d), bathroom };
+}
+
 // ---------------------------------------------------------------------------
 // People + venue
 // ---------------------------------------------------------------------------
@@ -662,9 +704,10 @@ export function practiceRound(seed: number): Round {
     const sp = LEGENDARY_ROOMS[Math.floor(legend / LEGEND_ODDS) % LEGENDARY_ROOMS.length];
     return { ...setPieceRound(sp, s, id), legend: sp.id };
   }
+  // Now and then a handmade room; otherwise anything goes.
   const roll = hashString('set-piece', s);
-  if (SET_PIECES.length > 0 && roll % 3 === 0) return setPieceRound(SET_PIECES[Math.floor(roll / 3) % SET_PIECES.length], s, id);
-  return generateRound(s, practiceDifficulty(s), id);
+  if (SET_PIECES.length > 0 && roll % 10 === 0) return setPieceRound(SET_PIECES[Math.floor(roll / 10) % SET_PIECES.length], s, id);
+  return randomRound(s, id);
 }
 
 /** An empty bathroom (a rare Endless room): every urinal free, the answer is the far end from the door. */

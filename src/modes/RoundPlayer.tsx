@@ -44,6 +44,10 @@ const NEXT_GUARD_MS = 400;
 /** If the scene never reports the walk finishing, reveal anyway after this long. */
 const WALK_FALLBACK_MS = 5000;
 const STEP_MS = 300;
+/** Seconds to pick: it's meant to be instinct, not math. The warm-up has no clock. */
+const PICK_SECONDS = 20;
+/** The clock turns urgent at this many seconds left. */
+const URGENT_SECONDS = 5;
 const MAX_STEPS = 10;
 
 export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel, header, extra, crowd, onRetry }: RoundPlayerProps) {
@@ -164,6 +168,28 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
     fallbackTimer.current = window.setTimeout(() => revealRef.current(i), reducedMotion ? 400 : WALK_FALLBACK_MS);
   };
 
+  // The pick clock. Pauses while the tab is hidden. At zero your legs choose for you.
+  const timed = !onRetry;
+  const [left, setLeft] = useState(PICK_SECONDS);
+  const [timedOut, setTimedOut] = useState(false);
+  const onPickRef = useRef(onPick);
+  onPickRef.current = onPick;
+  useEffect(() => {
+    if (!timed || picked !== undefined) return;
+    const t = window.setInterval(() => {
+      if (document.hidden) return;
+      setLeft((x) => Math.max(0, x - 1));
+    }, 1000);
+    return () => window.clearInterval(t);
+  }, [timed, picked]);
+  useEffect(() => {
+    if (!timed || left > 0 || picked !== undefined) return;
+    const open = round.bathroom.slots.flatMap((sl, i) => (!sl.occupant && sl.flag !== 'broken' ? [i] : []));
+    if (open.length === 0) return;
+    setTimedOut(true);
+    onPickRef.current(open[Math.floor(Math.random() * open.length)]);
+  }, [timed, left, picked, round]);
+
   const onWalkDone = () => {
     if (picked !== undefined) revealRef.current(picked);
   };
@@ -208,11 +234,20 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
       </div>
       <div className="round-foot" aria-live="polite">
         {!result ? (
-          <p className="round-prompt">{picked === undefined ? 'Tap a spot' : 'Walking in…'}</p>
+          <div className="round-prompt-wrap">
+            <p className="round-prompt">{picked === undefined ? 'Tap a spot' : timedOut ? 'Too slow. Your legs picked.' : 'Walking in…'}</p>
+            {timed && picked === undefined && (
+              <div className={`pick-clock${left <= URGENT_SECONDS ? ' is-urgent' : ''}`} role="timer" aria-label={`${left} seconds left`}>
+                <div className="pick-clock-bar" style={{ width: `${(left / PICK_SECONDS) * 100}%` }} />
+                <span className="pick-clock-num">{left}</span>
+              </div>
+            )}
+          </div>
         ) : (
           <div className={`verdict verdict--${result.grade}`}>
             <GradeUrinal grade={result.grade} size={80} animate={!reducedMotion} />
             <div className="verdict-text">
+              {timedOut && <p className="verdict-why">Out of time. Your legs picked.</p>}
               {line && <p className="verdict-line">{line}</p>}
               {why && <p className="verdict-why">{why}</p>}
               {crowd && <RoundCrowdLine crowd={crowd} pick={result.pick} greens={evaluation.greens} />}

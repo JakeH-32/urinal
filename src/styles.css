@@ -561,6 +561,47 @@ button {
   color: var(--ink-soft);
   padding: 14px 0;
 }
+/* The 20-second pick clock: a bar that drains, red for the last few seconds. */
+.round-prompt-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.pick-clock {
+  position: relative;
+  width: min(260px, 70%);
+  height: 10px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--paper, #fff);
+}
+.pick-clock-bar {
+  height: 100%;
+  background: #6cc3f0;
+  transition: width 1s linear, background-color 0.3s;
+}
+.pick-clock.is-urgent .pick-clock-bar {
+  background: #e0533d;
+}
+.pick-clock.is-urgent {
+  animation: pick-clock-pulse 1s ease-in-out infinite;
+}
+.pick-clock-num {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+@keyframes pick-clock-pulse {
+  50% { transform: scale(1.04); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pick-clock-bar { transition: none; }
+  .pick-clock.is-urgent { animation: none; }
+}
 /* Verdict: the grade urinal, with the verdict line and the why note beside it. Phones put Next
    underneath; wider screens put it on the right so the whole verdict is one short row. */
 .verdict {

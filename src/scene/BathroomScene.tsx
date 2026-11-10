@@ -184,13 +184,36 @@ function pickLine(lines: readonly string[], key: string, fallback: string): stri
   return lines.length ? lines[hashStr(key) % lines.length] : fallback;
 }
 
-/** A chatty guy's always-on line: fixed for the talker and pilot, one per room for the bros. */
-function chatLine(guy: Guy): string {
-  if (guy.quirk === 'pilot') return PILOT_LINE;
-  if (guy.quirk === 'knight') return pickLine(KNIGHT_LINES, guy.name, 'Where’s the ren faire?');
-  if (guy.quirk === 'crypto') return pickLine(CRYPTO_LINES, guy.name, 'It’s still early.');
-  if (guy.quirk === 'finance') return pickLine(FINANCE_LINES, guy.name, 'Let’s circle back.');
-  return TALKER_LINE;
+const TALKER_LINES = [TALKER_LINE, 'How’s it going?', 'Busy day, huh?', 'Crazy weather, right?'];
+const PILOT_LINES = [PILOT_LINE, 'I fly planes.', 'Did I mention I fly?', 'Captain, actually.'];
+
+/**
+ * Line `index`'s guy says from `pool`: stable per guy, and never the same line as another guy of
+ * his kind in this room (walk left to right; a taken line passes to the next free one).
+ */
+function roomLine(b: Bathroom, index: number, pool: readonly string[], fallback: string): string {
+  if (pool.length === 0) return fallback;
+  const q = b.slots[index].occupant?.quirk;
+  const used = new Set<number>();
+  for (let j = 0; j < b.slots.length; j++) {
+    const g = b.slots[j].occupant;
+    if (!g || g.quirk !== q || b.slots[j].kind !== b.slots[index].kind) continue;
+    let k = hashStr(g.name) % pool.length;
+    for (let t = 0; t < pool.length && used.has(k); t++) k = (k + 1) % pool.length;
+    used.add(k);
+    if (j === index) return pool[k];
+  }
+  return pickLine(pool, b.slots[index].occupant?.name ?? '', fallback);
+}
+
+/** A chatty guy's always-on line, never repeated by another guy of his kind in the room. */
+function chatLine(b: Bathroom, index: number): string {
+  const guy = b.slots[index].occupant!;
+  if (guy.quirk === 'pilot') return roomLine(b, index, PILOT_LINES, PILOT_LINE);
+  if (guy.quirk === 'knight') return roomLine(b, index, KNIGHT_LINES, 'Where’s the ren faire?');
+  if (guy.quirk === 'crypto') return roomLine(b, index, CRYPTO_LINES, 'It’s still early.');
+  if (guy.quirk === 'finance') return roomLine(b, index, FINANCE_LINES, 'Let’s circle back.');
+  return roomLine(b, index, TALKER_LINES, TALKER_LINE);
 }
 
 /** Where a twin stands in his set (left to right), and his set's line key (stable per group). */
@@ -313,7 +336,7 @@ function chatBubbles(
           <SideBubble
             x={g.cx + toward * 16}
             y={STALL_TOP_Y + 8}
-            text={pickLine(STALL_BOSS_LINES, guy.name, 'Occupied.')}
+            text={roomLine(bathroom, g.index, STALL_BOSS_LINES, 'Occupied.')}
             dir={toward}
             small
             sceneW={layout.width}
@@ -323,7 +346,7 @@ function chatBubbles(
     }
     if (!guy || !isChatty(guy.quirk) || g.kind !== 'urinal') return null;
     const reactDir = reactorDir.get(g.index);
-    const text = reactDir ? chatReaction(guy) : guy.quirk === 'twin' ? twinLine(bathroom, g.index) : chatLine(guy);
+    const text = reactDir ? chatReaction(guy) : guy.quirk === 'twin' ? twinLine(bathroom, g.index) : chatLine(bathroom, g.index);
     const long = text.length > 3;
     const turn = headTurn(guy, bathroom, g.index, reactDir) || 1;
     const head = headPoint(guy, g.cx);
@@ -798,7 +821,7 @@ export function BathroomScene(props: BathroomSceneProps) {
                   ? null
                   : (REACTION_TEXT[guy.quirk] ?? '!')
             : guy.quirk === 'shy'
-              ? pickLine(SHY_LINES, guy.name, 'Nope. Nope.')
+              ? roomLine(bathroom, index, SHY_LINES, 'Nope. Nope.')
               : REACTION_TEXT[guy.quirk];
           if (guy.quirk === 'gassy') {
             // PFFT over him (at his hip, downwind side); the cloud on "you" is drawn in its own layer.
