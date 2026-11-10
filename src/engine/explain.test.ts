@@ -86,3 +86,13 @@ describe('explainPick', () => {
     expect(explain('N _', 'left', 1)).toBe('Every spot broke the code.');
   });
 });
+
+describe('least-bad rooms', () => {
+  it('says why the ✓ was the least bad when you crowded more men', () => {
+    // Every spot crowds someone; the far end only crowds one man, the middle crowds two.
+    const b = parseLayout('_ N _ N', 'left');
+    const ev = evaluate(b);
+    expect(ev.slots[ev.greens[0]].reason).toBe('only-option');
+    expect(explainPick(b, ev, 2)).toBe('Every spot broke the code. The ✓ crowded fewer men.');
+  });
+});

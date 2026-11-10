@@ -1720,3 +1720,16 @@ button {
   margin: 0 0 6px;
   color: var(--ink-soft);
 }
+
+/* After the pick: one guy's bio, the joke there was no time to read. */
+.verdict-bio {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+.verdict-bio-name {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--ink);
+}

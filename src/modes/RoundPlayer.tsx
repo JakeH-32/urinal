@@ -1,6 +1,6 @@
 // One bathroom: pick -> walk in -> grade -> verdict -> Next. Shared by Daily and Practice.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import type { Round, RoundResult } from '../types';
+import type { Evaluation, Round, RoundResult } from '../types';
 import { BathroomScene } from '../scene';
 import { evaluate } from '../engine/code';
 import { explainPick } from '../engine/explain';
@@ -66,13 +66,42 @@ function clockColor(frac: number): string {
   return GRADES[g].color;
 }
 
+/**
+ * After the pick, one guy's bio (the best jokes, unreadable on a 5-second clock): whoever you crowded,
+ * else the nearest guy with a label, else nobody.
+ */
+function bioFor(round: Round, ev: Evaluation, pick: number): { name: string; blurb: string } | null {
+  const slots = round.bathroom.slots;
+  const crowded = ev.slots[pick]?.violatedBy?.[0];
+  let j = crowded;
+  if (j === undefined) {
+    let bestD = Infinity;
+    slots.forEach((s, k) => {
+      const g = s.occupant;
+      if (!g || g.quirk === 'normal' || !g.blurb || (g.part ?? 0) > 0) return;
+      const d = Math.abs(k - pick);
+      if (d < bestD) {
+        bestD = d;
+        j = k;
+      }
+    });
+  }
+  // A guy two or three urinals wide carries his bio on his first part.
+  while (j !== undefined && j > 0 && (slots[j].occupant?.part ?? 0) > 0) j--;
+  const g = j === undefined ? undefined : slots[j]?.occupant;
+  return g?.name && g.blurb ? { name: g.name, blurb: g.blurb } : null;
+}
+
 export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel, header, extra, crowd, onRetry }: RoundPlayerProps) {
   // Pure and cheap. Computed up front so a broken engine fails loudly into the ErrorBoundary.
   const evaluation = useMemo(() => evaluate(round.bathroom), [round]);
   // Rare characters and rooms: collect the first sighting of each, with a toast.
   const { update } = useSave();
   const toast = useToast();
+  // Held until the pick is graded: a toast mid-clock is just in the way.
+  const [sightingsDue, setSightingsDue] = useState(false);
   useEffect(() => {
+    if (!sightingsDue) return;
     const ids = sightingsIn(round);
     if (ids.length === 0) return;
     let added: SightingId[] = [];
@@ -85,7 +114,7 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
       const sg = sightingById(id);
       toast(`${sg.emoji} New sighting: ${sg.label}`, { tone: 'success', durationMs: 4000 });
     }
-  }, [round, update, toast]);
+  }, [sightingsDue, round, update, toast]);
   const [picked, setPicked] = useState<number | undefined>(undefined);
   const [result, setResult] = useState<RoundResult | null>(null);
   const graded = useRef(false);
@@ -161,6 +190,7 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
     stopTimers();
     const r = resultFromEvaluation(round.id, pick, evaluation);
     setResult(r);
+    setSightingsDue(true);
     sfx.play(r.grade);
     if (r.reason === 'gassy') sfx.play('fart');
     onGradedRef.current(r);
@@ -235,6 +265,7 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
   const shownEvaluation = result ? (retry ? { ...evaluation, greens: [] } : evaluation) : undefined;
   const rawWhy = result ? explainPick(round.bathroom, evaluation, result.pick) : null;
   const why = retry && rawWhy?.includes('✓') ? null : rawWhy;
+  const bio = result && !retry ? bioFor(round, evaluation, result.pick) : null;
   const act = () => {
     if (performance.now() - shownAt.current < NEXT_GUARD_MS) return;
     if (retry) onRetry?.();
@@ -287,6 +318,11 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
               {timedOut && <p className="verdict-why">Out of time. Your legs picked.</p>}
               {line && <p className="verdict-line">{line}</p>}
               {why && <p className="verdict-why">{why}</p>}
+              {bio && (
+                <p className="verdict-bio">
+                  <span className="verdict-bio-name">{bio.name}:</span> {bio.blurb}
+                </p>
+              )}
               {crowd && <RoundCrowdLine crowd={crowd} pick={result.pick} greens={evaluation.greens} />}
             </div>
             <div className="row verdict-actions">

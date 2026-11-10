@@ -116,6 +116,19 @@ export function explainPick(b: Bathroom, ev: Evaluation, pick: number): string |
     }
   }
 
+  // Apple Juice / See a Doctor in a room where every spot broke the code: say why the ✓ was the least bad,
+  // when there's a plain reason to give.
+  const b0 = best === undefined ? undefined : ev.slots[best];
+  if (b0?.reason === 'only-option') {
+    const mine = a.violatedBy?.length ?? 0;
+    const theirs = b0.violatedBy?.length ?? 0;
+    if (theirs < mine) return 'Every spot broke the code. The ✓ crowded fewer men.';
+    // Crowding a regular guy beats crowding one with a label.
+    const plainOnly = (ix: readonly number[] | undefined) => (ix ?? []).every((k) => actsNormal(b.slots[k].occupant));
+    if (plainOnly(b0.violatedBy) && !plainOnly(a.violatedBy)) return 'Every spot broke the code. The ✓ only crowded a regular guy.';
+    // Otherwise the rule you broke (below) says more than "it broke it least".
+  }
+
   // Apple Juice / See a Doctor: name the rule that was broken.
   const n = a.violatedBy?.length ?? 0;
   if (n >= 2) return `You were inside ${COUNT_WORD[n] ?? n} men’s space at once.`;
