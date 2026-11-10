@@ -79,7 +79,7 @@ export function Practice({ code }: { code?: string }) {
           Best <strong>{save.practice.bestRun}</strong>
         </span>
         <span className="practice-history" aria-label="Recent results">
-          {history.map((g) => GRADES[g].emoji).join('')}
+          {history.slice(-8).map((g) => GRADES[g].emoji).join('')}
         </span>
         <span className="practice-tools">
           {graded && (

@@ -9,6 +9,7 @@ import { Button } from '../ui/Button';
 import { crowdPercents, type RoundCrowd } from '../net/community';
 import { RoundCrowdLine } from '../ui/Crowd';
 import { GRADES } from '../grades';
+import { GradeUrinal } from '../ui/GradeUrinal';
 import { PerchPuck, puckForGrade } from '../ui/Puck';
 import { resultFromEvaluation, verdictFor } from './roundLogic';
 import { useSave } from '../state/SaveContext';
@@ -287,11 +288,9 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
           </div>
         ) : (
           <div className={`verdict verdict--${result.grade}`} style={{ '--grade': GRADES[result.grade].color, '--grade-ink': GRADES[result.grade].ink } as CSSProperties}>
+            <GradeUrinal grade={result.grade} size={64} animate={!reducedMotion} />
             <div className="verdict-text">
-              <p className="verdict-head">
-                <span className="verdict-pill">{GRADES[result.grade].label}</span>
-                {line && <span className="verdict-line">{line}</span>}
-              </p>
+              {line && <p className="verdict-head verdict-line">{line}</p>}
               {why && <p className="verdict-why">{why}</p>}
               {crowd && <RoundCrowdLine crowd={crowd} pick={result.pick} greens={evaluation.greens} />}
             </div>
