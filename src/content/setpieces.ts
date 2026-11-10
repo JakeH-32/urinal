@@ -238,7 +238,7 @@ export const SET_PIECES: SetPiece[] = [
     people: [
       { name: 'Your would-be boss', blurb: 'Asked where you see yourself in five years. You said “here.”' },
       { name: 'The HR rep', blurb: 'Took notes on your handshake.' },
-      { name: 'The other finalist', blurb: 'Has a portfolio. Has it with him now.' },
+      { name: 'The other finalist', blurb: 'Has a portfolio. Is walking you through it.' },
     ],
     answer: 6,
   },
@@ -518,7 +518,7 @@ export const SET_PIECES: SetPiece[] = [
     layout: '_ N _ _ I _ _',
     door: 'left',
     people: [
-      { name: 'Her cousin Rodney', blurb: 'Visited Grandpa twice. Both this year.' },
+      { name: 'Cousin Rodney', blurb: 'Visited Grandpa twice. Both this year.' },
       { name: 'Your father-in-law', blurb: 'Knows who gets the boat. Isn’t saying.' },
     ],
     answer: 1,

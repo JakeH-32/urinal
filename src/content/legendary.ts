@@ -14,10 +14,10 @@ export const LEGENDARY_ROOMS: (SetPiece & { id: LegendId })[] = [
     door: 'right',
     people: [
       { name: 'The point guard', blurb: 'Seven feet tall. Plays point anyway.' },
-      { name: 'The shooting guard', blurb: 'Hasn’t missed all season. Including here.' },
+      { name: 'The shooting guard', blurb: 'Hasn’t missed a free throw all season. Mentions it.' },
       { name: 'The small forward', blurb: 'Six foot eleven. The small one.' },
       { name: 'The power forward', blurb: 'Ducked under the door frame. Still hit it.' },
-      { name: 'The center', blurb: 'Can see over the dividers. Is looking.' },
+      { name: 'The center', blurb: 'Could see over the dividers. Doesn’t.' },
     ],
     answer: 5,
   },
@@ -30,8 +30,8 @@ export const LEGENDARY_ROOMS: (SetPiece & { id: LegendId })[] = [
     door: 'left',
     people: [
       { name: 'Bigfoot', blurb: 'Blurry in every photo. Clear as day in here.' },
-      { name: 'Mrs. Bigfoot', blurb: 'Wrong room. Doesn’t care.' },
-      { name: 'Bigfoot Jr.', blurb: 'Learning from his father.' },
+      { name: 'Uncle Bigfoot', blurb: 'The blurry one in the famous photo. Won’t confirm.' },
+      { name: 'Bigfoot Jr.', blurb: 'Forty-one. Still “Junior.”' },
       { name: 'Grandpa Bigfoot', blurb: 'Has been dodging cameras since 1967.' },
     ],
     answer: 5,

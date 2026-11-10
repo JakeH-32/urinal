@@ -116,9 +116,15 @@ export function verdictPool(bathroom: Bathroom, evaluation: Evaluation | undefin
 }
 
 /** The verdict a player sees for a result in a room: the right pool, the right name, the round's line. */
+/** Longest verdict line, with the name filled in, before we pick a shorter one. */
+const MAX_VERDICT = 60;
+
 export function verdictFor(roundId: string, bathroom: Bathroom, evaluation: Evaluation | undefined, result: Pick<RoundResult, 'pick' | 'reason'>): string {
   const pool = verdictPool(bathroom, evaluation, result.pick, result.reason);
-  return verdictLine(roundId, result.reason, violatorName(bathroom, evaluation, result.pick), pool);
+  const name = violatorName(bathroom, evaluation, result.pick);
+  // A long name in a long line makes a paragraph: keep to lines that stay short with this guy's name in them.
+  const short = pool.filter((l) => verdictLine(roundId, result.reason, name, [l]).length <= MAX_VERDICT);
+  return verdictLine(roundId, result.reason, name, short.length > 0 ? short : pool);
 }
 
 /**

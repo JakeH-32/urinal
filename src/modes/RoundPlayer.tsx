@@ -1,12 +1,11 @@
 // One bathroom: pick -> walk in -> grade -> verdict -> Next. Shared by Daily and Practice.
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import type { Evaluation, Round, RoundResult } from '../types';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import type { Round, RoundResult } from '../types';
 import { BathroomScene } from '../scene';
 import { evaluate } from '../engine/code';
 import { explainPick } from '../engine/explain';
 import { sfx } from '../audio/sfx';
 import { Button } from '../ui/Button';
-import { GradeUrinal } from '../ui/GradeUrinal';
 import { crowdPercents, type RoundCrowd } from '../net/community';
 import { RoundCrowdLine } from '../ui/Crowd';
 import { GRADES } from '../grades';
@@ -64,32 +63,6 @@ const MAX_STEPS = 10;
 function clockColor(frac: number): string {
   const g = frac > 0.75 ? 'clear' : frac > 0.5 ? 'straw' : frac > 0.25 ? 'amber' : 'doctor';
   return GRADES[g].color;
-}
-
-/**
- * After the pick, one guy's bio (the best jokes, unreadable on a 5-second clock): whoever you crowded,
- * else the nearest guy with a label, else nobody.
- */
-function bioFor(round: Round, ev: Evaluation, pick: number): { name: string; blurb: string } | null {
-  const slots = round.bathroom.slots;
-  const crowded = ev.slots[pick]?.violatedBy?.[0];
-  let j = crowded;
-  if (j === undefined) {
-    let bestD = Infinity;
-    slots.forEach((s, k) => {
-      const g = s.occupant;
-      if (!g || g.quirk === 'normal' || !g.blurb || (g.part ?? 0) > 0) return;
-      const d = Math.abs(k - pick);
-      if (d < bestD) {
-        bestD = d;
-        j = k;
-      }
-    });
-  }
-  // A guy two or three urinals wide carries his bio on his first part.
-  while (j !== undefined && j > 0 && (slots[j].occupant?.part ?? 0) > 0) j--;
-  const g = j === undefined ? undefined : slots[j]?.occupant;
-  return g?.name && g.blurb ? { name: g.name, blurb: g.blurb } : null;
 }
 
 export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel, header, extra, crowd, onRetry }: RoundPlayerProps) {
@@ -264,8 +237,9 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
   // A retry keeps the answer hidden: no ✓ on the scene, and no why note that points at it.
   const shownEvaluation = result ? (retry ? { ...evaluation, greens: [] } : evaluation) : undefined;
   const rawWhy = result ? explainPick(round.bathroom, evaluation, result.pick) : null;
-  const why = retry && rawWhy?.includes('✓') ? null : rawWhy;
-  const bio = result && !retry ? bioFor(round, evaluation, result.pick) : null;
+  // One line under the quip, only on a miss: what you did wrong (or that the clock ran out). A Clear needs
+  // no explaining, and the quip already covers "least bad".
+  const why = !result || result.grade === 'clear' ? null : timedOut ? 'Out of time. Your legs picked.' : retry && rawWhy?.includes('✓') ? null : rawWhy;
   const act = () => {
     if (performance.now() - shownAt.current < NEXT_GUARD_MS) return;
     if (retry) onRetry?.();
@@ -312,17 +286,13 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
             )}
           </div>
         ) : (
-          <div className={`verdict verdict--${result.grade}`}>
-            <GradeUrinal grade={result.grade} size={80} animate={!reducedMotion} />
+          <div className={`verdict verdict--${result.grade}`} style={{ '--grade': GRADES[result.grade].color, '--grade-ink': GRADES[result.grade].ink } as CSSProperties}>
             <div className="verdict-text">
-              {timedOut && <p className="verdict-why">Out of time. Your legs picked.</p>}
-              {line && <p className="verdict-line">{line}</p>}
+              <p className="verdict-head">
+                <span className="verdict-pill">{GRADES[result.grade].label}</span>
+                {line && <span className="verdict-line">{line}</span>}
+              </p>
               {why && <p className="verdict-why">{why}</p>}
-              {bio && (
-                <p className="verdict-bio">
-                  <span className="verdict-bio-name">{bio.name}:</span> {bio.blurb}
-                </p>
-              )}
               {crowd && <RoundCrowdLine crowd={crowd} pick={result.pick} greens={evaluation.greens} />}
             </div>
             <div className="row verdict-actions">

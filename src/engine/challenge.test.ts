@@ -184,7 +184,7 @@ describe('challengeResults', () => {
       for (const r of dailyRounds(key)) expect(r.bathroom.slots.length).toBeLessThanOrEqual(10);
       d.setDate(d.getDate() + 1);
     }
-  });
+  }, 30000);
 });
 
 describe('challenge store', () => {

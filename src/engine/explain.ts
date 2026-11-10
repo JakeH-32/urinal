@@ -35,6 +35,50 @@ const QUIRK_NOUN: Record<Exclude<Quirk, 'normal'>, string> = {
   sumo: 'the sumo wrestler',
 };
 
+/** "the mascot", "a stranger"; several of a kind become "both mascots" / "three strangers". */
+function guyList(b: Bathroom, ix: readonly number[]): string {
+  // One entry per guy: twins are one unit, a guy two or three urinals wide counts once.
+  const seen = new Set<string>();
+  const nouns: string[] = [];
+  for (const k of ix) {
+    const g = b.slots[k]?.occupant;
+    if (!g) continue;
+    const key = g.quirk === 'twin' ? `twin-${g.group}` : `${g.name}-${k - (g.part ?? 0)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    nouns.push(actsNormal(g) || g.quirk === 'normal' ? 'a stranger' : QUIRK_NOUN[g.quirk as Exclude<Quirk, 'normal'>]);
+  }
+  const counts = new Map<string, number>();
+  for (const n of nouns) counts.set(n, (counts.get(n) ?? 0) + 1);
+  const parts = [...counts].map(([n, c]) => {
+    if (c === 1) return n;
+    const bare = n.replace(/^(the|a|your) /, '');
+    const plural = /s$/.test(bare) ? bare : `${bare}s`;
+    return `${c === 2 ? (n === 'a stranger' ? 'two' : 'both') : (COUNT_WORD[c] ?? String(c))} ${plural}`;
+  });
+  return parts.length <= 1 ? (parts[0] ?? '') : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
+}
+
+/** Who you crowded (when it was more than one), and who the ✓ crowded instead in a no-good-spot room. */
+function crowdLine(b: Bathroom, ev: Evaluation, pick: number, best: number | undefined): string | null {
+  const mine = ev.slots[pick]?.violatedBy ?? [];
+  const bestSlot = best === undefined ? undefined : ev.slots[best];
+  const leastBad = bestSlot?.reason === 'only-option';
+  const theirs = leastBad ? (bestSlot?.violatedBy ?? []) : [];
+  const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+  let first: string | null = null;
+  if (mine.length >= 2 || (leastBad && mine.length >= 1)) {
+    const both = mine.some((k) => k < pick) && mine.some((k) => k > pick);
+    first = both && mine.length >= 2 ? `You were wedged between ${guyList(b, mine)}.` : `You crowded ${guyList(b, mine)}.`;
+  }
+  if (!leastBad || theirs.length === 0) return mine.length >= 2 ? first : null;
+  // The ✓ crowded the same men, just less: the rule you broke (or who you were wedged between) says it better.
+  if (theirs.every((k) => mine.includes(k)) && theirs.length === mine.length) return mine.length >= 2 ? first : null;
+  const second = `The ✓ only crowded ${guyList(b, theirs)}.`;
+  const line = first ? `${first} ${second}` : second;
+  return line.length <= 80 ? line : second.length <= 80 ? `${cap(second)}` : null;
+}
+
 /** The label guy closest (by room) to slot i, if any (men in stalls have walls: they don't count). */
 function tightQuirkIndex(b: Bathroom, i: number): number | undefined {
   let best: number | undefined;
@@ -97,7 +141,7 @@ export function explainPick(b: Bathroom, ev: Evaluation, pick: number): string |
       case 'not-wall':
         return 'Same room, but the ✓ spot was against the wall.';
       case 'quick-exit':
-        return 'Same room, but in a small room with a labeled guy, stay by the door.';
+        return 'In a room this small, the spot by the door gets you out fastest.';
       case 'missed-friend':
         return 'Legal, but the ✓ spot was right next to your bro.';
       case 'past-talker': {
@@ -116,25 +160,19 @@ export function explainPick(b: Bathroom, ev: Evaluation, pick: number): string |
     }
   }
 
-  // Apple Juice / See a Doctor in a room where every spot broke the code: say why the ✓ was the least bad,
-  // when there's a plain reason to give.
-  const b0 = best === undefined ? undefined : ev.slots[best];
-  if (b0?.reason === 'only-option') {
-    const mine = a.violatedBy?.length ?? 0;
-    const theirs = b0.violatedBy?.length ?? 0;
-    if (theirs < mine) return 'Every spot broke the code. The ✓ crowded fewer men.';
-    // Crowding a regular guy beats crowding one with a label.
-    const plainOnly = (ix: readonly number[] | undefined) => (ix ?? []).every((k) => actsNormal(b.slots[k].occupant));
-    if (plainOnly(b0.violatedBy) && !plainOnly(a.violatedBy)) return 'Every spot broke the code. The ✓ only crowded a regular guy.';
-    // Otherwise the rule you broke (below) says more than "it broke it least".
-  }
+  // Apple Juice / See a Doctor: name who you crowded, and who the ✓ crowded instead when every spot broke
+  // the code. Uses the room's own guys, so it reads as this room, not a rulebook.
+  const told = crowdLine(b, ev, pick, best);
+  if (told) return told;
 
   // Apple Juice / See a Doctor: name the rule that was broken.
   const n = a.violatedBy?.length ?? 0;
   if (n >= 2) return `You were inside ${COUNT_WORD[n] ?? n} men’s space at once.`;
   const j = culpritOf(b, pick);
   const guy = j === null ? undefined : b.slots[j].occupant;
-  const plain = 'Leave at least one empty urinal between you.';
+  // Right beside someone who has no rules of his own: say who, in this room.
+  const who = !guy || actsNormal(guy) || guy.quirk === 'normal' ? 'a stranger' : QUIRK_NOUN[guy.quirk as Exclude<Quirk, 'normal'>];
+  const plain = best !== undefined ? `Right beside ${who}, with a better spot open.` : `Right beside ${who}.`;
   if (j === null || !guy || actsNormal(guy)) return plain;
   const side = sideOf(pick, j); // which side of him you were on
   const divider = dividersBetween(b, pick, j) > 0;
@@ -152,12 +190,12 @@ export function explainPick(b: Bathroom, ev: Evaluation, pick: number): string |
     case 'napper':
     case 'friend':
       return plain;
+    case 'security':
+      return b.slots[pick].kind === 'stall' ? 'The stall isn’t safe with security in the room.' : plain;
     case 'twin':
       return 'The twins count as one. Crowd one, crowd both.';
     case 'shy':
       return 'The shy guy needs four empty urinals.';
-    case 'security':
-      return b.slots[pick].kind === 'stall' ? 'The stall isn’t safe with security in the room.' : plain;
     case 'dropper':
       return 'Pants at his ankles. Nobody stands closer than two urinals.';
     case 'germ':

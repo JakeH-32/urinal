@@ -41,9 +41,9 @@ describe('explainPick', () => {
   it('boss, talker through a divider, two men at once', () => {
     expect(explain('_ _ _ B _ _ _ _ _ _', 'left', 5)).toBe('A stressed boss needs two empty urinals.');
     expect(explain('_ _ _ B! _ _ _ _ _ _', 'left', 6)).toBe('An angry boss needs three empty urinals.');
-    expect(explain('_ _ _ B+ _ _ _ _ _ _', 'left', 4)).toBe('Leave at least one empty urinal between you.');
+    expect(explain('_ _ _ B+ _ _ _ _ _ _', 'left', 4)).toBe('Right beside a stranger, with a better spot open.');
     expect(explain('T | _ _ _ _ _', 'left', 1)).toBe('Talkers need two empty urinals, and he leans around dividers.');
-    expect(explain('_ N _ N _ _ _', 'left', 2)).toBe('You were inside two men’s space at once.');
+    expect(explain('_ N _ N _ _ _', 'left', 2)).toBe('You were wedged between two strangers.');
   });
 
   it('walking past the talker, and a talker as your closest neighbor', () => {
@@ -88,11 +88,11 @@ describe('explainPick', () => {
 });
 
 describe('least-bad rooms', () => {
-  it('says why the ✓ was the least bad when you crowded more men', () => {
+  it('names who you crowded and who the ✓ crowded instead', () => {
     // Every spot crowds someone; the far end only crowds one man, the middle crowds two.
     const b = parseLayout('_ N _ N', 'left');
     const ev = evaluate(b);
     expect(ev.slots[ev.greens[0]].reason).toBe('only-option');
-    expect(explainPick(b, ev, 2)).toBe('Every spot broke the code. The ✓ crowded fewer men.');
+    expect(explainPick(b, ev, 2)).toBe('You were wedged between two strangers. The ✓ only crowded a stranger.');
   });
 });
