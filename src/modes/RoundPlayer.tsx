@@ -46,9 +46,9 @@ const NEXT_GUARD_MS = 400;
 const WALK_FALLBACK_MS = 5000;
 const STEP_MS = 300;
 /** Seconds to pick: it's meant to be instinct, not math. The warm-up has no clock. */
-const PICK_SECONDS = 12;
+const PICK_SECONDS = 10;
 /** The clock turns urgent at this many seconds left. */
-const URGENT_SECONDS = 4;
+const URGENT_SECONDS = 3;
 const MAX_STEPS = 10;
 
 /** The clock drains through the hydration chart: Clear, then Lemonade, Apple Juice, See a Doctor. */
