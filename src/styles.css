@@ -570,8 +570,8 @@ button {
 }
 .pick-clock {
   position: relative;
-  width: min(260px, 70%);
-  height: 10px;
+  width: min(320px, 80%);
+  height: 14px;
   border: 2px solid var(--ink);
   border-radius: 999px;
   overflow: hidden;
@@ -740,18 +740,7 @@ button {
   margin: 14px auto 0;
   text-align: left;
 }
-/* Wider screens: score, tiles and Share on the left, the hydration chart and streak on the right,
-   so the whole card fits on a short laptop screen without scrolling. */
 @media (min-width: 640px) {
-  .results-card {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: center;
-    gap: 24px;
-  }
-  .results-card .hydration {
-    margin-top: 0;
-  }
   .results-title {
     margin-bottom: 10px;
   }
@@ -1716,4 +1705,18 @@ button {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+/* One-time heads-up before the first timed room. */
+.clock-notice-card {
+  width: min(100%, 360px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+.clock-notice-text {
+  margin: 0 0 6px;
+  color: var(--ink-soft);
 }

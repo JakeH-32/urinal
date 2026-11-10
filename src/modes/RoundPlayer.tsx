@@ -46,9 +46,18 @@ const NEXT_GUARD_MS = 400;
 const WALK_FALLBACK_MS = 5000;
 const STEP_MS = 300;
 /** Seconds to pick: it's meant to be instinct, not math. The warm-up has no clock. */
-const PICK_SECONDS = 10;
+const PICK_SECONDS = 5;
+/** Set once the player has seen the one-time heads-up about the clock. */
+const CLOCK_NOTICE_KEY = 'urinal:clock-notice';
+function clockNoticeSeen(): boolean {
+  try {
+    return localStorage.getItem(CLOCK_NOTICE_KEY) === '1';
+  } catch {
+    return true;
+  }
+}
 /** The clock turns urgent at this many seconds left. */
-const URGENT_SECONDS = 3;
+const URGENT_SECONDS = 2;
 const MAX_STEPS = 10;
 
 /** The clock drains through the hydration chart: Clear, then Lemonade, Apple Juice, See a Doctor. */
@@ -177,18 +186,28 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
 
   // The pick clock. Pauses while the tab is hidden. At zero your legs choose for you.
   const timed = !onRetry;
+  // One time only: say there's a clock before the first timed room. The clock waits until it's dismissed.
+  const [notice, setNotice] = useState(() => timed && !clockNoticeSeen());
+  const dismissNotice = () => {
+    try {
+      localStorage.setItem(CLOCK_NOTICE_KEY, '1');
+    } catch {
+      /* shows again next time; harmless */
+    }
+    setNotice(false);
+  };
   const [left, setLeft] = useState(PICK_SECONDS);
   const [timedOut, setTimedOut] = useState(false);
   const onPickRef = useRef(onPick);
   onPickRef.current = onPick;
   useEffect(() => {
-    if (!timed || picked !== undefined) return;
+    if (!timed || notice || picked !== undefined) return;
     const t = window.setInterval(() => {
       if (document.hidden) return;
       setLeft((x) => Math.max(0, x - 1));
     }, 1000);
     return () => window.clearInterval(t);
-  }, [timed, picked]);
+  }, [timed, notice, picked]);
   useEffect(() => {
     if (!timed || left > 0 || picked !== undefined) return;
     const open = round.bathroom.slots.flatMap((sl, i) => (!sl.occupant && sl.flag !== 'broken' ? [i] : []));
@@ -226,6 +245,17 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
     <div className="round">
       {header}
       {round.premise && <p className="round-premise">{round.premise}</p>}
+      {notice && (
+        <div className="review-overlay clock-notice" role="dialog" aria-modal="true" aria-label="New: a clock">
+          <section className="card clock-notice-card">
+            <h2 className="round-venue">New: {PICK_SECONDS} seconds a room</h2>
+            <p className="clock-notice-text">Don’t think. Go with your gut.</p>
+            <Button variant="primary" size="lg" onClick={dismissNotice}>
+              Got it
+            </Button>
+          </section>
+        </div>
+      )}
       <div ref={frameRef} className={`scene-frame${picked === undefined ? ' is-picking' : ''}`} style={perch?.pad ? { paddingTop: perch.pad } : undefined}>
         <PerchPuck size={PUCK_SIZE} at={perch} mood={result ? (round.bathroom.slots[result.pick]?.flag === 'puddle' ? 'disgusted' : puckForGrade(result.grade)) : 'thinking'} />
         <BathroomScene
@@ -242,7 +272,7 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
       <div className="round-foot" aria-live="polite">
         {!result ? (
           <div className="round-prompt-wrap">
-            <p className="round-prompt">{picked === undefined ? 'Tap a spot' : timedOut ? 'Too slow. Your legs picked.' : 'Walking in…'}</p>
+            <p className="round-prompt">{picked === undefined ? 'Tap a spot' : 'Walking in…'}</p>
             {timed && picked === undefined && (
               <div className={`pick-clock${left <= URGENT_SECONDS ? ' is-urgent' : ''}`} role="timer" aria-label={`${left} seconds left`}>
                 <div className="pick-clock-bar" style={{ width: `${(left / PICK_SECONDS) * 100}%`, background: clockColor(left / PICK_SECONDS) }} />

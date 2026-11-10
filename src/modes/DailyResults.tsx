@@ -13,7 +13,6 @@ import { ROUNDS_PER_DAY } from '../state/storage';
 import { ShareButton } from '../ui/ShareButton';
 import { Tile, TileRow } from '../ui/Tiles';
 import { useNow } from '../ui/hooks';
-import { HydrationChart } from '../ui/HydrationChart';
 import { hydrationPoints, pickableOnly, type DayCrowd } from '../net/community';
 import { DayCrowdSummary, ReviewCrowd } from '../ui/Crowd';
 import { RoomReview } from './RoomReview';
@@ -21,7 +20,7 @@ import { drawCardImage, drawStoryImage } from '../ui/storyImage';
 import { Button } from '../ui/Button';
 import { useToast } from '../ui/Toast';
 import { PerchPuck, puckForClears } from '../ui/Puck';
-import { clearsIn, gradeCounts, verdictFor, verdictLine } from './roundLogic';
+import { clearsIn, verdictFor, verdictLine } from './roundLogic';
 import { ChallengeNameField } from './Versus';
 import { DaySightings, StreakSaved } from './DayExtras';
 import type { Sighting as CardSighting } from '../ui/storyImage';
@@ -186,9 +185,6 @@ export function DailyResults({ record, todayKey, rounds, crowd }: DailyResultsPr
           {rounds && <DaySightings rounds={rounds} />}
           {today && <StreakSaved todayKey={todayKey} />}
           {today && <NextCountdown />}
-        </div>
-        <div className="results-side">
-          <HydrationChart compact art counts={gradeCounts(record.results)} title="Today" />
           <dl className="results-meta">
             <div>
               <dt>Streak</dt>

@@ -129,7 +129,7 @@ export function Daily() {
       <TileRow results={results} activeIndex={index} flipIndex={index} numbered onSelect={setReviewing} />
       <p className="round-meta">
         <span className="round-count">
-          Urinal #{number} · Round {index + 1} of {ROUNDS_PER_DAY}
+          Urinal #{number}
         </span>
         <span className="round-venue">{round.venue}</span>
       </p>
