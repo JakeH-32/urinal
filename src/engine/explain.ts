@@ -192,8 +192,6 @@ export function explainPick(b: Bathroom, ev: Evaluation, pick: number): string |
     case 'friend':
     case 'security': // guards the stall, takes no urinal space
       return plain;
-    case 'security':
-      return b.slots[pick].kind === 'stall' ? 'The stall isn’t safe with security in the room.' : plain;
     case 'twin':
       return 'The twins count as one. Crowd one, crowd both.';
     case 'shy':
