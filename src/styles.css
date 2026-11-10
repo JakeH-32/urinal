@@ -561,7 +561,7 @@ button {
   color: var(--ink-soft);
   padding: 14px 0;
 }
-/* The 20-second pick clock: a bar that drains, red for the last few seconds. */
+/* The pick clock: a bar that drains, red for the last few seconds. */
 .round-prompt-wrap {
   display: flex;
   flex-direction: column;
@@ -777,7 +777,7 @@ button {
   font-size: 1.1rem;
 }
 .countdown {
-  margin-top: 12px;
+  margin-top: 16px;
   color: var(--ink-soft);
   font-size: 0.95rem;
 }

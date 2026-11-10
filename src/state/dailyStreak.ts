@@ -27,21 +27,76 @@ export function shiftDateKey(key: string, days: number): string {
   return toDateKey(d);
 }
 
+const DAY_MS = 86_400_000;
+
+/** Whole calendar days from `a` to `b` (negative when b is earlier). NaN for an invalid key. */
+export function daysBetween(a: string, b: string): number {
+  const da = parseDateKey(a);
+  const db = parseDateKey(b);
+  if (!da || !db) return NaN;
+  return Math.round((db.getTime() - da.getTime()) / DAY_MS);
+}
+
+/** Two forgiven days must be at least this many days apart: one free miss in any 7 calendar days. */
+const GRACE_SPACING = 7;
+
+/** Can `missed` be forgiven, given the last day that was? */
+function canForgive(missed: string, lastForgiven: string | undefined): boolean {
+  return !lastForgiven || daysBetween(lastForgiven, missed) >= GRACE_SPACING;
+}
+
+export interface StreakScan {
+  /** The run ending at the last finished day (0 with no finished days). Forgiven days don't count. */
+  current: number;
+  best: number;
+  /** The last finished day. */
+  lastDate?: string;
+  /** The most recent missed day that was forgiven (in any run, live or not). */
+  lastForgiven?: string;
+}
+
 /**
- * Count a finished daily toward the streak (call once per date):
- * - finished yesterday -> streak + 1
- * - same day as lastDate -> unchanged (replays never double count)
- * - back-filling an older date -> unchanged
- * - any gap (or first ever) -> streak = 1
+ * The streak worked out from scratch from the finished days. One missed day between two finished days is
+ * forgiven (the run carries on, the missed day adds nothing) unless another day was forgiven less than
+ * 7 days before it. Two missed days in a row always start a new run.
+ */
+export function scanStreak(byDate: DailyState['byDate']): StreakScan {
+  const keys = Object.keys(byDate)
+    .filter((k) => byDate[k]?.finished && parseDateKey(k))
+    .sort();
+  let current = 0;
+  let best = 0;
+  let prev: string | undefined;
+  let lastForgiven: string | undefined;
+  for (const key of keys) {
+    const gap = prev ? daysBetween(prev, key) : 0;
+    const missed = shiftDateKey(key, -1);
+    if (prev && gap === 1) current += 1;
+    else if (prev && gap === 2 && canForgive(missed, lastForgiven)) {
+      current += 1;
+      lastForgiven = missed;
+    } else current = 1;
+    best = Math.max(best, current);
+    prev = key;
+  }
+  return { current, best, ...(prev ? { lastDate: prev } : {}), ...(lastForgiven ? { lastForgiven } : {}) };
+}
+
+/**
+ * Count a finished daily toward the streak. `daily.byDate` must already hold the finished record: the
+ * streak is recomputed from it (see scanStreak), so replays never double count and order doesn't matter.
+ * The stored numbers never drop below what plain consecutive-day counting gives, which protects an old
+ * save whose history has holes in it.
  */
 export function applyFinishedDay(daily: DailyState, key: string): DailyState {
-  let streak: number;
-  if (daily.lastDate === key) streak = Math.max(1, daily.streak);
-  else if (daily.lastDate && daily.lastDate === shiftDateKey(key, -1)) streak = daily.streak + 1;
-  else if (daily.lastDate && daily.lastDate > key) streak = daily.streak;
-  else streak = 1;
+  const scan = scanStreak(daily.byDate);
+  let floor = 1;
+  if (daily.lastDate === key) floor = Math.max(1, daily.streak);
+  else if (daily.lastDate && daily.lastDate === shiftDateKey(key, -1)) floor = daily.streak + 1;
+  else if (daily.lastDate && daily.lastDate > key) floor = daily.streak;
+  const streak = Math.max(scan.current, floor);
   const lastDate = daily.lastDate && daily.lastDate > key ? daily.lastDate : key;
-  return { ...daily, streak, bestStreak: Math.max(daily.bestStreak, streak), lastDate };
+  return { ...daily, streak, bestStreak: Math.max(daily.bestStreak, scan.best, streak), lastDate };
 }
 
 /**
@@ -79,19 +134,44 @@ export function applyDailyResets(save: SaveData, todayKey: string, resets: reado
   let daily: DailyState = { ...save.daily, byDate, resets: [...done, ...pending] };
   // Rebuild the streak from the remaining finished days (the wiped day may have counted).
   if (wiped) {
-    let rebuilt: DailyState = { ...daily, streak: 0, bestStreak: 0, lastDate: undefined };
-    for (const key of Object.keys(byDate).sort()) if (byDate[key].finished) rebuilt = applyFinishedDay(rebuilt, key);
-    const { lastDate, ...rest } = rebuilt;
-    daily = lastDate ? { ...rest, lastDate } : rest;
+    const scan = scanStreak(byDate);
+    const { lastDate: _old, ...rest } = daily;
+    daily = { ...rest, streak: scan.current, bestStreak: scan.best, ...(scan.lastDate ? { lastDate: scan.lastDate } : {}) };
   }
   return { ...save, daily };
 }
 
-/** The streak as it stands today: it's broken if you skipped yesterday. */
+/** The streak as it stands on `todayKey`, and whether a forgiven yesterday is holding it up. */
+export function streakStatus(daily: DailyState, todayKey: string): { streak: number; savedYesterday: boolean } {
+  const scan = scanStreak(daily.byDate);
+  const yesterday = shiftDateKey(todayKey, -1);
+  let streak = 0;
+  let savedYesterday = false;
+  if (scan.lastDate) {
+    const gap = daysBetween(scan.lastDate, todayKey);
+    if (gap === 0) {
+      streak = scan.current;
+      savedYesterday = scan.lastForgiven === yesterday;
+    } else if (gap === 1) streak = scan.current;
+    else if (gap === 2 && canForgive(yesterday, scan.lastForgiven)) {
+      // Yesterday was missed and today isn't played yet: still alive, for today only.
+      streak = scan.current;
+      savedYesterday = true;
+    }
+  }
+  // Never below plain consecutive-day counting on the stored numbers (old saves with holes in the history).
+  const stored = daily.lastDate === todayKey || daily.lastDate === yesterday ? daily.streak : 0;
+  return { streak: Math.max(streak, stored), savedYesterday: savedYesterday && streak > 0 };
+}
+
+/** The streak as it stands today. One missed day is forgiven now and then; two in a row break it. */
 export function displayStreak(daily: DailyState, todayKey: string): number {
-  if (!daily.lastDate) return 0;
-  if (daily.lastDate === todayKey || daily.lastDate === shiftDateKey(todayKey, -1)) return daily.streak;
-  return 0;
+  return streakStatus(daily, todayKey).streak;
+}
+
+/** True when yesterday was missed and forgiven, and the streak is alive because of it. */
+export function streakSavedYesterday(save: SaveData, todayKey: string): boolean {
+  return streakStatus(save.daily, todayKey).savedYesterday;
 }
 
 /** Milliseconds until the next local midnight (= next Urinal). */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Guy, Quirk, Round, Slot } from '../types';
-import { SIGHTINGS, sightingsIn, withSightings } from './sightings';
+import { SIGHTINGS, daySightings, sightingsIn, withSightings } from './sightings';
 import { defaultSave, migrate, resetProgress } from './storage';
 import { emptyRound } from '../engine/generate';
 
@@ -54,6 +54,25 @@ describe('sightingsIn', () => {
     const ids = SIGHTINGS.map((s) => s.id);
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids.sort()).toEqual(['bigfoot', 'doppel', 'empty', 'legend-bigfoot', 'legend-chili', 'legend-mirror', 'legend-sumo', 'legend-team', 'legend-triplets', 'legend-wolves', 'rookie', 'stallboss', 'sumo', 'triplets']);
+  });
+});
+
+describe('daySightings', () => {
+  it('is empty for an ordinary day and for no rooms', () => {
+    expect(daySightings([])).toEqual([]);
+    expect(daySightings([roundOf([guy('normal'), undefined]), roundOf([guy('talker'), undefined])])).toEqual([]);
+  });
+
+  it('lists each sighting once, rarest first', () => {
+    const day = [
+      roundOf([guy('rookie'), undefined]),
+      roundOf([guy('bigfoot'), undefined, guy('rookie')]),
+      { ...roundOf([guy('sumo'), undefined, guy('sumo')]), legend: 'legend-sumo' as const },
+      roundOf([guy('doppel'), undefined]),
+      roundOf([undefined, undefined]),
+    ];
+    expect(daySightings(day).map((s) => s.id)).toEqual(['legend-sumo', 'doppel', 'bigfoot', 'rookie', 'sumo', 'empty']);
+    expect(daySightings(day)[1]).toEqual({ id: 'doppel', label: 'Your Doppelgänger', emoji: '🪞', rarity: 'very rare' });
   });
 });
 

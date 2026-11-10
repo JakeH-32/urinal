@@ -1,0 +1,26 @@
+/* End-of-day extras (src/modes/DayExtras.tsx): one small line each, in the results card's soft ink. */
+
+.day-extra {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  gap: 2px 10px;
+  margin: 16px auto 0;
+  max-width: 100%;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ink-soft);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.day-sighting,
+.day-tease-venue {
+  color: var(--ink);
+}
+
+.day-streak-saved {
+  display: block;
+}

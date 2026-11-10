@@ -56,6 +56,14 @@ export function sightingsIn(round: Round): SightingId[] {
   return SIGHTING_IDS.filter((id) => found.has(id));
 }
 
+const RARITY_RANK: Record<Sighting['rarity'], number> = { legendary: 0, 'very rare': 1, rare: 2 };
+
+/** Every sighting across a day's rooms, once each, rarest first (ties in SIGHTINGS order). */
+export function daySightings(rounds: readonly Round[]): Sighting[] {
+  const found = new Set<SightingId>(rounds.flatMap((r) => sightingsIn(r)));
+  return SIGHTINGS.filter((s) => found.has(s.id)).sort((a, b) => RARITY_RANK[a.rarity] - RARITY_RANK[b.rarity]);
+}
+
 /** Add any new ids to the save. Returns the same save object when nothing is new. */
 export function withSightings(save: SaveData, ids: readonly SightingId[]): { save: SaveData; added: SightingId[] } {
   const have = new Set(save.sightings ?? []);

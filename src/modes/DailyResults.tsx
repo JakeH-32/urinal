@@ -4,7 +4,9 @@ import type { DailyRecord, Evaluation, Round } from '../types';
 import { RESULT_TITLES } from '../content';
 import { buildShareText } from '../engine/daily';
 import { evaluate } from '../engine/code';
-import { routeUrl } from '../router';
+import { challengeResults, challengeUrl } from '../engine/challenge';
+import { activeChallenge, useChallengeName } from '../state/challengeStore';
+import { daySightings } from '../state/sightings';
 import { useSave } from '../state/SaveContext';
 import { displayStreak, formatCountdown, msUntilNextDaily } from '../state/dailyStreak';
 import { ROUNDS_PER_DAY } from '../state/storage';
@@ -20,6 +22,9 @@ import { Button } from '../ui/Button';
 import { useToast } from '../ui/Toast';
 import { PerchPuck, puckForClears } from '../ui/Puck';
 import { clearsIn, gradeCounts, verdictFor, verdictLine } from './roundLogic';
+import { ChallengeNameField } from './Versus';
+import { DaySightings, StreakSaved } from './DayExtras';
+import type { Sighting as CardSighting } from '../ui/storyImage';
 
 export function NextCountdown({ label = 'Hold it. Next Urinal in' }: { label?: string }) {
   const now = useNow(1000);
@@ -63,11 +68,13 @@ function usePrebuiltImage(make: (() => Promise<Blob>) | null, name: string): Fil
 const puckMarkup = () => document.querySelector('.results-card .puck, .puck')?.outerHTML ?? null;
 
 /** Phones only: a story-sized image (score, tiles, rank, Puck) through the share sheet, e.g. to Instagram Stories. */
-function StoryShare({ record, clears }: { record: DailyRecord; clears: number }) {
+function StoryShare({ record, clears, spotted }: { record: DailyRecord; clears: number; spotted?: readonly CardSighting[] }) {
   const toast = useToast();
+  // The link carries your picks, so a friend who taps it can compare afterwards.
+  const link = challengeUrl(record, useChallengeName());
   const phone = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
   const file = usePrebuiltImage(
-    phone ? () => drawStoryImage(record, { clears, total: ROUNDS_PER_DAY, title: rankTitle(clears), puckSvg: puckMarkup(), site: 'urinal.app' }) : null,
+    phone ? () => drawStoryImage(record, { clears, total: ROUNDS_PER_DAY, title: rankTitle(clears), puckSvg: puckMarkup(), site: 'urinal.app', spotted }) : null,
     `urinal-${record.number}-story.png`,
   );
   if (!phone) return null;
@@ -75,11 +82,11 @@ function StoryShare({ record, clears }: { record: DailyRecord; clears: number })
     if (!file) return;
     // Instagram only takes links from its Link sticker, so the link goes on the clipboard too. Not awaited:
     // the share sheet has to open while the tap still counts.
-    navigator.clipboard?.writeText('https://urinal.app').catch(() => undefined);
+    navigator.clipboard?.writeText(link).catch(() => undefined);
     try {
       if (navigator.canShare?.({ files: [file] })) {
         // The link rides along: Instagram ignores it, Messages and other chats show it under the picture.
-        await navigator.share({ files: [file], title: `Urinal #${record.number}`, text: 'https://urinal.app' });
+        await navigator.share({ files: [file], title: `Urinal #${record.number}`, text: link });
       } else {
         const a = document.createElement('a');
         a.href = URL.createObjectURL(file);
@@ -99,15 +106,18 @@ function StoryShare({ record, clears }: { record: DailyRecord; clears: number })
   );
 }
 
-export function DailyShare({ record, variant = 'primary' }: { record: DailyRecord; variant?: 'primary' | 'default' }) {
-  const text = useMemo(() => buildShareText(record, routeUrl({ name: 'daily' })), [record]);
-  // A square card rides along with the text where the share sheet takes files (Messages shows it as a picture).
+export function DailyShare({ record, variant = 'primary', spotted }: { record: DailyRecord; variant?: 'primary' | 'default'; spotted?: readonly CardSighting[] }) {
+  // The link carries your picks, so a friend who taps it plays the same rooms and can compare afterwards.
+  const name = useChallengeName();
+  const link = useMemo(() => challengeUrl(record, name), [record, name]);
+  const text = useMemo(() => buildShareText(record, link), [record, link]);
+  // A banner card rides along with the text where the share sheet takes files (Messages shows it as a picture).
   const clears = clearsIn(record.results);
   const file = usePrebuiltImage(
-    record.finished ? () => drawCardImage(record, { clears, total: ROUNDS_PER_DAY, title: rankTitle(clears), puckSvg: puckMarkup(), site: 'urinal.app' }) : null,
+    record.finished ? () => drawCardImage(record, { clears, total: ROUNDS_PER_DAY, title: rankTitle(clears), puckSvg: puckMarkup(), site: 'urinal.app', spotted }) : null,
     `urinal-${record.number}.png`,
   );
-  return <ShareButton text={text} title={`Urinal #${record.number}`} label="Share result" variant={variant} image={file ? () => Promise.resolve(file) : undefined} imageText="https://urinal.app" />;
+  return <ShareButton text={text} title={`Urinal #${record.number}`} label="Share result" variant={variant} image={file ? () => Promise.resolve(file) : undefined} imageText={link} />;
 }
 
 export interface DailyResultsProps {
@@ -124,6 +134,13 @@ export function DailyResults({ record, todayKey, rounds, crowd }: DailyResultsPr
   const clears = clearsIn(record.results);
   const streak = displayStreak(save.daily, todayKey);
   const [reviewing, setReviewing] = useState<number | null>(null);
+  const spotted = useMemo(() => (rounds ? daySightings(rounds).map(({ emoji, label }) => ({ emoji, label })) : []), [rounds]);
+  // A friend's challenge link for today: compare room by room once you're done.
+  const vs = useMemo(() => activeChallenge(record.number), [record.number]);
+  const theirs = useMemo(() => (vs && rounds && record.finished ? challengeResults(rounds, vs.picks) : null), [vs, rounds, record.finished]);
+  const them = vs?.name || 'Friend';
+  const today = record.dateKey === todayKey;
+  const best = Math.max(save.daily.bestStreak, streak);
 
   const review = useMemo(() => {
     if (!rounds) return [];
@@ -162,10 +179,13 @@ export function DailyResults({ record, todayKey, rounds, crowd }: DailyResultsPr
           <TileRow results={record.results} onSelect={rounds ? setReviewing : undefined} />
           {crowd && <DayCrowdSummary crowd={crowd} points={hydrationPoints(record.results)} />}
           <div className="row row--center">
-            <DailyShare record={record} />
-            <StoryShare record={record} clears={clears} />
+            <DailyShare record={record} spotted={spotted} />
+            <StoryShare record={record} clears={clears} spotted={spotted} />
           </div>
-          {record.dateKey === todayKey && <NextCountdown />}
+          <ChallengeNameField />
+          {rounds && <DaySightings rounds={rounds} />}
+          {today && <StreakSaved todayKey={todayKey} />}
+          {today && <NextCountdown />}
         </div>
         <div className="results-side">
           <HydrationChart compact art counts={gradeCounts(record.results)} title="Today" />
@@ -179,7 +199,7 @@ export function DailyResults({ record, todayKey, rounds, crowd }: DailyResultsPr
             <div>
               <dt>Best</dt>
               <dd>
-                {save.daily.bestStreak} {save.daily.bestStreak === 1 ? 'day' : 'days'}
+                {best} {best === 1 ? 'day' : 'days'}
               </dd>
             </div>
           </dl>
@@ -188,7 +208,23 @@ export function DailyResults({ record, todayKey, rounds, crowd }: DailyResultsPr
 
       {review.length > 0 && (
         <section className="card review">
-          <h2 className="h3">The five bathrooms</h2>
+          {theirs ? (
+            <h2 className="scoreboard" aria-label={`You ${clears}, ${them} ${clearsIn(theirs)}`}>
+              <span className="sb-team">You</span>
+              <span className="sb-num">{clears}</span>
+              <span className="sb-dash" aria-hidden="true" />
+              <span className="sb-num">{clearsIn(theirs)}</span>
+              <span className="sb-team">{them}</span>
+            </h2>
+          ) : (
+            <h2 className="h3">The five bathrooms</h2>
+          )}
+          {theirs && (
+            <p className="review-cols" aria-hidden="true">
+              <span>You</span>
+              <span>{them}</span>
+            </p>
+          )}
           <ol className="review-list">
             {review.map(({ res, venue, line }, i) => (
               <li key={res.roundId} className="review-item">
@@ -200,6 +236,11 @@ export function DailyResults({ record, todayKey, rounds, crowd }: DailyResultsPr
                   <span className="review-line">{line}</span>
                   <ReviewCrowd crowd={pickableOnly(crowd?.rounds[i], rounds?.[i]?.bathroom)} pick={res.pick} />
                 </span>
+                {theirs?.[i] && (
+                  <span className="review-them" aria-label={`${them}:`}>
+                    <Tile grade={theirs[i].grade} size="sm" />
+                  </span>
+                )}
               </li>
             ))}
           </ol>

@@ -9,6 +9,7 @@ import { useDayCrowd } from '../net/useCrowd';
 import { useSave } from '../state/SaveContext';
 import { recordRound, toDateKey } from '../state/dailyStreak';
 import { ROUNDS_PER_DAY } from '../state/storage';
+import { activeChallenge, adoptChallenge } from '../state/challengeStore';
 import { Button, LinkButton } from '../ui/Button';
 import { TileRow } from '../ui/Tiles';
 import { useReducedMotion } from '../ui/hooks';
@@ -17,6 +18,7 @@ import { RoomReview } from './RoomReview';
 import { DayReplay } from './DayReplay';
 import { RoundPlayer } from './RoundPlayer';
 import { Warmup } from './Warmup';
+import { ChallengeLine, StaleChallengeLine, challengeClears } from './Versus';
 
 const clearsOf = (rs: readonly RoundResult[]) => rs.filter((r) => r.grade === 'clear').length;
 
@@ -24,7 +26,8 @@ export function Daily() {
   const { save, update } = useSave();
   const reducedMotion = useReducedMotion();
   // Fixed for the life of this screen: a daily started at 23:59 finishes as that day's daily.
-  const [todayKey] = useState(() => toDateKey(new Date()));
+  // Dev only: ?day=YYYY-MM-DD plays that date's daily (for playtesting future days).
+  const [todayKey] = useState(() => (import.meta.env.DEV && new URLSearchParams(location.search).get('day')) || toDateKey(new Date()));
   const rounds = useMemo(() => dailyRounds(todayKey), [todayKey]);
   const number = useMemo(() => dailyNumber(todayKey), [todayKey]);
 
@@ -51,8 +54,25 @@ export function Daily() {
   const [reviewing, setReviewing] = useState<number | null>(null);
   const [replaying, setReplaying] = useState(false);
 
-  // First visit ever: three easy rooms before the first daily.
-  if (!save.warmupDone) return <Warmup number={number} onDone={() => update((s) => ({ ...s, warmupDone: true }))} />;
+  // A challenge link (?vs=...): a friend's picks for today's rooms. Saved, so a reload without the query keeps it.
+  const [vs] = useState(() => adoptChallenge(location.search, number));
+  // Their clears in today's rooms; null when there's no challenge or their picks don't fit these rooms.
+  const vsClears = useMemo(() => challengeClears(rounds, vs.challenge), [rounds, vs]);
+  // Once it's saved (or was for another day), take it out of the address bar so a copied address is clean.
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(location.search);
+      if (!params.has('vs') || (vs.staleNumber === undefined && !activeChallenge(number))) return;
+      params.delete('vs');
+      const query = params.toString();
+      history.replaceState(history.state, '', `${location.pathname}${query ? `?${query}` : ''}${location.hash}`);
+    } catch {
+      /* the link stays as it is */
+    }
+  }, []);
+
+  // First visit ever: three easy rooms before the first daily. Arriving on a challenge skips them.
+  if (!save.warmupDone && vsClears === null && results.length === 0) return <Warmup number={number} onDone={() => update((s) => ({ ...s, warmupDone: true }))} />;
 
   if (view === 'results' && record) {
     return (
@@ -78,7 +98,11 @@ export function Daily() {
   if (!round) return <p className="center muted">No bathroom for round {index + 1}.</p>;
 
   const onGraded = (r: RoundResult) => {
-    update((s) => recordRound(s, todayKey, number, r));
+    update((s) => {
+      const next = recordRound(s, todayKey, number, r);
+      // A finished daily counts as warmed up (challenge visitors skip the warm-up; they never get it later).
+      return next.daily.byDate[todayKey]?.finished && !next.warmupDone ? { ...next, warmupDone: true } : next;
+    });
     recordPick(number, index + 1, r.pick, r.grade);
     const all = results.some((x) => x.roundId === r.roundId) ? results : [...results, r];
     if (all.length >= ROUNDS_PER_DAY) recordFinish(number, hydrationPoints(all), clearsOf(all));
@@ -97,6 +121,11 @@ export function Daily() {
 
   const header = (
     <header className="round-head">
+      {vsClears !== null ? (
+        <ChallengeLine name={vs.challenge?.name} clears={vsClears} />
+      ) : vs.staleNumber !== undefined ? (
+        <StaleChallengeLine number={vs.staleNumber} />
+      ) : null}
       <TileRow results={results} activeIndex={index} flipIndex={index} numbered onSelect={setReviewing} />
       <p className="round-meta">
         <span className="round-count">

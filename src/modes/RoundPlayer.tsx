@@ -45,9 +45,9 @@ const NEXT_GUARD_MS = 400;
 const WALK_FALLBACK_MS = 5000;
 const STEP_MS = 300;
 /** Seconds to pick: it's meant to be instinct, not math. The warm-up has no clock. */
-const PICK_SECONDS = 20;
+const PICK_SECONDS = 12;
 /** The clock turns urgent at this many seconds left. */
-const URGENT_SECONDS = 5;
+const URGENT_SECONDS = 4;
 const MAX_STEPS = 10;
 
 export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel, header, extra, crowd, onRetry }: RoundPlayerProps) {

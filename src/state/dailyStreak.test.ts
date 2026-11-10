@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import type { RoundResult, SaveData } from '../types';
 import { defaultSave } from './storage';
-import { applyDailyResets, displayStreak, formatCountdown, msUntilNextDaily, recordRound, shiftDateKey, toDateKey } from './dailyStreak';
+import {
+  applyDailyResets,
+  daysBetween,
+  displayStreak,
+  formatCountdown,
+  msUntilNextDaily,
+  recordRound,
+  scanStreak,
+  shiftDateKey,
+  streakSavedYesterday,
+  toDateKey,
+} from './dailyStreak';
 import { migrate } from './storage';
 
 const result = (dateKey: string, i: number, grade: RoundResult['grade'] = 'clear'): RoundResult => ({
@@ -68,17 +79,20 @@ describe('recordRound', () => {
     expect(s.daily.bestStreak).toBe(4);
   });
 
-  it('resets after a gap but keeps the best streak', () => {
-    const s = finishDays(['2026-10-01', '2026-10-02', '2026-10-03', '2026-10-05']);
+  it('resets after a two-day gap but keeps the best streak', () => {
+    const s = finishDays(['2026-10-01', '2026-10-02', '2026-10-03', '2026-10-06']);
     expect(s.daily.streak).toBe(1);
     expect(s.daily.bestStreak).toBe(3);
-    expect(finishDays(['2026-10-06'], s).daily.streak).toBe(2);
+    expect(finishDays(['2026-10-07'], s).daily.streak).toBe(2);
   });
 
-  it('an unfinished day breaks the streak', () => {
+  it('an unfinished day counts as a missed day', () => {
     let s = finishDays(['2026-10-01']);
     s = recordRound(s, '2026-10-02', 2, result('2026-10-02', 1));
     s = finishDays(['2026-10-03'], s);
+    expect(s.daily.streak).toBe(2);
+    s = recordRound(s, '2026-10-04', 4, result('2026-10-04', 1));
+    s = finishDays(['2026-10-05'], s);
     expect(s.daily.streak).toBe(1);
   });
 
@@ -97,9 +111,126 @@ describe('displayStreak', () => {
     expect(displayStreak(d, '2026-10-15')).toBe(2);
   });
 
-  it('shows 0 once a day has been skipped', () => {
-    expect(displayStreak(d, '2026-10-16')).toBe(0);
+  it('survives one skipped day, shows 0 after two', () => {
+    expect(displayStreak(d, '2026-10-16')).toBe(2);
+    expect(displayStreak(d, '2026-10-17')).toBe(0);
     expect(displayStreak(defaultSave().daily, '2026-10-16')).toBe(0);
+  });
+});
+
+describe('streak grace', () => {
+  /** Every day from `from` for `n` days, minus the skipped ones. */
+  const run = (from: string, n: number, skip: string[] = []) =>
+    Array.from({ length: n }, (_, i) => shiftDateKey(from, i)).filter((k) => !skip.includes(k));
+
+  /** The stored streak must match a from-scratch recount after every finished day. */
+  function playChecked(keys: string[]): SaveData {
+    let s = defaultSave();
+    let best = 0;
+    for (const k of keys) {
+      s = finishDays([k], s);
+      const scan = scanStreak(s.daily.byDate);
+      best = Math.max(best, scan.current);
+      expect(s.daily.streak).toBe(scan.current);
+      expect(s.daily.bestStreak).toBe(scan.best);
+      expect(s.daily.bestStreak).toBe(best);
+      expect(s.daily.lastDate).toBe(k);
+      expect(displayStreak(s.daily, k)).toBe(s.daily.streak);
+      expect(displayStreak(s.daily, shiftDateKey(k, 1))).toBe(s.daily.streak);
+    }
+    return s;
+  }
+
+  it('counts days', () => {
+    expect(daysBetween('2026-12-30', '2027-01-02')).toBe(3);
+    expect(daysBetween('2028-02-28', '2028-03-01')).toBe(2);
+    expect(daysBetween('2026-03-07', '2026-03-09')).toBe(2); // US clocks change on the 8th
+    expect(daysBetween('2026-11-02', '2026-11-01')).toBe(-1);
+  });
+
+  it('forgives one missed day without counting it', () => {
+    // Mon, (Tue missed), Wed
+    const s = playChecked(['2026-11-02', '2026-11-04']);
+    expect(s.daily.streak).toBe(2);
+    expect(s.daily.bestStreak).toBe(2);
+    expect(displayStreak(s.daily, '2026-11-04')).toBe(2);
+    expect(streakSavedYesterday(s, '2026-11-04')).toBe(true);
+    // The day after, it's old news.
+    expect(streakSavedYesterday(s, '2026-11-05')).toBe(false);
+    expect(streakSavedYesterday(finishDays(['2026-11-05'], s), '2026-11-05')).toBe(false);
+  });
+
+  it('holds the streak through the day after a miss, then lets go', () => {
+    const s = playChecked(['2026-11-02', '2026-11-03']);
+    expect(streakSavedYesterday(s, '2026-11-04')).toBe(false);
+    expect(displayStreak(s.daily, '2026-11-05')).toBe(2);
+    expect(streakSavedYesterday(s, '2026-11-05')).toBe(true);
+    expect(displayStreak(s.daily, '2026-11-06')).toBe(0);
+    expect(streakSavedYesterday(s, '2026-11-06')).toBe(false);
+  });
+
+  it('two missed days in a row break it', () => {
+    const s = playChecked(['2026-11-02', '2026-11-03', '2026-11-06']);
+    expect(s.daily.streak).toBe(1);
+    expect(s.daily.bestStreak).toBe(2);
+    expect(streakSavedYesterday(s, '2026-11-06')).toBe(false);
+  });
+
+  it('a second missed day inside the same week breaks it', () => {
+    // Missed the 3rd (forgiven) and the 9th (6 days later: not forgiven).
+    const s = playChecked(run('2026-11-02', 9, ['2026-11-03', '2026-11-09']));
+    expect(s.daily.streak).toBe(1);
+    expect(s.daily.bestStreak).toBe(6);
+    // Before playing the 10th, the streak already reads as gone.
+    const before = playChecked(run('2026-11-02', 7, ['2026-11-03']));
+    expect(displayStreak(before.daily, '2026-11-09')).toBe(6);
+    expect(displayStreak(before.daily, '2026-11-10')).toBe(0);
+    expect(streakSavedYesterday(before, '2026-11-10')).toBe(false);
+  });
+
+  it('a missed day a full week after the last forgiven one is forgiven', () => {
+    // Missed the 3rd and the 10th.
+    const s = playChecked(run('2026-11-02', 10, ['2026-11-03', '2026-11-10']));
+    expect(s.daily.streak).toBe(8);
+    expect(streakSavedYesterday(s, '2026-11-11')).toBe(true);
+  });
+
+  it('keeps a long streak alive through well-spaced misses, across month and year ends', () => {
+    const skip = ['2026-11-30', '2026-12-09', '2026-12-31', '2027-01-08', '2027-02-28'];
+    const s = playChecked(run('2026-11-20', 110, skip));
+    expect(s.daily.streak).toBe(105);
+    expect(s.daily.bestStreak).toBe(105);
+    expect(s.daily.lastDate).toBe('2027-03-09');
+  });
+
+  it('forgives across a month end and a year end', () => {
+    expect(playChecked(['2026-10-30', '2026-11-01']).daily.streak).toBe(2);
+    const s = playChecked(['2026-12-30', '2027-01-01']);
+    expect(s.daily.streak).toBe(2);
+    expect(streakSavedYesterday(s, '2027-01-01')).toBe(true);
+    expect(displayStreak(playChecked(['2026-12-30']).daily, '2027-01-01')).toBe(1);
+  });
+
+  it('a save with no days has no streak', () => {
+    const s = defaultSave();
+    expect(scanStreak(s.daily.byDate)).toEqual({ current: 0, best: 0 });
+    expect(displayStreak(s.daily, '2026-11-09')).toBe(0);
+    expect(streakSavedYesterday(s, '2026-11-09')).toBe(false);
+  });
+
+  it('an old save needs no migration, and never reads lower than before', () => {
+    // Saved under the old rule: 1st-3rd, missed the 4th, played the 5th (stored streak 1, best 3).
+    const played = finishDays(run('2026-10-01', 5, ['2026-10-04']));
+    const old = migrate(JSON.stringify({ ...played, daily: { ...played.daily, streak: 1, bestStreak: 3 } }));
+    expect(displayStreak(old.daily, '2026-10-06')).toBe(4);
+    const next = finishDays(['2026-10-06'], old);
+    expect(next.daily.streak).toBe(5);
+    expect(next.daily.bestStreak).toBe(5);
+    // A stored streak with holes in its history still stands.
+    const holes = migrate({ daily: { streak: 9, bestStreak: 9, lastDate: '2026-10-05', byDate: {} } });
+    expect(displayStreak(holes.daily, '2026-10-06')).toBe(9);
+    expect(displayStreak(holes.daily, '2026-10-07')).toBe(0);
+    expect(finishDays(['2026-10-06'], holes).daily.streak).toBe(10);
   });
 });
 
