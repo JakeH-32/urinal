@@ -9,6 +9,7 @@ import { Button } from '../ui/Button';
 import { GradeUrinal } from '../ui/GradeUrinal';
 import { crowdPercents, type RoundCrowd } from '../net/community';
 import { RoundCrowdLine } from '../ui/Crowd';
+import { GRADES } from '../grades';
 import { PerchPuck, puckForGrade } from '../ui/Puck';
 import { resultFromEvaluation, verdictFor } from './roundLogic';
 import { useSave } from '../state/SaveContext';
@@ -49,6 +50,12 @@ const PICK_SECONDS = 12;
 /** The clock turns urgent at this many seconds left. */
 const URGENT_SECONDS = 4;
 const MAX_STEPS = 10;
+
+/** The clock drains through the hydration chart: Clear, then Lemonade, Apple Juice, See a Doctor. */
+function clockColor(frac: number): string {
+  const g = frac > 0.75 ? 'clear' : frac > 0.5 ? 'straw' : frac > 0.25 ? 'amber' : 'doctor';
+  return GRADES[g].color;
+}
 
 export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel, header, extra, crowd, onRetry }: RoundPlayerProps) {
   // Pure and cheap. Computed up front so a broken engine fails loudly into the ErrorBoundary.
@@ -238,7 +245,7 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
             <p className="round-prompt">{picked === undefined ? 'Tap a spot' : timedOut ? 'Too slow. Your legs picked.' : 'Walking in…'}</p>
             {timed && picked === undefined && (
               <div className={`pick-clock${left <= URGENT_SECONDS ? ' is-urgent' : ''}`} role="timer" aria-label={`${left} seconds left`}>
-                <div className="pick-clock-bar" style={{ width: `${(left / PICK_SECONDS) * 100}%` }} />
+                <div className="pick-clock-bar" style={{ width: `${(left / PICK_SECONDS) * 100}%`, background: clockColor(left / PICK_SECONDS) }} />
                 <span className="pick-clock-num">{left}</span>
               </div>
             )}

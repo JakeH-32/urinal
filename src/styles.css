@@ -579,11 +579,7 @@ button {
 }
 .pick-clock-bar {
   height: 100%;
-  background: #6cc3f0;
-  transition: width 1s linear, background-color 0.3s;
-}
-.pick-clock.is-urgent .pick-clock-bar {
-  background: #e0533d;
+  transition: width 1s linear, background-color 0.4s ease;
 }
 .pick-clock.is-urgent {
   animation: pick-clock-pulse 1s ease-in-out infinite;
