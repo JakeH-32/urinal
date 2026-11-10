@@ -210,6 +210,8 @@ interface Plan {
   size: number;
   /** d6 only: what kind of answer we're aiming for. */
   target?: 'stall' | 'urinal' | 'only-option';
+  /** d5/d6: this guy is in the room (the daily's finale headliner). */
+  featured?: Quirk;
 }
 
 function makePlan(rng: Rng, d: Difficulty): Plan {
@@ -310,6 +312,7 @@ function layout(rng: Rng, d: Difficulty, plan: Plan): Bathroom {
       const nGuys = rng.int(3, 4);
       while (guys.length < nGuys) guys.push('normal');
       if (!small) addFlags(rng, b, rng.int(0, 1), ALL_FLAGS);
+      if (plan.featured) guys[guys.length > 1 ? 1 : 0] = plan.featured;
       break;
     }
     case 6:
@@ -324,6 +327,7 @@ function layout(rng: Rng, d: Difficulty, plan: Plan): Bathroom {
       for (let k = 0; k < nQuirk; k++) guys.push(pickQuirk(rng, ANY_QUIRK));
       while (guys.length < nGuys) guys.push('normal');
       if (!small) addFlags(rng, b, rng.int(0, 2), ALL_FLAGS);
+      if (plan.featured) guys[0] = plan.featured;
       break;
     }
   }
@@ -418,9 +422,9 @@ function fallbackLayout(rng: Rng): Bathroom {
 
 const ATTEMPTS_PER_STAGE = 400;
 
-function buildBathroom(rng: Rng, d: Difficulty): Bathroom {
+function buildBathroom(rng: Rng, d: Difficulty, featured?: Quirk): Bathroom {
   const planRng = rng.fork('plan');
-  const plan = makePlan(planRng, d);
+  const plan = featured ? { ...makePlan(planRng, d), featured } : makePlan(planRng, d);
   // Stages 0..2 keep the planned size; stage 3 lets the size vary too (hard rules only).
   for (let stage = 0; stage < 4; stage++) {
     const stageRng = rng.fork(`stage${stage}`);
@@ -587,9 +591,9 @@ function bossInStall(rng: Rng, b: Bathroom): void {
   b.dividers = next.dividers;
 }
 
-export function generateRound(seed: number, difficulty: Difficulty, id: string): Round {
+export function generateRound(seed: number, difficulty: Difficulty, id: string, featured?: Quirk): Round {
   const rng = createRng(seed);
-  const bathroom = buildBathroom(rng.fork(`layout-d${difficulty}`), difficulty);
+  const bathroom = buildBathroom(rng.fork(`layout-d${difficulty}`), difficulty, featured);
   dressGuys(rng.fork('people'), bathroom);
   const extra = rng.fork('boss-stall');
   if (difficulty >= 3 && extra.chance(BOSS_STALL_CHANCE)) bossInStall(extra, bathroom);
@@ -629,17 +633,80 @@ export function dailyRoundSeed(dateKey: string, r: number): number {
   return hashString(`r${r}`, seedFrom(`urinal:${dateKey}`)) & SEED_MASK;
 }
 
+/**
+ * From this day on the daily is all generated (handmade rooms live in Endless), never repeats a kind of
+ * guy or a venue, has no gimmes, and ends on a headliner. Not shipped before this day, so rooms people
+ * already played never change.
+ */
+const DAILY_VARIETY_FROM = '2026-11-11';
+/** Re-deals per daily room while looking for a fresh, not-too-easy one. */
+const DAILY_REDEALS = 40;
+/**
+ * The guys worth texting about. The last room of each day has one; the first four mostly don't, so the
+ * finale is the surprise.
+ */
+const HEADLINERS: readonly Quirk[] = ['sumo', 'knight', 'napper', 'mascot', 'twin', 'gymbro', 'tourist', 'dropper', 'friend', 'rookie'];
+/** Headliners the finale can be dealt around (the rookie only ever turns up on his own). */
+const STAR_PICKS = HEADLINERS.filter((q) => q !== 'rookie');
+const freshStars = (seen: Set<Quirk>) => (STAR_PICKS.some((q) => !seen.has(q)) ? STAR_PICKS.filter((q) => !seen.has(q)) : STAR_PICKS);
+const hasHeadliner = (b: Bathroom) => b.slots.some((s) => s.occupant && HEADLINERS.includes(s.occupant.quirk));
+
+/** The labelled guys in a room (the kinds that make it a "type" of room). */
+function roomQuirks(b: Bathroom): Set<Quirk> {
+  return new Set(b.slots.flatMap((s) => (s.occupant && s.occupant.quirk !== 'normal' ? [s.occupant.quirk] : [])));
+}
+
+/** A room is a gimme if it's tiny or nearly every wrong spot is obviously wrong. */
+export function isGimme(b: Bathroom): boolean {
+  if (b.slots.length <= SMALL_ROOM) return true;
+  const ev = evaluate(b);
+  const tempting = ev.slots.filter((s) => s.pickable && s.grade !== 'clear' && s.grade !== 'doctor').length;
+  return tempting < 2;
+}
+
 /** The rounds of a given local date (YYYY-MM-DD), by dailyDifficulties. Same for everyone. */
 export function dailyRounds(dateKey: string): Round[] {
-  const rounds: Round[] = [];
-  dailyDifficulties(dateKey).forEach((d, k) => {
+  if (dateKey >= DAILY_VARIETY_FROM) return variedDaily(dateKey);
+  // Days before the switch: exactly as they were dealt (set pieces in rounds 2 and 5).
+  return dailyDifficulties(dateKey).map((d, k) => {
     const r = k + 1;
     const seed = dailyRoundSeed(dateKey, r);
     const id = `d${dateKey}-r${r}`;
     const sp = SET_PIECE_ROUNDS.includes(r) ? dailySetPiece(dateKey, d) : undefined;
-    rounds.push(sp ? setPieceRound(sp, seed, id) : generateRound(seed, d, id));
+    return sp ? setPieceRound(sp, seed, id) : generateRound(seed, d, id);
   });
-  return rounds;
+}
+
+function variedDaily(dateKey: string): Round[] {
+  const shape = dailyDifficulties(dateKey);
+  const seen = new Set<Quirk>();
+  const venues = new Set<string>();
+  return shape.map((d, k) => {
+    const r = k + 1;
+    const finale = k === shape.length - 1;
+    const id = `d${dateKey}-r${r}`;
+    const base = dailyRoundSeed(dateKey, r);
+    let best: Round | undefined;
+    let bestScore = Infinity;
+    for (let a = 0; a < DAILY_REDEALS; a++) {
+      const seed = a === 0 ? base : hashString(`redeal-${a}`, base) & SEED_MASK;
+      // The finale is dealt around a headliner (a fresh pick each re-deal, in case one won't fit the room).
+      const star = finale ? createRng(seed).fork('headliner').pick(freshStars(seen)) : undefined;
+      const round = generateRound(seed, d, id, star);
+      const b = round.bathroom;
+      const repeats = [...roomQuirks(b)].filter((q) => seen.has(q)).length;
+      const headlined = hasHeadliner(b);
+      const score = repeats * 2 + (isGimme(b) ? 3 : 0) + (venues.has(round.venue) ? 3 : 0) + (finale ? (headlined ? 0 : 4) : headlined ? 1 : 0);
+      if (score < bestScore) {
+        best = round;
+        bestScore = score;
+        if (score === 0) break;
+      }
+    }
+    roomQuirks(best!.bathroom).forEach((q) => seen.add(q));
+    venues.add(best!.venue);
+    return best!;
+  });
 }
 
 // ---------------------------------------------------------------------------

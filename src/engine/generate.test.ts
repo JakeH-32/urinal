@@ -49,10 +49,11 @@ describe('generator determinism', () => {
     expect(JSON.stringify(practiceRound(99))).toBe(JSON.stringify(practiceRound(99)));
   });
 
-  it('is fast: dailyRounds well under 30ms', () => {
+  // A varied daily re-deals rooms until they're fresh (about ten rooms dealt per day), once per page load.
+  it('is fast: dailyRounds under 80ms', () => {
     const t0 = performance.now();
     for (const k of days(50, '2030-01-01')) dailyRounds(k);
-    expect((performance.now() - t0) / 50).toBeLessThan(30);
+    expect((performance.now() - t0) / 50).toBeLessThan(80);
   });
 });
 
@@ -257,5 +258,20 @@ describe('boss in a stall', () => {
       for (const s of b.slots) expect(a.slots[s.index].grade).toBe(s.grade);
     }
     expect(seen).toBeGreaterThan(5);
+  }, 30000);
+});
+
+describe('daily variety', () => {
+  const HEADLINERS = ['sumo', 'knight', 'napper', 'mascot', 'twin', 'gymbro', 'tourist', 'dropper', 'friend', 'rookie'];
+  it('never repeats a venue or a kind of labelled guy, and ends on a headliner', () => {
+    for (let i = 0; i < 40; i++) {
+      const key = new Date(Date.UTC(2027, 0, 1 + i)).toISOString().slice(0, 10);
+      const rounds = dailyRounds(key);
+      const venues = rounds.map((r) => r.venue);
+      expect(new Set(venues).size).toBe(venues.length);
+      const kinds = rounds.flatMap((r) => [...new Set(r.bathroom.slots.flatMap((s) => (s.occupant && s.occupant.quirk !== 'normal' ? [s.occupant.quirk] : [])))]);
+      expect(new Set(kinds).size).toBe(kinds.length);
+      expect(rounds[rounds.length - 1].bathroom.slots.some((s) => s.occupant && HEADLINERS.includes(s.occupant.quirk))).toBe(true);
+    }
   }, 30000);
 });
