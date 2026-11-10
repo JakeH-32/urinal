@@ -1,5 +1,5 @@
 // Share images of a finished daily (score, tiles, rank, Puck, where to play), drawn on a canvas: a
-// 1080x1920 story for Instagram Stories and a 1300x520 banner for chats, both through the native share sheet.
+// 1080x1920 story for Instagram Stories and a 1200x750 card for chats, both through the native share sheet.
 import type { DailyRecord } from '../types';
 import { GRADES } from '../grades';
 import { GRADE_GLYPH } from './Tiles';
@@ -214,12 +214,12 @@ export async function drawStoryImage(record: DailyRecord, opts: CardOpts): Promi
 }
 
 /**
- * A short, wide banner of the same thing (for Messages and other chats), 1200x630, so several results
- * fit on one phone screen. Puck on the left, score and rank beside it, the day's tiles underneath.
+ * A card of the same thing for Messages and other chats, 1200x750. Messages crops anything wider than
+ * about 16:9, so this stays under that, with margin all round for the rounded corners. Puck on the left, score and rank beside it, the day's tiles underneath.
  */
 export async function drawCardImage(record: DailyRecord, opts: CardOpts): Promise<Blob> {
-  const BW = 1300;
-  const BH = 520;
+  const BW = 1200;
+  const BH = 750;
   const canvas = document.createElement('canvas');
   canvas.width = BW;
   canvas.height = BH;
@@ -250,63 +250,64 @@ export async function drawCardImage(record: DailyRecord, opts: CardOpts): Promis
     c.stroke();
   }
 
-  // Wide margins all round: Messages rounds and crops the edges of a picture.
+  // The 1200x630 layout below, scaled down a little and centred, so nothing sits near an edge.
+  const Z = 0.9;
   c.save();
+  c.translate((BW - 1200 * Z) / 2, (BH - 630 * Z) / 2);
+  c.scale(Z, Z);
 
   // Top strip: URINAL tiles on the left, where to play on the right.
   const letters = 'URINAL'.split('');
-  const ts = 54;
-  const gap = 8;
-  letters.forEach((ch, i) => tile(c, 90 + i * (ts + gap), 52, ts, '#ffffff', INK, ch, `900 32px ${display}`, 0.6));
-  c.font = `900 30px ${display}`;
-  const pw = c.measureText(opts.site).width + 56;
+  const ts = 70;
+  const gap = 10;
+  letters.forEach((ch, i) => tile(c, 44 + i * (ts + gap), 34, ts, '#ffffff', INK, ch, `900 42px ${display}`, 0.6));
+  c.font = `900 34px ${display}`;
+  const pw = c.measureText(opts.site).width + 64;
   c.fillStyle = INK;
-  roundRect(c, BW - 90 - pw, 54, pw, 56, 18);
+  roundRect(c, BW - 44 - pw, 38, pw, 66, 22);
   c.fill();
   c.fillStyle = '#ffffff';
   c.textAlign = 'center';
   c.textBaseline = 'middle';
-  c.fillText(opts.site, BW - 90 - pw / 2, 83);
+  c.fillText(opts.site, BW - 44 - pw / 2, 73);
 
   // Puck on the left.
   if (opts.puckSvg) {
     const img = await loadSvg(opts.puckSvg);
-    if (img) c.drawImage(img, 70, 130, 330, 330);
+    if (img) c.drawImage(img, 30, 168, 370, 370);
   }
 
   // The score, with the day, rank and any sightings beside it.
-  const X = 450;
-  const RIGHT = BW - 90;
+  const X = 420;
+  const RIGHT = BW - 44;
   c.textAlign = 'left';
   c.textBaseline = 'alphabetic';
   c.fillStyle = INK;
-  c.font = `900 200px ${display}`;
+  c.font = `900 250px ${display}`;
   const score = String(opts.clears);
-  c.fillText(score, X - 8, 318);
+  c.fillText(score, X - 8, 352);
   const sw = c.measureText(score).width;
   c.fillStyle = '#55607a';
-  c.font = `900 84px ${display}`;
+  c.font = `900 104px ${display}`;
   const of = `/${opts.total}`;
-  c.fillText(of, X + sw, 318);
-  const tx = X + sw + c.measureText(of).width + 40;
+  c.fillText(of, X + sw, 352);
+  const tx = X + sw + c.measureText(of).width + 36;
   const spotted = spottedLine(opts.spotted);
-  
-  c.font = `600 40px ${body}`;
-  c.fillText(`Urinal #${record.number}`, tx, 226);
+  const lift = spotted ? 44 : 0;
+  c.font = `600 46px ${body}`;
+  c.fillText(`Urinal #${record.number}`, tx, 250 - lift);
   c.fillStyle = INK;
-  fitFont(c, opts.title, 900, 68, display, RIGHT - tx);
-  c.fillText(opts.title, tx, 306);
-  // Sightings ride in the top strip, between the name and the address.
-  const stripL = 90 + 6 * (54 + 8) + 24;
-  if (spotted) badge(c, spotted, (stripL + (BW - 90 - pw - 24)) / 2, 55, 54, BW - 90 - pw - 24 - stripL, body, 'center');
+  fitFont(c, opts.title, 900, 76, display, RIGHT - tx);
+  c.fillText(opts.title, tx, 336 - lift);
+  if (spotted) badge(c, spotted, tx, 314, 62, RIGHT - tx, body, 'left');
 
   // Grade tiles.
   const n = record.results.length;
   const gg = 18;
-  const gs = Math.min(110, (RIGHT - X - (n - 1) * gg) / Math.max(1, n));
+  const gs = Math.min(150, (RIGHT - X - (n - 1) * gg) / Math.max(1, n));
   record.results.forEach((r, i) => {
     const g = GRADES[r.grade];
-    tile(c, X + i * (gs + gg), 350, gs, g.color, g.ink, GRADE_GLYPH[r.grade], `900 ${Math.round(gs * 0.5)}px ${body}`);
+    tile(c, X + i * (gs + gg), 408, gs, g.color, g.ink, GRADE_GLYPH[r.grade], `900 ${Math.round(gs * 0.5)}px ${body}`);
   });
 
   c.restore();
