@@ -632,6 +632,8 @@ export function dailyRoundSeed(dateKey: string, r: number): number {
  */
 const DAILY_VARIETY_FROM = '2026-11-11';
 /** Re-deals per daily room while looking for a fresh, not-too-easy one. */
+/** From this day on, the security guard never appears in a daily room. */
+const NO_GUARD_FROM = '2026-11-12';
 const DAILY_REDEALS = 40;
 /**
  * The guys worth texting about. The last room of each day has one; the first four mostly don't, so the
@@ -688,7 +690,9 @@ function variedDaily(dateKey: string): Round[] {
       const b = round.bathroom;
       const repeats = [...roomQuirks(b)].filter((q) => seen.has(q)).length;
       const headlined = hasHeadliner(b);
-      const score = repeats * 2 + (isGimme(b) ? 3 : 0) + (venues.has(round.venue) ? 3 : 0) + (finale ? (headlined ? 0 : 4) : headlined ? 1 : 0);
+      // No security guard in the daily (Endless only).
+      const guard = dateKey >= NO_GUARD_FROM && roomQuirks(b).has('security') ? 100 : 0;
+      const score = guard + repeats * 2 + (isGimme(b) ? 3 : 0) + (venues.has(round.venue) ? 3 : 0) + (finale ? (headlined ? 0 : 4) : headlined ? 1 : 0);
       if (score < bestScore) {
         best = round;
         bestScore = score;
