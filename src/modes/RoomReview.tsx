@@ -11,7 +11,7 @@ import { verdictFor } from './roundLogic';
 export function RoomReview({ round, result, title, onClose }: { round: Round; result: RoundResult; title: string; onClose(): void }) {
   const evaluation = useMemo(() => evaluate(round.bathroom), [round]);
   const closeRef = useRef<HTMLButtonElement>(null);
-  const line = verdictFor(round.id, round.bathroom, evaluation, result);
+  const line = verdictFor(round.id, round.bathroom, evaluation, result, round.venue);
   const why = explainPick(round.bathroom, evaluation, result.pick);
 
   useEffect(() => {

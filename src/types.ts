@@ -100,6 +100,11 @@ export interface Bathroom {
   /** dividers[i] === true means a divider between slot i and slot i+1 (length = slots.length - 1). */
   dividers: boolean[];
   door: Side;
+  /**
+   * Daily rooms from before 2026-11-12 keep the old order: any dry spot beat a puddle, even inside a
+   * peeper's, gassy guy's or full dropper's space. Set by the generator; never stored.
+   */
+  legacyPuddle?: boolean;
 }
 
 export type Difficulty = 1 | 2 | 3 | 4 | 5 | 6;

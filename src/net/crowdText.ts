@@ -40,7 +40,8 @@ export function roundCrowdText(crowd: RoundCrowd, pick: number, greens: readonly
   if (total === 2) return `The other player went with ${spot(top.i)}.`;
   const myPct = pctText(mine, total);
   if (mine > top.n) return `You picked with the crowd: ${myPct} chose ${you}.`;
-  if (mine === top.n) return `${myPct} of players picked this spot. Just as many went with ${spot(top.i)}.`;
+  // A tie is plain to see on the room's percentages.
+  if (mine === top.n) return `${myPct} of players picked this spot.`;
   const found = greens.includes(pick);
   const lead =
     mine <= 1

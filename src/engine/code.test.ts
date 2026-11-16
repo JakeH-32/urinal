@@ -423,3 +423,17 @@ describe('evaluate', () => {
     expect(evaluate(bath('N X N')).greens).toEqual([]);
   });
 });
+
+describe('a puddle beats a peeper, a gassy guy or a full dropper', () => {
+  it('sends you into the puddle rather than right beside one of them', () => {
+    expect(evaluate(parseLayout('_ E< _ W', 'right')).greens).toEqual([3]);
+    expect(evaluate(parseLayout('_ G _ W', 'left')).greens).toEqual([3]);
+  });
+  it('only right beside: two urinals off in his space, dry still beats the puddle', () => {
+    expect(evaluate(parseLayout('_ _ E< W', 'right')).greens).toEqual([0]);
+  });
+  it('keeps the old order for daily rooms dealt before the change', () => {
+    const b = { ...parseLayout('_ E< _ W', 'right'), legacyPuddle: true };
+    expect(evaluate(b).greens).not.toEqual([3]);
+  });
+});

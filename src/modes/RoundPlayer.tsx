@@ -233,7 +233,7 @@ export function RoundPlayer({ round, reducedMotion, onGraded, onNext, nextLabel,
     next?.scrollIntoView?.({ block: 'nearest', behavior: reducedMotion ? 'auto' : 'smooth' });
   }, [result, reducedMotion]);
 
-  const line = result ? verdictFor(round.id, round.bathroom, evaluation, result) : '';
+  const line = result ? verdictFor(round.id, round.bathroom, evaluation, result, round.venue) : '';
   const retry = !!onRetry && !!result && result.grade !== 'clear';
   // A retry keeps the answer hidden: no ✓ on the scene, and no why note that points at it.
   const shownEvaluation = result ? (retry ? { ...evaluation, greens: [] } : evaluation) : undefined;

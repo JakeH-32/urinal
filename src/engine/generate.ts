@@ -6,6 +6,7 @@
 import { QUIRKS, VENUES } from '../content';
 import { SET_PIECES } from '../content/setpieces';
 import { LEGENDARY_ROOMS } from '../content/legendary';
+import { QUIRK_THEMES, venueThemes } from '../content/venueThemes';
 import type { Bathroom, Difficulty, Evaluation, Guy, Quirk, Rng, Round, SetPiece, Side, Slot, UrinalFlag } from '../types';
 import { actsNormal, evaluate, isOpen, zoneCovers } from './code';
 import { dailyNumber } from './daily';
@@ -56,6 +57,26 @@ export function labelsMatter(b: Bathroom, ev: Evaluation = evaluate(b)): boolean
     const plain: Bathroom = { ...b, slots: b.slots.map((x, k) => (k >= j && k <= end ? { ...x, occupant: swapped } : x)) };
     return evaluate(plain).greens.join() !== key;
   });
+}
+
+/**
+ * True when at least one labeled guy changes the answer (or there are no labeled guys at all). Endless
+ * uses this: rooms stay random, but a label is never pure decoration.
+ */
+export function someLabelMatters(b: Bathroom, ev: Evaluation = evaluate(b)): boolean {
+  const key = ev.greens.join();
+  let labeled = 0;
+  const moved = b.slots.some((s, j) => {
+    const g = s.occupant;
+    if (!g || g.quirk === 'normal' || s.kind !== 'urinal' || (g.part ?? 0) > 0) return false;
+    labeled++;
+    let end = j;
+    while (b.slots[end + 1]?.occupant?.quirk === g.quirk && (b.slots[end + 1].occupant?.part ?? 0) > 0) end++;
+    const swapped: Guy = g.quirk === 'boss' && g.mood === 'happy' ? { ...g, mood: 'stressed' } : { ...g, quirk: 'normal', lean: undefined, mood: undefined, part: undefined };
+    const plain: Bathroom = { ...b, slots: b.slots.map((x, k) => (k >= j && k <= end ? { ...x, occupant: swapped } : x)) };
+    return evaluate(plain).greens.join() !== key;
+  });
+  return moved || labeled === 0;
 }
 
 /** True when no naive pick is clear (the round punishes eyeballing). */
@@ -415,7 +436,7 @@ function fallbackLayout(rng: Rng): Bathroom {
 
 const ATTEMPTS_PER_STAGE = 400;
 
-function buildBathroom(rng: Rng, d: Difficulty, featured?: Quirk): Bathroom {
+function buildBathroom(rng: Rng, d: Difficulty, featured?: Quirk, legacy = false): Bathroom {
   const planRng = rng.fork('plan');
   const plan = featured ? { ...makePlan(planRng, d), featured } : makePlan(planRng, d);
   // Stages 0..2 keep the planned size; stage 3 lets the size vary too (hard rules only).
@@ -424,10 +445,13 @@ function buildBathroom(rng: Rng, d: Difficulty, featured?: Quirk): Bathroom {
     for (let a = 0; a < ATTEMPTS_PER_STAGE; a++) {
       const p = stage < 3 ? plan : { ...plan, size: roomSize(stageRng, d) };
       const b = layout(stageRng, d, p);
+      if (legacy) b.legacyPuddle = true;
       if (accepts(b, evaluate(b), d, p, Math.min(stage, 2))) return b;
     }
   }
-  return fallbackLayout(rng.fork('fallback'));
+  const fb = fallbackLayout(rng.fork('fallback'));
+  if (legacy) fb.legacyPuddle = true;
+  return fb;
 }
 
 /**
@@ -457,7 +481,8 @@ function randomOk(b: Bathroom, ev: Evaluation): boolean {
   if (pickable < 2) return false;
   if (b.slots.some((s, j) => (s.occupant?.quirk === 'shy' || s.occupant?.quirk === 'germ') && zoneCovers(b, j).some((k) => b.slots[k].occupant))) return false;
   if (b.slots.some((s, j) => s.kind === 'urinal' && s.occupant?.quirk === 'security' && ![j - 1, j + 1].some((k) => b.slots[k]?.kind === 'urinal' && b.slots[k].occupant && b.slots[k].occupant!.quirk !== 'security'))) return false;
-  return true;
+  // Random, but no room where every label is decoration.
+  return someLabelMatters(b, ev);
 }
 
 /** An Endless room from the random generator (difficulty is only a label here). */
@@ -468,7 +493,7 @@ export function randomRound(seed: number, id: string): Round {
   const extra = rng.fork('boss-stall');
   if (extra.chance(BOSS_STALL_CHANCE)) bossInStall(extra, bathroom);
   const d = practiceDifficulty(seed);
-  return { id, seed, difficulty: d, venue: pickVenue(rng.fork('venue'), d), bathroom };
+  return { id, seed, difficulty: d, venue: pickVenue(rng.fork('venue'), d, bathroom), bathroom };
 }
 
 // ---------------------------------------------------------------------------
@@ -547,9 +572,24 @@ function dressGuys(rng: Rng, b: Bathroom, people?: SetPiece['people']): void {
   }
 }
 
-function pickVenue(rng: Rng, d: Difficulty): string {
-  const pool = (VENUES[d - 1] ?? []).filter((v) => typeof v === 'string' && v.length > 0);
-  return pool.length > 0 ? rng.pick(pool) : 'A bathroom';
+function pickVenue(rng: Rng, d: Difficulty, b?: Bathroom, exclude?: ReadonlySet<string>): string {
+  const ok = (v: string) => typeof v === 'string' && v.length > 0 && !exclude?.has(v);
+  const pool = (VENUES[d - 1] ?? []).filter(ok);
+  if (pool.length === 0) return 'A bathroom';
+  if (!b) return rng.pick(pool);
+  // Fit the room: score each venue by how many of the room's guys belong there. Same stakes tier first,
+  // then the tiers either side; a room of plain guys (or no fit anywhere) takes any venue of its tier.
+  const kinds = [...new Set(b.slots.flatMap((s) => (s.occupant && s.occupant.quirk !== 'normal' ? [s.occupant.quirk] : [])))];
+  const fit = (v: string) => {
+    const vt = venueThemes(v);
+    return kinds.filter((q) => (QUIRK_THEMES[q] ?? []).some((t) => vt.includes(t))).length;
+  };
+  for (const tiers of [[d], [d - 1, d + 1]]) {
+    const cands = tiers.flatMap((t) => (VENUES[t - 1] ?? []).filter(ok));
+    const best = Math.max(0, ...cands.map(fit));
+    if (best > 0) return rng.pick(cands.filter((v) => fit(v) === best));
+  }
+  return rng.pick(pool);
 }
 
 // ---------------------------------------------------------------------------
@@ -583,13 +623,13 @@ function bossInStall(rng: Rng, b: Bathroom): void {
   b.dividers = next.dividers;
 }
 
-export function generateRound(seed: number, difficulty: Difficulty, id: string, featured?: Quirk): Round {
+export function generateRound(seed: number, difficulty: Difficulty, id: string, featured?: Quirk, fitVenue = true, legacy = false): Round {
   const rng = createRng(seed);
-  const bathroom = buildBathroom(rng.fork(`layout-d${difficulty}`), difficulty, featured);
+  const bathroom = buildBathroom(rng.fork(`layout-d${difficulty}`), difficulty, featured, legacy);
   dressGuys(rng.fork('people'), bathroom);
   const extra = rng.fork('boss-stall');
   if (difficulty >= 3 && extra.chance(BOSS_STALL_CHANCE)) bossInStall(extra, bathroom);
-  const venue = pickVenue(rng.fork('venue'), difficulty);
+  const venue = pickVenue(rng.fork('venue'), difficulty, fitVenue ? bathroom : undefined);
   return { id, seed, difficulty, venue, bathroom };
 }
 
@@ -631,9 +671,13 @@ export function dailyRoundSeed(dateKey: string, r: number): number {
  * already played never change.
  */
 const DAILY_VARIETY_FROM = '2026-11-11';
-/** Re-deals per daily room while looking for a fresh, not-too-easy one. */
+/** From this day on, a daily room's venue is picked to fit the guys in it. Earlier days keep theirs. */
+const VENUE_FIT_FROM = '2026-11-17';
+/** From this day on, a puddle beats standing in a peeper's, gassy guy's or full dropper's space. */
+const GRIM_PUDDLE_FROM = '2026-11-17';
 /** From this day on, the security guard never appears in a daily room. */
 const NO_GUARD_FROM = '2026-11-12';
+/** Re-deals per daily room while looking for a fresh, not-too-easy one. */
 const DAILY_REDEALS = 40;
 /**
  * The guys worth texting about. The last room of each day has one; the first four mostly don't, so the
@@ -667,7 +711,7 @@ export function dailyRounds(dateKey: string): Round[] {
     const seed = dailyRoundSeed(dateKey, r);
     const id = `d${dateKey}-r${r}`;
     const sp = SET_PIECE_ROUNDS.includes(r) ? dailySetPiece(dateKey, d) : undefined;
-    return sp ? setPieceRound(sp, seed, id) : generateRound(seed, d, id);
+    return sp ? setPieceRound(sp, seed, id, true) : generateRound(seed, d, id, undefined, false, true);
   });
 }
 
@@ -686,18 +730,23 @@ function variedDaily(dateKey: string): Round[] {
       const seed = a === 0 ? base : hashString(`redeal-${a}`, base) & SEED_MASK;
       // The finale is dealt around a headliner (a fresh pick each re-deal, in case one won't fit the room).
       const star = finale ? createRng(seed).fork('headliner').pick(freshStars(seen)) : undefined;
-      const round = generateRound(seed, d, id, star);
+      const fit = dateKey >= VENUE_FIT_FROM;
+      const round = generateRound(seed, d, id, star, fit, dateKey < GRIM_PUDDLE_FROM);
       const b = round.bathroom;
       const repeats = [...roomQuirks(b)].filter((q) => seen.has(q)).length;
       const headlined = hasHeadliner(b);
+      // With fitted venues a repeat is fixed below by picking another fitting venue, not by re-dealing the room.
       // No security guard in the daily (Endless only).
       const guard = dateKey >= NO_GUARD_FROM && roomQuirks(b).has('security') ? 100 : 0;
-      const score = guard + repeats * 2 + (isGimme(b) ? 3 : 0) + (venues.has(round.venue) ? 3 : 0) + (finale ? (headlined ? 0 : 4) : headlined ? 1 : 0);
+      const score = guard + repeats * 2 + (isGimme(b) ? 3 : 0) + (!fit && venues.has(round.venue) ? 3 : 0) + (finale ? (headlined ? 0 : 4) : headlined ? 1 : 0);
       if (score < bestScore) {
         best = round;
         bestScore = score;
         if (score === 0) break;
       }
+    }
+    if (dateKey >= VENUE_FIT_FROM && venues.has(best!.venue)) {
+      best = { ...best!, venue: pickVenue(createRng(best!.seed).fork('venue-again'), d, best!.bathroom, venues) };
     }
     roomQuirks(best!.bathroom).forEach((q) => seen.add(q));
     venues.add(best!.venue);
@@ -715,8 +764,9 @@ export const SET_PIECE_ROUNDS: readonly number[] = [2, 5];
 /** Set pieces come in these difficulties (2 is Endless-only since the daily dropped its warm-ups). */
 export const SET_PIECE_DIFFICULTIES: readonly Difficulty[] = [2, 4, 6];
 
-export function setPieceRound(sp: SetPiece, seed: number, id: string): Round {
+export function setPieceRound(sp: SetPiece, seed: number, id: string, legacy = false): Round {
   const bathroom = parseLayout(sp.layout, sp.door);
+  if (legacy) bathroom.legacyPuddle = true;
   dressGuys(createRng(seed).fork('people'), bathroom, sp.people);
   return { id, seed, difficulty: sp.difficulty, venue: sp.venue, premise: sp.premise, bathroom };
 }

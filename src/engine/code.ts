@@ -260,13 +260,26 @@ interface Cand {
 }
 
 /** Ranking comparator: negative when x ranks better than y, 0 on an exact tie. */
+/** Guys whose space is worse than a puddle: the peeping tom, the gassy guy, the full dropper. */
+const WORSE_THAN_A_PUDDLE: readonly Quirk[] = ['peeper', 'gassy', 'dropper'];
+
+/** A spot right beside one of them (one urinal away). Further out in their space, the puddle still loses. */
+function grim(b: Bathroom, c: Cand): boolean {
+  return c.violatedBy.some((j) => Math.abs(j - c.index) === 1 && WORSE_THAN_A_PUDDLE.includes(b.slots[j]?.occupant?.quirk as Quirk));
+}
+
 function compareCand(b: Bathroom, x: Cand, y: Cand): number {
   // Two legal urinals: right beside a guy (through a divider) loses to a gap, even when the gap is the
   // low urinal (playtest: a real gap beats standing next to a stranger).
   // Legal spots: right next to a friend beats everything else.
   if (x.violations === 0 && y.violations === 0 && x.friendNext !== y.friendNext) return y.friendNext - x.friendNext;
   if (x.tier <= 1 && y.tier <= 1 && x.beside !== y.beside) return x.beside - y.beside;
-  if (x.tier !== y.tier) return x.tier - y.tier;
+  // Right beside a peeper, a gassy guy or a full dropper is the worst place to stand: worse than any other
+  // crowding, and worse than a puddle (playtest: "puddle > peeper or gassy or full drop", "only when you're
+  // one space away").
+  const tx = !b.legacyPuddle && grim(b, x) ? 4.5 : x.tier;
+  const ty = !b.legacyPuddle && grim(b, y) ? 4.5 : y.tier;
+  if (tx !== ty) return tx - ty;
   if (x.severity !== y.severity) return x.severity - y.severity;
   if (x.violations !== y.violations) return x.violations - y.violations;
   // Between legal spots only: once you're in someone's space anyway, walking past the talker is moot.

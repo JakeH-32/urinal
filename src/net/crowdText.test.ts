@@ -54,7 +54,7 @@ describe('roundCrowdText', () => {
   });
 
   it('handles a tie for the top spot', () => {
-    expect(roundCrowdText(rc([2, 2, 1]), 0)).toBe('40% of players picked this spot. Just as many went with #2.');
+    expect(roundCrowdText(rc([2, 2, 1]), 0)).toBe('40% of players picked this spot.');
   });
 
   it('prefers a Clear spot when naming a tied favourite', () => {

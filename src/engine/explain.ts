@@ -5,7 +5,7 @@ import { actsNormal, culpritOf, dividersBetween, isTalker, occupantIndices, room
 
 const other = (s: Side): Side => (s === 'left' ? 'right' : 'left');
 
-const QUIRK_NOUN: Record<Exclude<Quirk, 'normal'>, string> = {
+export const QUIRK_NOUN: Record<Exclude<Quirk, 'normal'>, string> = {
   talker: 'the talker',
   splasher: 'the splasher',
   boss: 'the boss',
@@ -46,7 +46,7 @@ function guyList(b: Bathroom, ix: readonly number[]): string {
     const key = g.quirk === 'twin' ? `twin-${g.group}` : `${g.name}-${k - (g.part ?? 0)}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    nouns.push(actsNormal(g) || g.quirk === 'normal' ? 'a stranger' : QUIRK_NOUN[g.quirk as Exclude<Quirk, 'normal'>]);
+    nouns.push(g.quirk === 'normal' ? 'a stranger' : QUIRK_NOUN[g.quirk as Exclude<Quirk, 'normal'>]);
   }
   const counts = new Map<string, number>();
   for (const n of nouns) counts.set(n, (counts.get(n) ?? 0) + 1);
@@ -172,8 +172,9 @@ export function explainPick(b: Bathroom, ev: Evaluation, pick: number): string |
   const j = culpritOf(b, pick);
   const guy = j === null ? undefined : b.slots[j].occupant;
   // Right beside someone who has no rules of his own: say who, in this room.
-  const who = !guy || actsNormal(guy) || guy.quirk === 'normal' ? 'a stranger' : QUIRK_NOUN[guy.quirk as Exclude<Quirk, 'normal'>];
-  const plain = best !== undefined ? `Right beside ${who}, with a better spot open.` : `Right beside ${who}.`;
+  // A guy with a chip is named by it, even when he plays by the regular rules (rookie, mascot, knight...).
+  const who = !guy || guy.quirk === 'normal' ? 'a stranger' : QUIRK_NOUN[guy.quirk as Exclude<Quirk, 'normal'>];
+  const plain = best !== undefined ? `Right beside ${who}.` : `Right beside ${who}.`;
   if (j === null || !guy || actsNormal(guy)) return plain;
   const side = sideOf(pick, j); // which side of him you were on
   const divider = dividersBetween(b, pick, j) > 0;

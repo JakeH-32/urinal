@@ -94,7 +94,7 @@ export function DayReplay({ rounds, results, number, reducedMotion, onClose }: {
               {GRADES[play.result.grade].label}
             </p>
             <p className="verdict-line" style={{ visibility: phase === 'shown' ? 'visible' : 'hidden' }}>
-              {verdictFor(play.round.id, play.round.bathroom, evaluation, play.result) || ' '}
+              {verdictFor(play.round.id, play.round.bathroom, evaluation, play.result, play.round.venue) || ' '}
             </p>
             <div className="row row--center">
               <Button ref={closeRef} variant="ghost" onClick={onClose}>

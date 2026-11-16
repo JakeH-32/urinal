@@ -1,6 +1,6 @@
 // Pure scene logic (labels, keyboard focus order, reveal model). No React.
 import type { Bathroom, Evaluation, Grade, Quirk, Slot } from '../types';
-import { isOpen } from '../engine/code';
+import { isOpen, isTalker } from '../engine/code';
 import { QUIRK_STYLE } from './looks';
 
 /** Grades that broke the urinal code: show zone bands and reactions. */
@@ -169,6 +169,14 @@ export function buildReveal(evaluation: Evaluation, picked: number | undefined, 
       const youOn = picked < j ? 'left' : 'right';
       if (g.lean && g.lean !== youOn) reactors.push({ index: j, dir: picked < j ? -1 : 1 });
     }
+  }
+  // Walked past a talker (or the pilot, or the crypto bro) when the ✓ didn't: he turns to you as you go by.
+  if (bathroom && picked !== undefined && pickedA?.reason === 'past-talker') {
+    bathroom.slots.forEach((s, j) => {
+      if (s.kind !== 'urinal' || !isTalker(s.occupant) || reactors.some((r) => r.index === j)) return;
+      const passed = bathroom.door === 'left' ? j < picked : j > picked;
+      if (passed) reactors.push({ index: j, dir: picked < j ? -1 : 1 });
+    });
   }
   const dodged: ZoneBand[] = [];
   if (grade === 'clear' && picked !== undefined && bathroom) {

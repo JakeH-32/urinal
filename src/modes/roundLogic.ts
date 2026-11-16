@@ -4,6 +4,8 @@ import { FIXTURES, QUIRKS, VERDICT_CASES, VERDICTS } from '../content';
 import type { VerdictCase } from '../content';
 import { hashString } from '../engine/rng';
 import { actsNormal, culpritOf, dividersBetween, occupantIndices, roomTo, sideOf, zoneRadius } from '../engine/code';
+import { QUIRK_NOUN } from '../engine/explain';
+import { THEME_VERDICTS, venueThemes } from '../content/venueThemes';
 import { GRADES, GRADE_ORDER } from '../grades';
 import { ROUNDS_PER_DAY } from '../state/storage';
 
@@ -38,7 +40,14 @@ export function violatorName(bathroom: Bathroom, evaluation: Evaluation | undefi
   }
   if (idx === null || idx === undefined) idx = closestNeighbor(bathroom, pick);
   if (idx === null || idx === undefined) return undefined;
-  return bathroom.slots[idx]?.occupant?.name;
+  const g = bathroom.slots[idx]?.occupant;
+  if (!g) return undefined;
+  // A guy with a label goes by what his chip says ("The mascot"), not his whole bio name: short quips.
+  if (g.quirk !== 'normal') {
+    const noun = QUIRK_NOUN[g.quirk];
+    return noun.startsWith('the ') ? `The ${noun.slice(4)}` : noun.charAt(0).toUpperCase() + noun.slice(1);
+  }
+  return g.name;
 }
 
 function closestNeighbor(b: Bathroom, pick: number): number | undefined {
@@ -116,11 +125,28 @@ export function verdictPool(bathroom: Bathroom, evaluation: Evaluation | undefin
 }
 
 /** The verdict a player sees for a result in a room: the right pool, the right name, the round's line. */
+/** On a miss, lines for crowding this guy at a venue that suits him (the room, the title and the pick together). */
+function themeLines(b: Bathroom, ev: Evaluation | undefined, result: Pick<RoundResult, 'pick' | 'reason'>, venue: string | undefined): string[] {
+  const a = ev?.slots.find((s) => s.index === result.pick);
+  if (!venue || !a || (a.grade !== 'amber' && a.grade !== 'doctor')) return [];
+  let j: number | null | undefined;
+  try {
+    j = culpritOf(b, result.pick);
+  } catch {
+    j = null;
+  }
+  if (j === null || j === undefined) j = a.violatedBy?.[0];
+  const q = j === null || j === undefined ? undefined : b.slots[j]?.occupant?.quirk;
+  if (!q || q === 'normal') return [];
+  const byTheme = THEME_VERDICTS[q] ?? {};
+  return venueThemes(venue).flatMap((t) => [...(byTheme[t] ?? [])]);
+}
+
 /** Longest verdict line, with the name filled in, before we pick a shorter one. */
 const MAX_VERDICT = 60;
 
-export function verdictFor(roundId: string, bathroom: Bathroom, evaluation: Evaluation | undefined, result: Pick<RoundResult, 'pick' | 'reason'>): string {
-  const pool = verdictPool(bathroom, evaluation, result.pick, result.reason);
+export function verdictFor(roundId: string, bathroom: Bathroom, evaluation: Evaluation | undefined, result: Pick<RoundResult, 'pick' | 'reason'>, venue?: string): string {
+  const pool = [...themeLines(bathroom, evaluation, result, venue), ...verdictPool(bathroom, evaluation, result.pick, result.reason)];
   const name = violatorName(bathroom, evaluation, result.pick);
   // A long name in a long line makes a paragraph: keep to lines that stay short with this guy's name in them.
   const short = pool.filter((l) => verdictLine(roundId, result.reason, name, [l]).length <= MAX_VERDICT);

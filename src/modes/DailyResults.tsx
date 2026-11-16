@@ -154,7 +154,7 @@ export function DailyResults({ record, todayKey, rounds, crowd }: DailyResultsPr
       return {
         res,
         venue: round?.venue ?? `Round ${i + 1}`,
-        line: round ? verdictFor(res.roundId, round.bathroom, ev, res) : verdictLine(res.roundId, res.reason),
+        line: round ? verdictFor(res.roundId, round.bathroom, ev, res, round.venue) : verdictLine(res.roundId, res.reason),
       };
     });
   }, [record, rounds]);
