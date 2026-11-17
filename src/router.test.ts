@@ -14,10 +14,17 @@ describe('router', () => {
     expect(parseHash('#/how')).toEqual({ name: 'how' });
     expect(parseHash('#/stats')).toEqual({ name: 'stats' });
     expect(parseHash('#/settings')).toEqual({ name: 'settings' });
+    expect(parseHash('#/privacy')).toEqual({ name: 'privacy' });
+    expect(parseHash('#/privacy/')).toEqual({ name: 'privacy' });
+    expect(parseHash('#/terms')).toEqual({ name: 'privacy' });
     expect(parseHash('#/dev/scene')).toEqual({ name: 'devScene' });
     expect(parseHash('#/dev')).toEqual({ name: 'menu' });
     expect(parseHash('#/campaign/c1-l1')).toEqual({ name: 'menu' });
     expect(parseHash('#/practice/%E0%A4%A')).toEqual({ name: 'practice', code: '%E0%A4%A' });
+  });
+
+  it('links the privacy page at #/privacy', () => {
+    expect(routeToHash({ name: 'privacy' })).toBe('#/privacy');
   });
 
   it('round-trips', () => {
@@ -29,6 +36,7 @@ describe('router', () => {
       { name: 'how' },
       { name: 'stats' },
       { name: 'settings' },
+      { name: 'privacy' },
       { name: 'devScene' },
     ];
     for (const r of routes) expect(parseHash(routeToHash(r))).toEqual(r);

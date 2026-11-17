@@ -10,6 +10,7 @@ import { Menu } from './ui/Menu';
 import { HowToPlay } from './ui/HowToPlay';
 import { Stats } from './ui/Stats';
 import { Settings } from './ui/Settings';
+import { Privacy } from './ui/Privacy';
 import { Daily } from './modes/Daily';
 import { Practice } from './modes/Practice';
 
@@ -33,6 +34,7 @@ const TITLES: Record<Route['name'], string> = {
   how: 'How to play · Urinal',
   stats: 'Stats · Urinal',
   settings: 'Settings · Urinal',
+  privacy: 'Privacy & terms · Urinal',
   devScene: 'Scene gallery · Urinal',
 };
 
@@ -60,6 +62,8 @@ function RouteView({ route }: { route: Route }) {
       return <Stats />;
     case 'settings':
       return <Settings />;
+    case 'privacy':
+      return <Privacy />;
     case 'devScene':
       return SceneGallery ? (
         <Suspense fallback={<p className="center muted">Loading scene gallery…</p>}>

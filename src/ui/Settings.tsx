@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { sfx } from '../audio/sfx';
+import { communityEnabled, forgetDevice } from '../net/community';
 import { useSave } from '../state/SaveContext';
+import { setCrowdSharing, useCrowdSharing } from '../state/privacy';
 import { Button, LinkButton } from './Button';
 import { Toggle } from './Toggle';
 import { useToast } from './Toast';
@@ -9,7 +11,9 @@ export function Settings() {
   const { save, update, reset } = useSave();
   const toast = useToast();
   const [confirming, setConfirming] = useState(false);
+  const [forgetting, setForgetting] = useState(false);
   const s = save.settings;
+  const sharing = useCrowdSharing();
 
   const setSetting = (patch: Partial<typeof s>) => update((d) => ({ ...d, settings: { ...d.settings, ...patch } }));
 
@@ -33,6 +37,32 @@ export function Settings() {
           checked={s.reducedMotion}
           onChange={(v) => setSetting({ reducedMotion: v })}
         />
+      </section>
+
+      <section className="card">
+        <Toggle
+          label="Share my picks anonymously"
+          description="Adds your picks to the crowd stats with a random ID for this device. No names or accounts."
+          checked={sharing.on}
+          onChange={(v) => setCrowdSharing(v)}
+        />
+        {communityEnabled() && (
+          <Button
+            variant="ghost"
+            disabled={forgetting}
+            onClick={async () => {
+              setForgetting(true);
+              const ok = await forgetDevice();
+              setForgetting(false);
+              toast(ok ? 'Your crowd data is deleted' : 'Couldn’t reach the server. Try again later.');
+            }}
+          >
+            {forgetting ? 'Deleting…' : 'Delete my crowd data'}
+          </Button>
+        )}
+        <p className="small settings-privacy">
+          <a href="#/privacy">Privacy &amp; terms</a>
+        </p>
       </section>
 
       <section className="card">
@@ -65,6 +95,7 @@ export function Settings() {
 
       <div className="row row--center">
         <LinkButton href="#/how">How to play</LinkButton>
+        <LinkButton href="#/privacy">Privacy</LinkButton>
         <LinkButton href="#/">Menu</LinkButton>
       </div>
     </div>

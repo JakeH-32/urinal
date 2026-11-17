@@ -4,7 +4,8 @@
 // - Until VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY exist (src/net/config.ts) every call here is a
 //   silent no-op: no requests, no storage writes, fetchDay resolves null.
 // - Nothing here throws into the game, and every request gives up after REQUEST_TIMEOUT_MS.
-// - Only day, round, slot, grade, points, clears and a random per-device id are ever sent.
+// - Only day, round, slot, grade, points, clears, a new/yesterday/lapsed flag and a random per-device id
+//   are ever sent, and only while the player's sharing choice allows it (src/state/privacy.ts).
 //
 // Backend: supabase/schema.sql (tables `picks` + `finishes`, insert-only for anon; `day_stats` RPC).
 import type { Bathroom, Grade, RoundResult } from '../types';
@@ -13,6 +14,7 @@ import { isOpen } from '../engine/code';
 import { URINAL_EPOCH } from '../engine/daily';
 import { dailyRounds } from '../engine/generate';
 import { shiftDateKey } from '../state/dailyStreak';
+import { crowdSharingAllowed } from '../state/privacy';
 import { ROUNDS_PER_DAY, getDefaultStorage } from '../state/storage';
 import { communityConfig } from './config';
 
@@ -174,6 +176,8 @@ interface CrowdStore {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 let memStore: CrowdStore | null = null;
+/** True after a write to localStorage failed: then the in-memory copy is the only one, so keep it. */
+let lsBroken = false;
 
 function newDeviceId(): string {
   try {
@@ -212,8 +216,10 @@ function writeStore(s: CrowdStore): void {
   if (!ls) return;
   try {
     ls.setItem(CROWD_STORAGE_KEY, JSON.stringify(s));
+    lsBroken = false;
   } catch {
-    /* quota / blocked: the in-memory copy still dedupes this session */
+    // quota / blocked: the in-memory copy still dedupes this session
+    lsBroken = true;
   }
 }
 
@@ -223,6 +229,8 @@ function readStore(): CrowdStore {
     try {
       const parsed = parseStore(ls.getItem(CROWD_STORAGE_KEY));
       if (parsed) return (memStore = parsed);
+      // Storage works and holds no id (sharing was turned off, which deletes it): start a fresh one.
+      if (!lsBroken) memStore = null;
     } catch {
       /* blocked */
     }
@@ -292,13 +300,21 @@ export async function whenSent(): Promise<void> {
 }
 
 /** Insert one row unless this device already sent `key`. Fire-and-forget. */
-function send(key: string, day: number, table: 'picks' | 'finishes', row: Record<string, string | number>): void {
+function send(key: string, day: number, table: 'picks' | 'finishes', row: Record<string, string | number>, optional?: string): void {
   if (inflight.has(key)) return;
   const store = readStore();
   if (store.sent.includes(key)) return;
+  const post = (r: Record<string, string | number>) => call(table, { ...r, device: store.device }, 'return=minimal', (res) => res.status);
   // Plain insert: "resolution=ignore-duplicates" (ON CONFLICT DO NOTHING) fails Supabase's RLS check
   // since the public key has no SELECT policy. A repeat just comes back 409, which counts as sent.
-  const done = call(table, { ...row, device: store.device }, 'return=minimal', (res) => res.status)
+  const done = post(row)
+    .then((status) => {
+      // A database without the `optional` column yet answers 400: send the row again without it.
+      if (status !== 400 || !optional || !(optional in row)) return status;
+      const rest = { ...row };
+      delete rest[optional];
+      return post(rest);
+    })
     .then((status) => {
       // 2xx = stored; 409 = already there; 400/422 = the data will never be accepted. Anything else
       // (offline, timeout, 401, 5xx, schema not set up yet) stays unsent and is retried next visit.
@@ -319,7 +335,7 @@ export function communityEnabled(): boolean {
 /** Send one pick (round 1..5, slot index 0..9). Once per device per (day, round). Never throws. */
 export function recordPick(day: number, round: number, slot: number, grade: Grade): void {
   try {
-    if (!communityEnabled()) return;
+    if (!communityEnabled() || !crowdSharingAllowed()) return;
     if (!validDay(day) || !isInt(round) || round < 1 || round > CROWD_ROUNDS) return;
     if (!isInt(slot) || slot < 0 || slot >= MAX_SLOTS || !GRADE_ORDER.includes(grade)) return;
     send(`${day}:${round}`, day, 'picks', { day, round, slot, grade });
@@ -328,16 +344,65 @@ export function recordPick(day: number, round: number, slot: number, grade: Grad
   }
 }
 
-/** Send a finished day (points 0..15, clears 0..5). Once per device per day. Never throws. */
-export function recordFinish(day: number, points: number, clears: number): void {
+/** Was this player here before? Worked out on the device from its own saved days; no id involved. */
+export type Visit = 'new' | 'yesterday' | 'lapsed';
+const VISITS: readonly Visit[] = ['new', 'yesterday', 'lapsed'];
+
+/**
+ * 'new' = no finished daily before `todayKey`; 'yesterday' = finished the day before; 'lapsed' = finished
+ * some earlier day but not yesterday.
+ */
+export function visitKind(byDate: Readonly<Record<string, { finished?: boolean } | undefined>>, todayKey: string): Visit {
+  const before = Object.keys(byDate).filter((k) => k < todayKey && byDate[k]?.finished);
+  if (before.length === 0) return 'new';
+  return before.includes(shiftDateKey(todayKey, -1)) ? 'yesterday' : 'lapsed';
+}
+
+/**
+ * Send a finished day (points 0..15, clears 0..5), with the new/yesterday/lapsed flag when given.
+ * Once per device per day. Never throws.
+ */
+export function recordFinish(day: number, points: number, clears: number, visit?: Visit): void {
   try {
-    if (!communityEnabled()) return;
+    if (!communityEnabled() || !crowdSharingAllowed()) return;
     if (!validDay(day) || !isInt(points) || !isInt(clears) || clears < 0 || clears > CROWD_ROUNDS) return;
     // Same rule as the table's CHECK: 3 per clear, at most 2 per other round.
     if (points < clears * 3 || points > clears * 3 + (CROWD_ROUNDS - clears) * 2) return;
-    send(`${day}:f`, day, 'finishes', { day, points, clears });
+    if (visit !== undefined && VISITS.includes(visit)) send(`${day}:f`, day, 'finishes', { day, points, clears, visit }, 'visit');
+    else send(`${day}:f`, day, 'finishes', { day, points, clears });
   } catch {
     /* never break the game */
+  }
+}
+
+/**
+ * Delete every row this device has sent, then forget its id. true when the rows are gone (or there was
+ * nothing to delete); false when the server couldn't be reached, so the id is kept for another try.
+ */
+export async function forgetDevice(): Promise<boolean> {
+  try {
+    await whenSent();
+    const ls = getDefaultStorage();
+    let stored: CrowdStore | null = null;
+    try {
+      stored = parseStore(ls?.getItem(CROWD_STORAGE_KEY) ?? null);
+    } catch {
+      /* blocked */
+    }
+    const device = stored?.device ?? memStore?.device;
+    if (!device) return true;
+    if (!communityEnabled()) return false;
+    const ok = await call('rpc/forget_device', { p_device: device }, null, (res) => res.ok);
+    if (!ok) return false;
+    memStore = null;
+    try {
+      ls?.removeItem(CROWD_STORAGE_KEY);
+    } catch {
+      /* blocked */
+    }
+    return true;
+  } catch {
+    return false;
   }
 }
 

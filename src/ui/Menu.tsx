@@ -82,6 +82,10 @@ export function Menu() {
           Settings
         </LinkButton>
       </nav>
+
+      <p className="menu-foot small center">
+        <a href="#/privacy">Privacy &amp; terms</a>
+      </p>
     </div>
   );
 }

@@ -3,7 +3,9 @@
 -- See docs/STATS.md. The game talks to this over the REST API with the public anon key:
 --   POST /rest/v1/picks, POST /rest/v1/finishes   (insert only; a repeat comes back 409)
 --   POST /rest/v1/rpc/day_stats {"p_day": N}      (aggregate counts only)
--- Nothing personal is stored: day, round, slot, grade, points, clears and a random per-device id.
+-- Nothing personal is stored: day, round, slot, grade, points, clears, a new/yesterday/lapsed flag and a
+-- random per-device id.
+--   POST /rest/v1/rpc/forget_device {"p_device": "<uuid>"}   (deletes that device's rows)
 
 -- One row per device per daily round.
 create table if not exists public.picks (
@@ -26,6 +28,11 @@ create table if not exists public.finishes (
   primary key (day, device),
   check (points between clears * 3 and clears * 3 + (6 - clears) * 2)
 );
+
+-- Was this player here before? Worked out on the device: 'new' (first finished daily), 'yesterday'
+-- (also finished the day before) or 'lapsed' (came back after a gap). Null on rows from before this.
+alter table public.finishes add column if not exists visit text
+  check (visit is null or visit in ('new', 'yesterday', 'lapsed'));
 
 -- Row-level security: the public key may INSERT and nothing else. No select/update/delete policies
 -- exist, so nobody can read, change or delete raw rows through the API.
@@ -97,6 +104,22 @@ $$;
 
 revoke all on function public.day_stats(integer) from public;
 grant execute on function public.day_stats(integer) to anon, authenticated;
+
+-- "Delete my crowd data" in Settings: removes every row sent with one device id. The id is a random
+-- 122-bit value only that device holds, so knowing it is the proof of ownership.
+create or replace function public.forget_device(p_device uuid)
+returns void
+language sql
+volatile
+security definer
+set search_path = ''
+as $$
+  delete from public.picks where device = p_device;
+  delete from public.finishes where device = p_device;
+$$;
+
+revoke all on function public.forget_device(uuid) from public;
+grant execute on function public.forget_device(uuid) to anon, authenticated;
 
 -- Make the REST API pick up the new tables and function right away.
 notify pgrst, 'reload schema';

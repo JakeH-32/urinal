@@ -7,6 +7,7 @@ export type Route =
   | { name: 'how' }
   | { name: 'stats' }
   | { name: 'settings' }
+  | { name: 'privacy' }
   | { name: 'devScene' };
 
 export function parseHash(hash: string): Route {
@@ -27,6 +28,10 @@ export function parseHash(hash: string): Route {
       return { name: 'stats' };
     case 'settings':
       return { name: 'settings' };
+    // Privacy policy and terms share one page; #/terms is an alias.
+    case 'privacy':
+    case 'terms':
+      return { name: 'privacy' };
     case 'dev':
       return arg === 'scene' && rest.length === 0 ? { name: 'devScene' } : { name: 'menu' };
     default:

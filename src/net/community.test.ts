@@ -395,3 +395,74 @@ describe('when configured', () => {
     expect(store.getItem(m.CROWD_STORAGE_KEY) ?? '').not.toContain('2:1');
   });
 });
+
+describe('visitKind', () => {
+  const fin = { finished: true };
+  it('new with no earlier finished day, yesterday when the day before was finished, lapsed otherwise', async () => {
+    expect(m.visitKind({}, '2026-11-16')).toBe('new');
+    expect(m.visitKind({ '2026-11-16': fin, '2026-11-15': { finished: false } }, '2026-11-16')).toBe('new');
+    expect(m.visitKind({ '2026-11-15': fin }, '2026-11-16')).toBe('yesterday');
+    expect(m.visitKind({ '2026-11-10': fin }, '2026-11-16')).toBe('lapsed');
+    expect(m.visitKind({ '2026-10-31': fin }, '2026-11-01')).toBe('yesterday');
+  });
+});
+
+describe('sharing choice, visit flag and forgetting', () => {
+  beforeEach(enable);
+  const SHARE = 'urinal:share:v1';
+
+  it('sends nothing while sharing is off', async () => {
+    store.setItem(SHARE, '0');
+    m.recordPick(2, 1, 0, 'clear');
+    m.recordFinish(2, 15, 5, 'new');
+    await m.whenSent();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(store.getItem(m.CROWD_STORAGE_KEY)).toBeNull();
+  });
+
+  it('sends the visit flag with a finish', async () => {
+    store.setItem(SHARE, '1');
+    m.recordFinish(2, 12, 3, 'yesterday');
+    await m.whenSent();
+    const sent = body(fetchMock.mock.calls[0]);
+    expect(Object.keys(sent).sort()).toEqual(['clears', 'day', 'device', 'points', 'visit']);
+    expect(sent.visit).toBe('yesterday');
+  });
+
+  it('resends without the flag when the database has no visit column yet', async () => {
+    store.setItem(SHARE, '1');
+    fetchMock.mockImplementationOnce(async () => new Response(null, { status: 400 }));
+    m.recordFinish(2, 12, 3, 'lapsed');
+    await m.whenSent();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(body(fetchMock.mock.calls[1])).not.toHaveProperty('visit');
+    m.recordFinish(2, 12, 3, 'lapsed');
+    await m.whenSent();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('forgetDevice deletes the rows for this id, then the id', async () => {
+    store.setItem(SHARE, '1');
+    m.recordPick(2, 1, 0, 'clear');
+    await m.whenSent();
+    const device = body(fetchMock.mock.calls[0]).device;
+    fetchMock.mockImplementationOnce(async () => new Response(null, { status: 204 }));
+    expect(await m.forgetDevice()).toBe(true);
+    expect(fetchMock.mock.calls[1][0]).toBe(`${URL_}/rest/v1/rpc/forget_device`);
+    expect(body(fetchMock.mock.calls[1])).toEqual({ p_device: device });
+    expect(store.getItem(m.CROWD_STORAGE_KEY)).toBeNull();
+    // A later pick starts a fresh id.
+    m.recordPick(3, 1, 0, 'clear');
+    await m.whenSent();
+    expect(body(fetchMock.mock.calls[2]).device).not.toBe(device);
+  });
+
+  it('forgetDevice keeps the id when the server says no', async () => {
+    store.setItem(SHARE, '1');
+    m.recordPick(2, 1, 0, 'clear');
+    await m.whenSent();
+    fetchMock.mockImplementationOnce(async () => new Response(null, { status: 500 }));
+    expect(await m.forgetDevice()).toBe(false);
+    expect(store.getItem(m.CROWD_STORAGE_KEY)).not.toBeNull();
+  });
+});
